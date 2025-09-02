@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabaseClient.ts'
-import type { AuthState } from '../types'
+import { Auth } from '../types'
+
+// Definição do estado e ações da store de autenticação
+type AuthState = Auth.AuthState
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,

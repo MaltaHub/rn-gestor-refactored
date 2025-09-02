@@ -1,18 +1,9 @@
-export interface Vehicle {
-  [key: string]: string;
-}
+import * as supabase_tables from './supabase_tables';
+import * as supabase_auth from './supabase_auth';
+import * as utils from './utils';
 
-type AuthUser = {
-  id: string
-  email?: string
-  // adicione outros campos do user se necessário
-}
-
-export type AuthState = {
-  user: AuthUser | null
-  token: string | null // access_token (JWT)
-  loading: boolean
-  // ações
-  bootstrap: () => Promise<void>
-  logout: () => Promise<void>
-}
+export { 
+    supabase_tables as Tabelas, 
+    supabase_auth as Auth,
+    utils as Utils
+};
