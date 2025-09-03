@@ -117,8 +117,10 @@ export class VersionManager {
   }
 }
 
+/*
 const vm = new VersionManager(5000); // 5s por padrão
 vm.start();
 
 // @ts-ignore
 window.__versionManager = vm;
+*/

@@ -6,6 +6,7 @@ import { PrivateRoute } from './components/PrivateRoute'
 import { LoginPage } from './pages/LoginPage'
 import { Inventory } from './pages/Inventory'
 import Todos from './pages/Todos'
+import EditVehicle from './pages/EditVehicle'
 
 export default function App() {
   return (
@@ -21,7 +22,7 @@ export default function App() {
             </Route>
 
             <Route element={<PrivateRoute />}> {/* rotas protegidas */}
-              <Route path="/inventario" element={<Inventory />} />
+              <Route path="/editar/:id" element={<EditVehicle />} />
               <Route path="/todos" element={<Todos table_name="veiculos" />} />
               {/* outras rotas privadas */}
             </Route>

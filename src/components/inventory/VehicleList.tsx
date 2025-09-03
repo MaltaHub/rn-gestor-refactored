@@ -1,10 +1,10 @@
 import { Tabelas } from "../../types";
-import { VehicleCard } from "./VehicleCard";
+import { VehicleCard } from "./VehicleCard.tsx";
 
 // Definindo um alias para o tipo Veiculo
-type Veiculo = Tabelas.Veiculo;
+type VeiculoRead = Tabelas.VeiculoRead;
 
-export function VehicleList({ vehicles }: { vehicles: Veiculo[] }) {
+export function VehicleList({ vehicles }: { vehicles: VeiculoRead[] }) {
   if (vehicles.length === 0) {
     return (
       <p className="col-span-full text-center text-gray-500 text-lg font-medium">

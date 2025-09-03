@@ -1,28 +1,76 @@
-import { api } from "../../lib/axiosClient";
-import type { Vehicle } from "../../types";
+import { supabase } from "../../lib/supabaseClient";
+import { Tabelas } from "../../types";
+
+type Veiculo = Tabelas.Veiculo;
+type VeiculoUpload = Tabelas.VeiculoUpload;
 
 export class Veiculos {
+  static async fetchAll(): Promise<{ vehicles: Veiculo[] }> {
+    const { data, error } = await supabase
+      .from("veiculos")
+      .select<"*", Veiculo>("*");
 
-  static async fetchAll() {
-    const { data } = await api.get<{ vehicles: []}>("/vehicles");
-    return data;
+    if (error) {
+      throw error;
+    }
+
+    // ⚠️ se quiser transformar string -> Date
+    const vehicles = (data ?? []).map((v) => ({
+      ...v,
+      registrado_em: new Date(v.registrado_em),
+      editado_em: new Date(v.editado_em),
+    }));
+
+    return { vehicles };
   }
 
-  static async create(payload: Partial<Vehicle>): Promise<Vehicle> {
-    const { data } = await api.post("/vehicles", payload);
-    return data as Vehicle;
+  static async create(payload: VeiculoUpload): Promise<Veiculo> {
+    const { data, error } = await supabase
+      .from("veiculos")
+      .insert([payload])
+      .select<"*", Veiculo>()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      ...data,
+      registrado_em: new Date(data.registrado_em),
+      editado_em: new Date(data.editado_em),
+    };
   }
 
-  static async update(
-    id: string,
-    payload: Partial<Vehicle>
-  ): Promise<Vehicle> {
-    const { data } = await api.put(`/vehicles/${id}`, payload);
-    return data as Vehicle;
+  static async update(id: string, payload: Partial<VeiculoUpload>): Promise<Veiculo> {
+    const { data, error } = await supabase
+      .from("veiculos")
+      .update(payload)
+      .eq("id", id)
+      .select<"*", Veiculo>()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      ...data,
+      registrado_em: new Date(data.registrado_em),
+      editado_em: new Date(data.editado_em),
+    };
   }
 
   static async remove(id: string): Promise<{ success: boolean }> {
-    const { data } = await api.delete(`/vehicles/${id}`);
-    return data as { success: boolean };
+    const { error } = await supabase
+      .from("veiculos")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      throw error;
+    }
+
+    return { success: true };
   }
 }
