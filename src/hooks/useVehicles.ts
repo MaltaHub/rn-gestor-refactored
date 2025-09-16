@@ -37,9 +37,7 @@ export function useVehicles() {
     mutationFn: async (payload: VeiculoUpload) => {
       const { data, error } = await supabase
         .from("veiculos")
-        .insert([payload])
-        .select<"*", Veiculo>()
-        .single();
+        .insert([payload]);
 
       if (error) throw error;
 

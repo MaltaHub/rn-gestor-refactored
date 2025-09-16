@@ -1,23 +1,23 @@
 export type Veiculo = {
   id: string; // system
   placa: string;
-  modelo_id?: string;
+  modelo_id: string | null; // foreign key para modelos
   local: string;
   hodometro: number;
-  estagio_documentacao?: string;
+  estagio_documentacao: string | null;
   estado_venda: string; // public.estado_venda (enum no Postgres)
-  estado_veiculo?: string; // public.estado_veiculo (enum no Postgres)
+  estado_veiculo: string | null; // public.estado_veiculo (enum no Postgres)
   cor: string;
-  preco_venda?: number;
-  chassi?: string;
-  ano_modelo?: number;
-  ano_fabricacao?: number;
+  preco_venda: number | null;
+  chassi: string | null;
+  ano_modelo: number | null;
+  ano_fabricacao: number | null;
   registrado_por: string | null; // system
   registrado_em: Date | null; // timestamp (pode ser Date) system
   editado_por: string | null; // system
   editado_em: Date | null; // timestamp (pode ser Date) system
   repetido_id: string | null; // system
-  observacao?: string;
+  observacao: string | null
 };
 
 // Omitir os campos de sistema
