@@ -1,13 +1,4 @@
-<<<<<<< HEAD
-﻿import { create } from "zustand";
-=======
-import { create } from 'zustand'
-import { supabase } from '../lib/supabaseClient.ts'
-import { Auth } from '../types'
-
 // Definição do estado e ações da store de autenticação
-type AuthState = Auth.AuthState
->>>>>>> 4a9cd9a764550d3359743d5484686b69da2b76a3
 
 import { supabase } from "@/lib/supabaseClient";
 import type { AuthState } from "@/types";
