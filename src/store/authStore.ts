@@ -1,37 +1,69 @@
-import { create } from 'zustand'
-import { supabase } from '../lib/supabaseClient.ts'
-import type { AuthState } from '../types'
+﻿import { create } from "zustand";
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  loading: true,
+import { supabase } from "@/lib/supabaseClient";
+import type { AuthState } from "@/types";
 
-  // Faz uma leitura inicial da sessão e inicia o listener para atualizações (refresh do token, login/logout)
-  bootstrap: async () => {
-    set({ loading: true })
+export const useAuthStore = create<AuthState>((set) => {
+  const refreshEmpresaId = async () => {
+    try {
+      const { data, error } = await supabase.rpc("empresa_do_usuario");
+      if (error) throw error;
+      set({ empresaId: data ?? null });
+    } catch (erro) {
+      console.error("Falha ao obter empresa do usuario", erro);
+      set({ empresaId: null });
+    }
+  };
 
-    const { data } = await supabase.auth.getSession()
-    const session = data.session
+  return {
+    user: null,
+    token: null,
+    empresaId: null,
+    loading: true,
+    bootstrap: async () => {
+      set({ loading: true });
 
-    set({
-      user: session ? ({ id: session.user.id, email: session.user.email ?? undefined }) : null,
-      token: session?.access_token ?? null,
-      loading: false,
-    })
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
 
-    // Listener: sempre que o Supabase renovar/alterar a sessão, atualizamos o token em memória
-    supabase.auth.onAuthStateChange((_event, newSession) => {
       set({
-        user: newSession ? ({ id: newSession.user.id, email: newSession.user.email ?? undefined }) : null,
-        token: newSession?.access_token ?? null,
-        // não travar a UI; bootstrap já definiu loading=false
-      })
-    })
-  },
+        user: session
+          ? {
+              id: session.user.id,
+              email: session.user.email ?? undefined,
+            }
+          : null,
+        token: session?.access_token ?? null,
+        loading: false,
+      });
 
-  logout: async () => {
-    await supabase.auth.signOut()
-    set({ user: null, token: null })
-  },
-}))
+      if (session) {
+        await refreshEmpresaId();
+      }
+
+      supabase.auth.onAuthStateChange(async (_event, newSession) => {
+        set({
+          user: newSession
+            ? {
+                id: newSession.user.id,
+                email: newSession.user.email ?? undefined,
+              }
+            : null,
+          token: newSession?.access_token ?? null,
+        });
+
+        if (newSession) {
+          await refreshEmpresaId();
+        } else {
+          set({ empresaId: null });
+        }
+      });
+    },
+    setEmpresaId: (empresaId: string | null) => set({ empresaId }),
+    refreshEmpresa: refreshEmpresaId,
+    logout: async () => {
+      await supabase.auth.signOut();
+      set({ user: null, token: null, empresaId: null });
+    },
+  };
+});

@@ -1,234 +1,741 @@
-import { useState, useMemo } from "react";
+﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Filter,
+  MapPin,
+  Gauge,
+  Search,
+  Plus,
+  Loader2,
+} from "lucide-react";
 
-export interface Vehicle {
-  id: string;
-  model: string;
-  year: number;
-  price: number;
-  mileage: number;
-  store: string;
-  documentacao?: string;
-  hasIndicadores?: boolean;
-  images?: string[];
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useVehicles, useCreateVehicle, useDeleteVehicle } from "@/hooks/useVehicles";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/authStore";
+import type { VehicleInsertInput, VehicleRecord } from "@/services/veiculos";
+
+const ESTADO_VENDA_OPTIONS = [
+  "disponivel",
+  "reservado",
+  "vendido",
+  "repassado",
+  "restrito",
+] as const;
+
+const ESTADO_VEICULO_OPTIONS = [
+  "novo",
+  "seminovo",
+  "usado",
+  "sucata",
+  "limpo",
+  "sujo",
+] as const;
+
+type LocalOption = { id: string; nome: string };
+type ModeloOption = { id: string; nome: string; marca: string | null };
+
+type VehicleFilters = {
+  search: string;
+  estadoVenda: string;
+  estadoVeiculo: string;
+  localId: string;
+  modeloId: string;
+};
+
+const DEFAULT_FILTERS: VehicleFilters = {
+  search: "",
+  estadoVenda: "",
+  estadoVeiculo: "",
+  localId: "",
+  modeloId: "",
+};
+
+async function fetchLocais(empresaId: string): Promise<LocalOption[]> {
+  const { data, error } = await supabase
+    .from("locais")
+    .select("id, nome")
+    .eq("empresa_id", empresaId)
+    .order("nome", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map((item) => ({
+    id: item.id,
+    nome: item.nome,
+  }));
 }
 
-export interface AdvancedFilterState {
-  priceMin: string;
-  priceMax: string;
-  yearMin: string;
-  yearMax: string;
-  mileageMin: string;
-  mileageMax: string;
-  local: string;
-  documentacao: string;
-  hasIndicadores: string;
-  hasPhotos: string;
+async function fetchModelos(empresaId: string): Promise<ModeloOption[]> {
+  const { data, error } = await supabase
+    .from("modelos")
+    .select("id, nome, marca")
+    .eq("empresa_id", empresaId)
+    .order("nome", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map((item) => ({
+    id: item.id,
+    nome: item.nome,
+    marca: item.marca,
+  }));
 }
 
-const initialVehicles: Vehicle[] = [
-  { id: '1', model: 'Honda Civic', year: 2020, price: 90000, mileage: 15000, store: 'Oficina', hasIndicadores: true, images: ['img1'] },
-  { id: '2', model: 'Toyota Corolla', year: 2018, price: 85000, mileage: 30000, store: 'Funilaria', hasIndicadores: false, images: [] },
-  { id: '3', model: 'Fiat Uno', year: 2015, price: 35000, mileage: 80000, store: 'Polimento', hasIndicadores: true, images: ['img2'] },
-];
+export function Inventory() {
+  const empresaId = useAuthStore((state) => state.empresaId);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleRecord | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-export const Inventory = () => {
-  const [filters, setFilters] = useState<AdvancedFilterState>({
-    priceMin: '',
-    priceMax: '',
-    yearMin: '',
-    yearMax: '',
-    mileageMin: '',
-    mileageMax: '',
-    local: '',
-    documentacao: '',
-    hasIndicadores: '',
-    hasPhotos: ''
+  const { data: vehicles, isLoading, isFetching } = useVehicles();
+  const createVehicle = useCreateVehicle();
+  const deleteVehicle = useDeleteVehicle();
+  const { data: locais } = useQuery({
+    queryKey: ["locais", empresaId],
+    queryFn: () => fetchLocais(empresaId!),
+    enabled: Boolean(empresaId),
   });
-  const [isOpen, setIsOpen] = useState(true);
+
+  const { data: modelos } = useQuery({
+    queryKey: ["modelos", empresaId],
+    queryFn: () => fetchModelos(empresaId!),
+    enabled: Boolean(empresaId),
+  });
+
+  useEffect(() => {
+    const state = (location.state as { openCreate?: boolean } | null) ?? null;
+    if (state?.openCreate) {
+      setShowCreateForm(true);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
+
+  async function handleDeleteVehicle(id: string) {
+    const confirmed = window.confirm("Deseja remover este veiculo do estoque?");
+    if (!confirmed) return;
+    try {
+      await deleteVehicle.mutateAsync({ veiculoId: id });
+      setFeedback("Veiculo removido com sucesso.");
+      setSelectedVehicle(null);
+      setErrorMessage(null);
+    } catch (erro) {
+      const message = erro instanceof Error ? erro.message : "Nao foi possivel remover o veiculo.";
+      setErrorMessage(message);
+    }
+  }
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = window.setTimeout(() => setFeedback(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = window.setTimeout(() => setErrorMessage(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [errorMessage]);
 
   const filteredVehicles = useMemo(() => {
-    return initialVehicles.filter(vehicle => {
-      if (filters.priceMin && vehicle.price < Number(filters.priceMin)) return false;
-      if (filters.priceMax && vehicle.price > Number(filters.priceMax)) return false;
-      if (filters.yearMin && vehicle.year < Number(filters.yearMin)) return false;
-      if (filters.yearMax && vehicle.year > Number(filters.yearMax)) return false;
-      if (filters.mileageMin && vehicle.mileage < Number(filters.mileageMin)) return false;
-      if (filters.mileageMax && vehicle.mileage > Number(filters.mileageMax)) return false;
-      if (filters.local && vehicle.store !== filters.local) return false;
-      if (filters.documentacao && vehicle.documentacao !== filters.documentacao) return false;
-      if (filters.hasIndicadores === "true" && !vehicle.hasIndicadores) return false;
-      if (filters.hasIndicadores === "false" && vehicle.hasIndicadores) return false;
-      if (filters.hasPhotos === "true" && (!vehicle.images || vehicle.images.length === 0)) return false;
-      if (filters.hasPhotos === "false" && vehicle.images && vehicle.images.length > 0) return false;
-      return true;
-    });
-  }, [filters]);
+    if (!vehicles) return [];
 
-  const handleClearFilters = () => {
-    setFilters({
-      priceMin: '',
-      priceMax: '',
-      yearMin: '',
-      yearMax: '',
-      mileageMin: '',
-      mileageMax: '',
-      local: '',
-      documentacao: '',
-      hasIndicadores: '',
-      hasPhotos: ''
-    });
-  };
+    return vehicles.filter((vehicle) => {
+      const searchTerm = filters.search.toLowerCase();
+      const matchesSearch = searchTerm
+        ? [
+            vehicle.placa,
+            vehicle.observacao,
+            vehicle.cor,
+            vehicle.estado_venda,
+          ]
+            .filter(Boolean)
+            .some((value) => (value ?? "").toLowerCase().includes(searchTerm))
+        : true;
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== '');
+      const matchesEstadoVenda = filters.estadoVenda
+        ? vehicle.estado_venda === filters.estadoVenda
+        : true;
+
+      const matchesEstadoVeiculo = filters.estadoVeiculo
+        ? vehicle.estado_veiculo === filters.estadoVeiculo
+        : true;
+
+      const matchesLocal = filters.localId
+        ? vehicle.local_id === filters.localId
+        : true;
+
+      const matchesModelo = filters.modeloId
+        ? vehicle.modelo_id === filters.modeloId
+        : true;
+
+      return (
+        matchesSearch &&
+        matchesEstadoVenda &&
+        matchesEstadoVeiculo &&
+        matchesLocal &&
+        matchesModelo
+      );
+    });
+  }, [filters, vehicles]);
+
+  const metrics = useMemo(() => {
+    if (!vehicles || vehicles.length === 0) {
+      return {
+        total: 0,
+        vendidos: 0,
+        disponiveis: 0,
+        ticketMedio: 0,
+      };
+    }
+
+    const total = vehicles.length;
+    const vendidos = vehicles.filter((v) => v.estado_venda === "vendido").length;
+    const disponiveis = vehicles.filter((v) => v.estado_venda === "disponivel").length;
+    const ticketMedio =
+      vehicles.reduce((acc, item) => acc + (item.preco_venal ?? 0), 0) /
+      total;
+
+    return { total, vendidos, disponiveis, ticketMedio };
+  }, [vehicles]);
+
+  function handleFilterChange<K extends keyof VehicleFilters>(
+    key: K,
+    value: VehicleFilters[K]
+  ) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleResetFilters() {
+    setFilters(DEFAULT_FILTERS);
+  }
+
+  async function handleCreateVehicle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    const dados: VehicleInsertInput = {
+      placa: String(formData.get("placa") ?? "").trim().toUpperCase(),
+      cor: String(formData.get("cor") ?? "").trim(),
+      estado_venda: formData.get("estado_venda") as VehicleInsertInput["estado_venda"],
+      hodometro: Number(formData.get("hodometro") ?? 0),
+      estado_veiculo: (formData.get("estado_veiculo") || null) as VehicleInsertInput["estado_veiculo"],
+      modelo_id: (formData.get("modelo_id") || null) as VehicleInsertInput["modelo_id"],
+      local_id: (formData.get("local_id") || null) as VehicleInsertInput["local_id"],
+      preco_venal: formData.get("preco_venal")
+        ? Number(formData.get("preco_venal"))
+        : null,
+      observacao: (formData.get("observacao") || null) as VehicleInsertInput["observacao"],
+    };
+
+    try {
+      await createVehicle.mutateAsync({ dados });
+      event.currentTarget.reset();
+      setShowCreateForm(false);
+    } catch (erro) {
+      console.error("Falha ao cadastrar veiculo", erro);
+    }
+  }
+
+  const busy = isLoading || isFetching;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans">
-      {/* Botão colapsar filtros */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full p-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl shadow-lg hover:from-blue-600 hover:to-indigo-700 transition"
-      >
-        <span className="font-bold text-lg">Filtros Avançados</span>
-        <span className="text-xl">{isOpen ? "▲" : "▼"}</span>
-      </button>
+    <div className="space-y-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Gestao de estoque</h1>
+          <p className="text-muted-foreground">
+            Monitore e organize todos os veiculos cadastrados na empresa.
+          </p>
+        </div>
+        <Button variant="hero" size="lg" onClick={() => setShowCreateForm((state) => !state)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {showCreateForm ? "Fechar formulario" : "Novo veiculo"}
+        </Button>
+      </div>
 
-      {/* Filtros */}
-      {isOpen && (
-        <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl shadow-inner border border-gray-200 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Preço Mín / Máx */}
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Preço Mín</label>
-              <input
-                type="number"
-                value={filters.priceMin}
-                onChange={(e) => setFilters({...filters, priceMin: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Preço Máx</label>
-              <input
-                type="number"
-                value={filters.priceMax}
-                onChange={(e) => setFilters({...filters, priceMax: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            {/* Ano Mín / Máx */}
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Ano Mín</label>
-              <input
-                type="number"
-                value={filters.yearMin}
-                onChange={(e) => setFilters({...filters, yearMin: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Ano Máx</label>
-              <input
-                type="number"
-                value={filters.yearMax}
-                onChange={(e) => setFilters({...filters, yearMax: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            {/* KM */}
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">KM Mín</label>
-              <input
-                type="number"
-                value={filters.mileageMin}
-                onChange={(e) => setFilters({...filters, mileageMin: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">KM Máx</label>
-              <input
-                type="number"
-                value={filters.mileageMax}
-                onChange={(e) => setFilters({...filters, mileageMax: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-          </div>
-
-          {/* Seletores */}
-          <div className="flex flex-wrap gap-4">
-            <select
-              className="p-2 rounded-lg border border-gray-300 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-              value={filters.local}
-              onChange={(e) => setFilters({...filters, local: e.target.value})}
-            >
-              <option value="">Todos os Locais</option>
-              <option value="Oficina">Oficina</option>
-              <option value="Funilaria">Funilaria</option>
-              <option value="Polimento">Polimento</option>
-            </select>
-
-            <select
-              className="p-2 rounded-lg border border-gray-300 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-              value={filters.hasIndicadores}
-              onChange={(e) => setFilters({...filters, hasIndicadores: e.target.value})}
-            >
-              <option value="">Todos Indicadores</option>
-              <option value="true">Com Indicadores</option>
-              <option value="false">Sem Indicadores</option>
-            </select>
-
-            <select
-              className="p-2 rounded-lg border border-gray-300 text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-              value={filters.hasPhotos}
-              onChange={(e) => setFilters({...filters, hasPhotos: e.target.value})}
-            >
-              <option value="">Todas Fotos</option>
-              <option value="true">Tem Fotos</option>
-              <option value="false">Sem Fotos</option>
-            </select>
-          </div>
-
-          {/* Limpar filtros */}
-          {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
-            >
-              Limpar Filtros
-            </button>
-          )}
+      {feedback && (
+        <div className="rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-sm text-success">
+          {feedback}
+        </div>
+      )}
+      {errorMessage && (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {errorMessage}
         </div>
       )}
 
-      {/* Lista de veículos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVehicles.length > 0 ? filteredVehicles.map(vehicle => (
-          <div key={vehicle.id} className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition">
-            <div className="p-4 space-y-2">
-              <h3 className="font-bold text-xl text-indigo-600">{vehicle.model}</h3>
-              <p className="text-gray-700">Ano: {vehicle.year}</p>
-              <p className="text-gray-700">Preço: <span className="font-semibold text-green-600">R$ {vehicle.price.toLocaleString()}</span></p>
-              <p className="text-gray-700">KM: {vehicle.mileage.toLocaleString()}</p>
-              <p className="text-gray-700">Local: <span className="font-medium">{vehicle.store}</span></p>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard title="Total" value={metrics.total} helper="Veiculos cadastrados" />
+        <MetricCard title="Disponiveis" value={metrics.disponiveis} helper="Prontos para venda" />
+        <MetricCard title="Vendidos" value={metrics.vendidos} helper="Negocios concluidos" />
+        <MetricCard
+          title="Ticket medio"
+          value={metrics.ticketMedio}
+          helper="Valor medio de venda"
+          isCurrency
+        />
+      </div>
 
-              {/* Badges */}
-              <div className="flex flex-wrap gap-2 mt-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${vehicle.hasIndicadores ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {vehicle.hasIndicadores ? "Com indicadores" : "Sem indicadores"}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${vehicle.images?.length ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-                  {vehicle.images?.length ? "Tem fotos" : "Sem fotos"}
-                </span>
+      <Card className="shadow-card">
+        <CardHeader className="space-y-1">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Filter className="h-5 w-5 text-primary" />
+            Filtros avancados
+          </CardTitle>
+          <CardDescription>
+            Combine filtros para localizar veiculos de forma precisa.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Busca rapida
+              </label>
+              <div className="mt-1 flex items-center gap-2 rounded-xl border border-border bg-background px-3">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input
+                  value={filters.search}
+                  onChange={(event) => handleFilterChange("search", event.target.value)}
+                  placeholder="Placa, cor ou observacao"
+                  className="h-10 flex-1 bg-transparent text-sm outline-none"
+                />
               </div>
             </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Estado de venda
+              </label>
+              <select
+                value={filters.estadoVenda}
+                onChange={(event) => handleFilterChange("estadoVenda", event.target.value)}
+                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              >
+                <option value="">Todos</option>
+                {ESTADO_VENDA_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Estado do veiculo
+              </label>
+              <select
+                value={filters.estadoVeiculo}
+                onChange={(event) => handleFilterChange("estadoVeiculo", event.target.value)}
+                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              >
+                <option value="">Todos</option>
+                {ESTADO_VEICULO_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Local</label>
+              <select
+                value={filters.localId}
+                onChange={(event) => handleFilterChange("localId", event.target.value)}
+                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              >
+                <option value="">Todos</option>
+                {locais?.map((local) => (
+                  <option key={local.id} value={local.id}>
+                    {local.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Modelo</label>
+              <select
+                value={filters.modeloId}
+                onChange={(event) => handleFilterChange("modeloId", event.target.value)}
+                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              >
+                <option value="">Todos</option>
+                {modelos?.map((modelo) => (
+                  <option key={modelo.id} value={modelo.id}>
+                    {(modelo.marca ?? "Marca") + " " + modelo.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        )) : (
-          <p className="col-span-full text-center text-gray-500 text-lg font-medium">Nenhum veículo encontrado</p>
-        )}
-      </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button variant="ghost" onClick={handleResetFilters}>
+              Limpar filtros
+            </Button>
+            {busy && (
+              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Carregando dados
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {showCreateForm && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Novo veiculo</CardTitle>
+            <CardDescription>
+              Informe os dados para cadastrar o veiculo na empresa.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateVehicle}>
+              <Field label="Placa">
+                <input
+                  name="placa"
+                  required
+                  placeholder="ABC1D23"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm uppercase"
+                />
+              </Field>
+
+              <Field label="Cor">
+                <input
+                  name="cor"
+                  required
+                  placeholder="Prata"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                />
+              </Field>
+
+              <Field label="Estado de venda">
+                <select
+                  name="estado_venda"
+                  required
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  {ESTADO_VENDA_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Estado do veiculo">
+                <select
+                  name="estado_veiculo"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  <option value="">Selecionar</option>
+                  {ESTADO_VEICULO_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Hodometro (km)">
+                <input
+                  name="hodometro"
+                  type="number"
+                  min={0}
+                  required
+                  placeholder="0"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                />
+              </Field>
+
+              <Field label="Preco venal">
+                <input
+                  name="preco_venal"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0,00"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                />
+              </Field>
+
+              <Field label="Local">
+                <select
+                  name="local_id"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  <option value="">Selecionar</option>
+                  {locais?.map((local) => (
+                    <option key={local.id} value={local.id}>
+                      {local.nome}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Modelo">
+                <select
+                  name="modelo_id"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  <option value="">Selecionar</option>
+                  {modelos?.map((modelo) => (
+                    <option key={modelo.id} value={modelo.id}>
+                      {(modelo.marca ?? "Marca") + " " + modelo.nome}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Observacao" className="md:col-span-2">
+                <textarea
+                  name="observacao"
+                  rows={3}
+                  placeholder="Informacoes adicionais"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                />
+              </Field>
+
+              <div className="md:col-span-2 flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowCreateForm(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={createVehicle.isPending}>
+                  {createVehicle.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Salvando
+                    </span>
+                  ) : (
+                    "Cadastrar"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="shadow-card">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Veiculos filtrados</CardTitle>
+            <CardDescription>
+              {filteredVehicles.length} resultado(s) com os filtros aplicados.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            {locais?.length ?? 0} locais cadastrados
+          </div>
+        </CardHeader>
+        <CardContent>
+          {busy ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="h-40 animate-pulse rounded-3xl bg-muted" />
+              ))}
+            </div>
+          ) : filteredVehicles.length === 0 ? (
+            <div className="flex min-h-[160px] flex-col items-center justify-center gap-2 text-center">
+              <Gauge className="h-8 w-8 text-muted-foreground" />
+              <p className="font-medium">Nenhum veiculo encontrado</p>
+              <p className="text-sm text-muted-foreground">
+                Ajuste os filtros ou cadastre um novo veiculo.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredVehicles.map((vehicle) => {
+                const localNome = locais?.find((item) => item.id === vehicle.local_id)?.nome;
+                const modeloInfo = modelos?.find((item) => item.id === vehicle.modelo_id);
+
+                return (
+                  <article
+                    key={vehicle.id}
+                    className="flex h-full flex-col justify-between rounded-3xl border border-border bg-card p-5 shadow-card transition-all hover:shadow-dropdown"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                          {vehicle.estado_venda}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Intl.DateTimeFormat("pt-BR", {
+                            dateStyle: "short",
+                          }).format(new Date(vehicle.registrado_em))}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-bold uppercase tracking-wide">
+                        {vehicle.placa}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {(modeloInfo?.marca ?? "Modelo") + " " + (modeloInfo?.nome ?? "Nao informado")}
+                      </p>
+                      <dl className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <dt className="text-muted-foreground">Cor</dt>
+                          <dd className="font-semibold">{vehicle.cor}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Hodometro</dt>
+                          <dd className="font-semibold">{vehicle.hodometro.toLocaleString("pt-BR")}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Local</dt>
+                          <dd className="font-semibold">{localNome ?? "Nao informado"}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Preco</dt>
+                          <dd className="font-semibold">
+                            {vehicle.preco_venal
+                              ? vehicle.preco_venal.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })
+                              : "Nao informado"}
+                          </dd>
+                        </div>
+                      </dl>
+                      {vehicle.observacao && (
+                        <p className="rounded-2xl bg-muted px-3 py-2 text-xs text-muted-foreground">
+                          {vehicle.observacao}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center justify-between">
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedVehicle(vehicle)}>
+                        Detalhes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={deleteVehicle.isPending}
+                        onClick={() => handleDeleteVehicle(vehicle.id)}
+                      >
+                        {deleteVehicle.isPending ? "Removendo..." : "Remover"}
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedVehicle && (
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-start justify-between">
+            <div>
+              <CardTitle>Detalhes do veiculo {selectedVehicle.placa}</CardTitle>
+              <CardDescription>Informacoes complementares do veiculo selecionado.</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedVehicle(null)}>Fechar</Button>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2">
+            <DetailItem label="Estado de venda" value={selectedVehicle.estado_venda} />
+            <DetailItem label="Estado do veiculo" value={selectedVehicle.estado_veiculo ?? "Nao informado"} />
+            <DetailItem
+              label="Preco venal"
+              value={selectedVehicle.preco_venal
+                ? selectedVehicle.preco_venal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                : "Nao informado"}
+            />
+            <DetailItem label="Hodometro" value={selectedVehicle.hodometro.toLocaleString("pt-BR")} />
+            <DetailItem
+              label="Local"
+              value={locais?.find((item) => item.id === selectedVehicle.local_id)?.nome ?? "Nao informado"}
+            />
+            <DetailItem
+              label="Modelo"
+              value={modelos?.find((item) => item.id === selectedVehicle.modelo_id)?.nome ?? "Nao informado"}
+            />
+            <DetailItem
+              label="Observacao"
+              value={selectedVehicle.observacao ?? "Sem observacoes"}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
-};
+}
+
+interface DetailItemProps {
+  label: string;
+  value: ReactNode;
+}
+
+function DetailItem({ label, value }: DetailItemProps) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-sm font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+interface MetricCardProps {
+  title: string;
+  value: number;
+  helper: string;
+  isCurrency?: boolean;
+}
+
+function MetricCard({ title, value, helper, isCurrency }: MetricCardProps) {
+  const formattedValue = isCurrency
+    ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    : value.toLocaleString("pt-BR");
+
+  return (
+    <Card className="shadow-card">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{formattedValue}</div>
+        <p className="text-xs text-muted-foreground">{helper}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface FieldProps {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}
+
+function Field({ label, children, className }: FieldProps) {
+  return (
+    <div className={className}>
+      <label className="mb-1 block text-sm font-medium text-muted-foreground">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+export default Inventory;
