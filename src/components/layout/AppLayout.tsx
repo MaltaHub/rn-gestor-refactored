@@ -7,7 +7,7 @@ import {
   ShoppingCart,
   Gift,
   Users,
-  Landmark,
+  Settings2,
   LogOut,
   Menu,
   X,
@@ -30,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Vendas", path: "/app/vendas", icon: <ShoppingCart className="h-4 w-4" /> },
   { label: "Promoções", path: "/app/promocoes", icon: <Gift className="h-4 w-4" /> },
   { label: "Membros", path: "/app/membros", icon: <Users className="h-4 w-4" /> },
-  { label: "Lojas", path: "/app/lojas", icon: <Landmark className="h-4 w-4" /> },
+  { label: "Configuracoes", path: "/app/configuracoes", icon: <Settings2 className="h-4 w-4" /> },
 ]
 
 function NavigationList({

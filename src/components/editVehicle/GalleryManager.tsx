@@ -1,39 +1,39 @@
-import React, { useEffect, useState } from "react";
+﻿import { useEffect, useState, type ChangeEvent, type CSSProperties, type DragEvent } from "react"
 import {
   DndContext,
-  closestCenter,
   PointerSensor,
+  closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
-} from "@dnd-kit/core";
+} from "@dnd-kit/core"
 import {
-  arrayMove,
   SortableContext,
+  arrayMove,
   useSortable,
   verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { supabase } from "../../lib/supabaseClient";
-import { useCurrentStore } from "../../hooks/useCurrentStore";
-import { GalleryViewer, type PreviewImage } from "../GalleryViewer";
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
-// Foto arrastável com botão de excluir
+import { GalleryViewer, type PreviewImage } from "@/components/GalleryViewer"
+import { useCurrentStore } from "@/hooks/useCurrentStore"
+import { supabase } from "@/lib/supabaseClient"
+
 function SortableFoto({
   foto,
   index,
   onRemove,
 }: {
-  foto: PreviewImage;
-  index: number;
-  onRemove: (id: string) => void;
+  foto: PreviewImage
+  index: number
+  onRemove: (id: string) => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: foto.id });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: foto.id })
 
-  const style = {
+  const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    position: "relative" as const,
+    position: "relative",
     margin: "8px",
     width: "120px",
     height: "120px",
@@ -41,13 +41,15 @@ function SortableFoto({
     overflow: "hidden",
     boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
     background: "#f9f9f9",
-  };
+  }
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <img src={foto.preview} alt={`foto-${index}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       <button
+        type="button"
         onClick={() => onRemove(foto.id)}
+        aria-label="Remover foto"
         style={{
           position: "absolute",
           top: "6px",
@@ -62,114 +64,110 @@ function SortableFoto({
           cursor: "pointer",
         }}
       >
-        ✕
+        x
       </button>
     </div>
-  );
+  )
 }
 
 export function GalleryManager({ vehicleId }: { vehicleId: string }) {
-  const { selectedLoja, lojaId } = useCurrentStore();
-  const [fotos, setFotos] = useState<PreviewImage[]>([]);
-  const sensors = useSensors(useSensor(PointerSensor));
+  const { selectedLoja, lojaId } = useCurrentStore()
+  const [fotos, setFotos] = useState<PreviewImage[]>([])
+  const sensors = useSensors(useSensor(PointerSensor))
 
-  // Carregar fotos do Supabase
   useEffect(() => {
-    if (!lojaId || !vehicleId) return;
+    if (!lojaId || !vehicleId) return
 
     const load = async () => {
       const { data: items, error } = await supabase.storage
         .from("fotos_veiculos_loja")
-        .list(`${lojaId}/${vehicleId}/`, { limit: 20 });
+        .list(`${lojaId}/${vehicleId}/`, { limit: 20 })
 
       if (error) {
-        console.error("Erro ao listar fotos:", error);
-        return;
+        console.error("Erro ao listar fotos:", error)
+        return
       }
 
-      const publicFotos: PreviewImage[] =
-        items
-          ?.map((item) => ({
-            id: item.name,
-            preview: supabase.storage
-              .from("fotos_veiculos_loja")
-              .getPublicUrl(`${lojaId}/${vehicleId}/${item.name}`).data.publicUrl,
-          }))
-          .sort((a, b) => {
-            const numA = parseInt(a.id.replace(".jpg", ""), 10);
-            const numB = parseInt(b.id.replace(".jpg", ""), 10);
-            return numA - numB;
-          }) ?? [];
+      const mapped = (items ?? []).map<PreviewImage>((item) => ({
+        id: item.name,
+        preview: supabase.storage
+          .from("fotos_veiculos_loja")
+          .getPublicUrl(`${lojaId}/${vehicleId}/${item.name}`).data.publicUrl,
+      }))
 
-      setFotos(publicFotos);
-    };
+      mapped.sort((a, b) => {
+        const numA = parseInt(a.id.replace(".jpg", ""), 10)
+        const numB = parseInt(b.id.replace(".jpg", ""), 10)
+        return numA - numB
+      })
 
-    load();
-  }, [lojaId, vehicleId]);
+      setFotos(mapped)
+    }
 
-  // Adicionar arquivos
+    void load()
+  }, [lojaId, vehicleId])
+
   const addFiles = (files: File[]) => {
     const newFotos = files.map((file) => ({
       id: crypto.randomUUID(),
       file,
       preview: URL.createObjectURL(file),
       isNew: true,
-    }));
-    setFotos((prev) => [...prev, ...newFotos]);
-  };
+    }))
+    setFotos((prev) => [...prev, ...newFotos])
+  }
 
-  const handleDropFiles = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    addFiles(Array.from(e.dataTransfer.files));
-  };
+  const handleDropFiles = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    addFiles(Array.from(event.dataTransfer.files))
+  }
 
-  const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) addFiles(Array.from(e.target.files));
-  };
+  const handleSelectFiles = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) addFiles(Array.from(event.target.files))
+  }
 
   const removeFoto = (id: string) => {
-    setFotos((prev) => prev.filter((f) => f.id !== id));
-  };
+    setFotos((prev) => prev.filter((foto) => foto.id !== id))
+  }
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) {
-      return;
+      return
     }
 
-    const oldIndex = fotos.findIndex((f) => f.id === active.id);
-    const newIndex = fotos.findIndex((f) => f.id === over.id);
+    const oldIndex = fotos.findIndex((foto) => foto.id === active.id)
+    const newIndex = fotos.findIndex((foto) => foto.id === over.id)
 
     if (oldIndex >= 0 && newIndex >= 0) {
-      setFotos((items) => arrayMove(items, oldIndex, newIndex));
+      setFotos((items) => arrayMove(items, oldIndex, newIndex))
     }
-  };
+  }
 
-  // Salvar fotos no Supabase
   const handleSave = async () => {
-    if (!selectedLoja?.id || !vehicleId) return;
+    if (!selectedLoja?.id || !vehicleId) return
 
-    for (let i = 0; i < fotos.length; i++) {
-      const foto = fotos[i];
-      const fileName = `${i + 1}.jpg`;
+    for (let i = 0; i < fotos.length; i += 1) {
+      const foto = fotos[i]
+      const fileName = `${i + 1}.jpg`
 
       if (foto.isNew && foto.file) {
         const { error } = await supabase.storage
           .from("fotos_veiculos_loja")
-          .upload(`${selectedLoja.id}/${vehicleId}/${fileName}`, foto.file, { upsert: true });
+          .upload(`${selectedLoja.id}/${vehicleId}/${fileName}`, foto.file, { upsert: true })
 
-        if (error) console.error("Erro ao enviar:", error);
+        if (error) console.error("Erro ao enviar:", error)
       }
     }
 
-    alert("Fotos enviadas na ordem escolhida!");
-  };
+    alert("Fotos enviadas na ordem escolhida!")
+  }
 
   return (
     <div>
       <h2>Adicionar fotos</h2>
       <div
         onDrop={handleDropFiles}
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(event) => event.preventDefault()}
         style={{
           border: "2px dashed gray",
           borderRadius: "8px",
@@ -186,12 +184,12 @@ export function GalleryManager({ vehicleId }: { vehicleId: string }) {
         </label>
       </div>
 
-      {/* Área de ordenação e exclusão */}
+      {/* Area de ordenacao e exclusao */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={fotos.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={fotos.map((foto) => foto.id)} strategy={verticalListSortingStrategy}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", minHeight: "120px" }}>
-            {fotos.map((foto, i) => (
-              <SortableFoto key={foto.id} foto={foto} index={i} onRemove={removeFoto} />
+            {fotos.map((foto, index) => (
+              <SortableFoto key={foto.id} foto={foto} index={index} onRemove={removeFoto} />
             ))}
           </div>
         </SortableContext>
@@ -203,9 +201,9 @@ export function GalleryManager({ vehicleId }: { vehicleId: string }) {
         </button>
       )}
 
-      {/* Visualização separada */}
-      <h3 style={{ marginTop: "30px" }}>Visualização</h3>
+      {/* Visualizacao */}
+      <h3 style={{ marginTop: "30px" }}>Visualizacao</h3>
       <GalleryViewer fotos={fotos} />
     </div>
-  );
+  )
 }

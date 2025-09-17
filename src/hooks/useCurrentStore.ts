@@ -1,68 +1,76 @@
-// src/stores/useCurrentStore.ts
-import { create } from "zustand";
-import { supabase } from "../lib/supabaseClient";
+﻿import { create } from "zustand"
+
+import { supabase } from "@/lib/supabaseClient"
 
 export interface Loja {
-  id: string;
-  nome: string;
+  id: string
+  nome: string
 }
 
 interface CurrentStoreState {
-  lojas: Loja[];
-  selectedLoja: Loja | null;
-  loading: boolean;
-  error: Error | null;
-  setSelectedLoja: (loja: Loja | null) => void;
-  fetchLojas: () => Promise<Loja[]>;
-  lojaId: string | null;
-  lojaNome: string | null;
+  lojas: Loja[]
+  selectedLoja: Loja | null
+  loading: boolean
+  error: Error | null
+  lojaId: string | null
+  lojaNome: string | null
+  setSelectedLoja: (loja: Loja | null) => void
+  fetchLojas: (empresaId?: string | null) => Promise<Loja[]>
 }
 
-export const useCurrentStore = create<CurrentStoreState>((set, get) => ({
+export const useCurrentStore = create<CurrentStoreState>((set) => ({
   lojas: [],
   selectedLoja: null,
   loading: false,
   error: null,
+  lojaId: null,
+  lojaNome: null,
 
-  setSelectedLoja: (loja: Loja | null) =>
+  setSelectedLoja: (loja) =>
     set({
       selectedLoja: loja,
       lojaId: loja?.id ?? null,
       lojaNome: loja?.nome ?? null,
     }),
 
-  fetchLojas: async () => {
-    set({ loading: true, error: null });
+  fetchLojas: async (empresaId) => {
+    set({ loading: true, error: null })
+
     try {
-      const { data, error } = await supabase
-        .from("lojas")
-        .select("id, nome")
-        .order("nome", { ascending: true });
+      let query = supabase.from("lojas").select("id, nome")
 
-      if (error) throw error;
+      if (empresaId) {
+        query = query.eq("empresa_id", empresaId)
+      }
 
-      // atualiza o estado
-      set({ lojas: data ?? [] });
+      const { data, error } = await query.order("nome", { ascending: true })
 
-      return data ?? [];
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error("Erro desconhecido ao buscar lojas");
-      console.error("Erro ao buscar lojas:", error);
-      set({ error });
+      if (error) throw error
 
-      return [];
+      const lojas = data ?? []
+
+      set((state) => {
+        const stillSelected =
+          state.selectedLoja && lojas.some((loja) => loja.id === state.selectedLoja?.id)
+
+        return {
+          lojas,
+          selectedLoja: stillSelected ? state.selectedLoja : null,
+          lojaId: stillSelected ? state.selectedLoja?.id ?? null : null,
+          lojaNome: stillSelected ? state.selectedLoja?.nome ?? null : null,
+        }
+      })
+
+      return lojas
+    } catch (err) {
+      const normalized = err instanceof Error ? err : new Error("Erro ao buscar lojas")
+      console.error("Erro ao buscar lojas:", normalized)
+      set({ error: normalized, lojas: [], selectedLoja: null, lojaId: null, lojaNome: null })
+      return []
     } finally {
-      set({ loading: false });
+      set({ loading: false })
     }
   },
+}))
 
-  get lojaId() {
-    return get().selectedLoja?.id ?? null;
-  },
-  get lojaNome() {
-    return get().selectedLoja?.nome ?? null;
-  },
-}));
-
-// Carrega as lojas ao inicializar o estado
-useCurrentStore.getState().fetchLojas();
+void useCurrentStore.getState().fetchLojas()

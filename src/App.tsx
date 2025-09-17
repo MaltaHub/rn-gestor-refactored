@@ -14,7 +14,7 @@ import Anuncios from "@/pages/Anuncios"
 import Vendas from "@/pages/Vendas"
 import Promocoes from "@/pages/Promocoes"
 import Membros from "@/pages/Membros"
-import Lojas from "@/pages/Lojas"
+import Settings from "@/pages/Settings"
 import LandingPage from "@/pages/LandingPage"
 import JoinCompany from "@/pages/JoinCompany"
 import NotFound from "@/pages/NotFound"
@@ -45,7 +45,7 @@ export default function App() {
                   <Route path="vendas" element={<Vendas />} />
                   <Route path="promocoes" element={<Promocoes />} />
                   <Route path="membros" element={<Membros />} />
-                  <Route path="lojas" element={<Lojas />} />
+                  <Route path="configuracoes" element={<Settings />} />
                 </Route>
               </Route>
             </Route>
