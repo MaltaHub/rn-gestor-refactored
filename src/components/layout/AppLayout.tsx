@@ -1,5 +1,5 @@
-﻿import { useMemo, useState, type ReactNode } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useMemo, useState, type ReactNode } from "react"
+import { NavLink, Outlet, useLocation } from "react-router-dom"
 import {
   LayoutDashboard,
   Warehouse,
@@ -8,35 +8,39 @@ import {
   Gift,
   Users,
   Landmark,
-  FileText,
   LogOut,
   Menu,
   X,
-} from "lucide-react";
+} from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/store/authStore";
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/store/authStore"
 
 interface NavItem {
-  label: string;
-  path: string;
-  icon: ReactNode;
+  label: string
+  path: string
+  icon: ReactNode
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", path: "/", icon: <LayoutDashboard className="h-4 w-4" /> },
-  { label: "Estoque", path: "/estoque", icon: <Warehouse className="h-4 w-4" /> },
-  { label: "Anuncios", path: "/anuncios", icon: <Megaphone className="h-4 w-4" /> },
-  { label: "Vendas", path: "/vendas", icon: <ShoppingCart className="h-4 w-4" /> },
-  { label: "Promocoes", path: "/promocoes", icon: <Gift className="h-4 w-4" /> },
-  { label: "Membros", path: "/membros", icon: <Users className="h-4 w-4" /> },
-  { label: "Lojas", path: "/lojas", icon: <Landmark className="h-4 w-4" /> },
-  { label: "Documentacao", path: "/documentacao", icon: <FileText className="h-4 w-4" /> },
-];
+  { label: "Dashboard", path: "/app", icon: <LayoutDashboard className="h-4 w-4" /> },
+  { label: "Estoque", path: "/app/estoque", icon: <Warehouse className="h-4 w-4" /> },
+  { label: "Anúncios", path: "/app/anuncios", icon: <Megaphone className="h-4 w-4" /> },
+  { label: "Vendas", path: "/app/vendas", icon: <ShoppingCart className="h-4 w-4" /> },
+  { label: "Promoções", path: "/app/promocoes", icon: <Gift className="h-4 w-4" /> },
+  { label: "Membros", path: "/app/membros", icon: <Users className="h-4 w-4" /> },
+  { label: "Lojas", path: "/app/lojas", icon: <Landmark className="h-4 w-4" /> },
+]
 
-function NavigationList({ orientation = "vertical", onNavigate }: { orientation?: "vertical" | "horizontal"; onNavigate?: () => void }) {
-  const location = useLocation();
+function NavigationList({
+  orientation = "vertical",
+  onNavigate,
+}: {
+  orientation?: "vertical" | "horizontal"
+  onNavigate?: () => void
+}) {
+  const location = useLocation()
 
   return (
     <nav
@@ -46,46 +50,57 @@ function NavigationList({ orientation = "vertical", onNavigate }: { orientation?
           : "grid grid-cols-2 gap-2 md:grid-cols-4"
       )}
     >
-      {NAV_ITEMS.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          onClick={() => onNavigate?.()}
-          className={({ isActive }) =>
-            cn(
-              "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-              isActive || location.pathname === item.path
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/60"
-            )
-          }
-          end={item.path === "/"}
-        >
-          <span>{item.icon}</span>
-          <span>{item.label}</span>
-        </NavLink>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        const isCurrent =
+          item.path === "/app"
+            ? location.pathname === item.path
+            : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+
+        return (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            onClick={() => onNavigate?.()}
+            className={() =>
+              cn(
+                "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                isCurrent
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted/60"
+              )
+            }
+            end={item.path === "/app"}
+          >
+            <span>{item.icon}</span>
+            <span>{item.label}</span>
+          </NavLink>
+        )
+      })}
     </nav>
-  );
+  )
 }
 
 export function AppLayout() {
-  const location = useLocation();
-  const { user, logout } = useAuthStore();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation()
+  const { user, logout } = useAuthStore()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const currentSection = useMemo(() => {
-    const match = NAV_ITEMS.find((item) =>
-      item.path === "/" ? location.pathname === item.path : location.pathname.startsWith(item.path)
-    );
-    return match?.label ?? "Dashboard";
-  }, [location.pathname]);
+    const match = NAV_ITEMS.find((item) => {
+      if (item.path === "/app") return location.pathname === item.path
+      return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+    })
+
+    if (match) return match.label
+    if (location.pathname.startsWith("/app/veiculos")) return "Estoque"
+    return "Dashboard"
+  }, [location.pathname])
 
   async function handleLogout() {
     try {
-      await logout();
+      await logout()
     } catch (error) {
-      console.error("Falha ao encerrar sessao", error);
+      console.error("Falha ao encerrar sessao", error)
     }
   }
 
@@ -124,7 +139,7 @@ export function AppLayout() {
                 <Menu className="h-4 w-4" />
               </Button>
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Visao atual</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Visão atual</p>
                 <h1 className="text-xl font-semibold">{currentSection}</h1>
               </div>
             </div>
@@ -150,36 +165,40 @@ export function AppLayout() {
           </div>
         </section>
 
-      {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm lg:hidden">
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="text-sm font-semibold">Menu</span>
-              <Button variant="ghost" size="icon" onClick={() => setMobileNavOpen(false)}><X className="h-4 w-4" /></Button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <NavigationList orientation="vertical" onNavigate={() => setMobileNavOpen(false)} />
-              <Button
-                variant="outline"
-                className="mt-6 w-full justify-center gap-2"
-                onClick={() => {
-                  setMobileNavOpen(false);
-                  void (async () => {
-                    try {
-                      await logout();
-                    } catch (error) {
-                      console.error("Falha ao encerrar sessao", error);
-                    }
-                  })();
-                }}
-              >
-                <LogOut className="h-4 w-4" /> Sair
-              </Button>
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm lg:hidden">
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                <span className="text-sm font-semibold">Menu</span>
+                <Button variant="ghost" size="icon" onClick={() => setMobileNavOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                <NavigationList orientation="vertical" onNavigate={() => setMobileNavOpen(false)} />
+                <Button
+                  variant="outline"
+                  className="mt-6 w-full justify-center gap-2"
+                  onClick={() => {
+                    setMobileNavOpen(false)
+                    void (async () => {
+                      try {
+                        await logout()
+                      } catch (error) {
+                        console.error("Falha ao encerrar sessao", error)
+                      }
+                    })()
+                  }}
+                >
+                  <LogOut className="h-4 w-4" /> Sair
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </main>
     </div>
-  );
+  )
 }
+
+export default AppLayout

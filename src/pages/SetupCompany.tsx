@@ -51,7 +51,7 @@ export default function SetupCompany() {
   });
 
   if (empresaId) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   const hasInvites = (invitesQuery.data ?? []).length > 0;

@@ -1,5 +1,5 @@
 // src/pages/EditVehicle.tsx
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, Store } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { GalleryManager } from "../components/editVehicle/GalleryManager";
 type VeiculoUpload = Tabelas.VeiculoUpload;
 
 const EditVehicle: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { vehicleId } = useParams<{ vehicleId: string }>();
   const navigate = useNavigate();
 
   const { getVehicle, updateVehicle, deleteVehicle, isLoading } = useVehicles();
@@ -25,10 +25,8 @@ const EditVehicle: React.FC = () => {
   const canEdit = true;
   const canDelete = true;
 
-  const vehicle = getVehicle(id || "");
+  const vehicle = getVehicle(vehicleId || "");
   const [form, setForm] = useState<Partial<VeiculoUpload>>({});
-
-  const inputRef = useRef<HTMLInputElement | null>(null);
 
   if (isLoading || lojaLoading) return <LoadingPlaceholder />;
 
@@ -44,7 +42,7 @@ const EditVehicle: React.FC = () => {
       return toast.error("Você não tem permissão para editar este veículo.");
     await updateVehicle({ id: vehicle.id, payload: updatedData });
     toast.success("Veículo atualizado com sucesso!");
-    navigate(`/vehicle/${vehicle.id}`);
+    navigate(`/app/veiculos/${vehicle.id}`);
   };
 
   const handleDelete = async () => {
@@ -53,7 +51,7 @@ const EditVehicle: React.FC = () => {
     if (!window.confirm("Deseja realmente excluir este veículo?")) return;
     await deleteVehicle(vehicle.id);
     toast.success("Veículo excluído com sucesso!");
-    navigate("/inventory");
+    navigate("/app/estoque");
   };
 
   return (
@@ -101,7 +99,7 @@ const EditVehicle: React.FC = () => {
           handleSave={handleSave}
         />
       ) : (
-        <GalleryManager vehicleId={id ?? ""} />
+        <GalleryManager vehicleId={vehicleId ?? ""} />
       )}
 
       {showTransferModal && (

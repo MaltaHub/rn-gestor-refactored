@@ -24,10 +24,12 @@ export const useCurrentStore = create<CurrentStoreState>((set, get) => ({
   loading: false,
   error: null,
 
-  setSelectedLoja: (loja: Loja | null) => set({ selectedLoja: loja,
-    lojaId: loja?.id ?? null,
-    lojaNome: loja?.nome ?? null
-   }),
+  setSelectedLoja: (loja: Loja | null) =>
+    set({
+      selectedLoja: loja,
+      lojaId: loja?.id ?? null,
+      lojaNome: loja?.nome ?? null,
+    }),
 
   fetchLojas: async () => {
     set({ loading: true, error: null });
@@ -43,10 +45,11 @@ export const useCurrentStore = create<CurrentStoreState>((set, get) => ({
       set({ lojas: data ?? [] });
 
       return data ?? [];
-    } catch (err: any) {
-      console.error("Erro ao buscar lojas:", err);
-      set({ error: err });
-      
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error("Erro desconhecido ao buscar lojas");
+      console.error("Erro ao buscar lojas:", error);
+      set({ error });
+
       return [];
     } finally {
       set({ loading: false });

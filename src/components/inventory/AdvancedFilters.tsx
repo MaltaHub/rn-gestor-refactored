@@ -2,6 +2,13 @@ import { Utils } from "../../types";
 
 // Definindo um alias para o tipo AdvancedFilterState
 type AdvancedFilterState = Utils.AdvancedFilterState;
+type NumericFilterKey =
+  | "priceMin"
+  | "priceMax"
+  | "yearMin"
+  | "yearMax"
+  | "mileageMin"
+  | "mileageMax";
 
 interface Props {
   filters: AdvancedFilterState;
@@ -29,19 +36,21 @@ export function AdvancedFilters({ filters, setFilters, onClear, isOpen, toggleOp
         <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl shadow-inner border border-gray-200 space-y-6">
           {/* Grid de campos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: "Preço Mín", key: "priceMin" },
-              { label: "Preço Máx", key: "priceMax" },
-              { label: "Ano Mín", key: "yearMin" },
-              { label: "Ano Máx", key: "yearMax" },
-              { label: "KM Mín", key: "mileageMin" },
-              { label: "KM Máx", key: "mileageMax" },
-            ].map(({ label, key }) => (
+            {(
+              [
+                { label: "Preço Mín", key: "priceMin" },
+                { label: "Preço Máx", key: "priceMax" },
+                { label: "Ano Mín", key: "yearMin" },
+                { label: "Ano Máx", key: "yearMax" },
+                { label: "KM Mín", key: "mileageMin" },
+                { label: "KM Máx", key: "mileageMax" },
+              ] as Array<{ label: string; key: NumericFilterKey }>
+            ).map(({ label, key }) => (
               <div key={key}>
                 <label className="block font-semibold text-gray-700 mb-1">{label}</label>
                 <input
                   type="number"
-                  value={(filters as any)[key]}
+                  value={filters[key]}
                   onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
                   className="w-full p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />

@@ -15,7 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/authStore";
 import type { TableRow } from "@/types";
 
-interface PromocaoRecord extends TableRow<"promocoes"> {}
+type PromocaoRecord = TableRow<"promocoes">
 
 async function fetchPromocoes(empresaId: string) {
   const { data, error } = await supabase
@@ -95,7 +95,7 @@ export default function Promocoes() {
 
             <div className="flex flex-wrap gap-2">
 
-              <Button variant="outline" onClick={() => navigate('/estoque')}>Selecionar veiculos</Button>
+              <Button variant="outline" onClick={() => navigate('/app/estoque')}>Selecionar veiculos</Button>
 
               <Button variant="ghost" onClick={() => setShowCreatePanel(false)}>Entendi</Button>
 

@@ -15,7 +15,7 @@ import { useAuthStore } from "@/store/authStore";
 import type { TableRow, Enums } from "@/types";
 import { inviteMember } from "@/services/empresa";
 
-interface MembroRecord extends TableRow<"membros_empresa"> {}
+type MembroRecord = TableRow<"membros_empresa">
 
 const PAPEL_OPTIONS: Enums["papel_usuario_empresa"][] = [
   "proprietario",

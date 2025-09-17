@@ -113,7 +113,7 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex flex-wrap justify-start gap-3">
-          <Button variant="hero" size="lg" onClick={() => navigate('/estoque', { state: { openCreate: true } })}>
+          <Button variant="hero" size="lg" onClick={() => navigate('/app/estoque', { state: { openCreate: true } })}>
             <Plus className="mr-2 h-4 w-4" />
             Novo veiculo
           </Button>
@@ -181,7 +181,7 @@ export function Dashboard() {
                 Cadastros recentes ordenados por data de registro.
               </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate('/estoque')}>
+            <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate('/app/estoque')}>
               Ver todos
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -256,7 +256,7 @@ export function Dashboard() {
           title="Gestao de estoque"
           description="Cadastre veiculos e controle disponibilidade."
           icon={<Package className="h-5 w-5 text-primary" />}
-          onClick={() => navigate('/estoque')}
+          onClick={() => navigate('/app/estoque')}
         />
         <QuickAction
           title="Gestao de anuncios"

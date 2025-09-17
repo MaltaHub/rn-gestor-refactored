@@ -21,7 +21,7 @@ import {
 import { useVehicles, useCreateVehicle, useDeleteVehicle } from "@/hooks/useVehicles";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/authStore";
-import type { VehicleInsertInput, VehicleRecord } from "@/services/veiculos";
+import type { VehicleInsertInput } from "@/services/veiculos";
 
 const ESTADO_VENDA_OPTIONS = [
   "disponivel",
@@ -94,7 +94,6 @@ export function Inventory() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleRecord | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -127,7 +126,6 @@ export function Inventory() {
     try {
       await deleteVehicle.mutateAsync({ veiculoId: id });
       setFeedback("Veiculo removido com sucesso.");
-      setSelectedVehicle(null);
       setErrorMessage(null);
     } catch (erro) {
       const message = erro instanceof Error ? erro.message : "Nao foi possivel remover o veiculo.";
@@ -622,7 +620,11 @@ export function Inventory() {
                       )}
                     </div>
                     <div className="mt-4 flex items-center justify-between">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedVehicle(vehicle)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/app/veiculos/${vehicle.id}`)}
+                      >
                         Detalhes
                       </Button>
                       <Button
@@ -642,54 +644,6 @@ export function Inventory() {
         </CardContent>
       </Card>
 
-      {selectedVehicle && (
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-start justify-between">
-            <div>
-              <CardTitle>Detalhes do veiculo {selectedVehicle.placa}</CardTitle>
-              <CardDescription>Informacoes complementares do veiculo selecionado.</CardDescription>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedVehicle(null)}>Fechar</Button>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
-            <DetailItem label="Estado de venda" value={selectedVehicle.estado_venda} />
-            <DetailItem label="Estado do veiculo" value={selectedVehicle.estado_veiculo ?? "Nao informado"} />
-            <DetailItem
-              label="Preco venal"
-              value={selectedVehicle.preco_venal
-                ? selectedVehicle.preco_venal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                : "Nao informado"}
-            />
-            <DetailItem label="Hodometro" value={selectedVehicle.hodometro.toLocaleString("pt-BR")} />
-            <DetailItem
-              label="Local"
-              value={locais?.find((item) => item.id === selectedVehicle.local_id)?.nome ?? "Nao informado"}
-            />
-            <DetailItem
-              label="Modelo"
-              value={modelos?.find((item) => item.id === selectedVehicle.modelo_id)?.nome ?? "Nao informado"}
-            />
-            <DetailItem
-              label="Observacao"
-              value={selectedVehicle.observacao ?? "Sem observacoes"}
-            />
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-interface DetailItemProps {
-  label: string;
-  value: ReactNode;
-}
-
-function DetailItem({ label, value }: DetailItemProps) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }

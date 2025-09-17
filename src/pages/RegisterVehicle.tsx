@@ -102,7 +102,7 @@ const RegisterVehicle: React.FC = () => {
 
             await createVehicle(payload);
             toast.success("Veículo registrado com sucesso!");
-            navigate("/inventory");
+            navigate("/app/estoque");
         } catch (err) {
             console.error(err);
             toast.error("Erro ao registrar veículo!");

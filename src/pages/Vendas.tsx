@@ -15,7 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/authStore";
 import type { TableRow } from "@/types";
 
-interface VendaRecord extends TableRow<"vendas"> {}
+type VendaRecord = TableRow<"vendas">
 
 async function fetchVendas(empresaId: string) {
   const { data, error } = await supabase
@@ -94,7 +94,7 @@ export default function Vendas() {
 
             <div className="flex flex-wrap gap-2">
 
-              <Button variant="outline" onClick={() => navigate('/estoque')}>Abrir estoque</Button>
+              <Button variant="outline" onClick={() => navigate('/app/estoque')}>Abrir estoque</Button>
 
               <Button variant="ghost" onClick={() => navigate('/documentacao')}>Ver documentacao</Button>
 

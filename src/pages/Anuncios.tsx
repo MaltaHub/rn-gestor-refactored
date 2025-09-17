@@ -15,7 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/authStore";
 import type { TableRow } from "@/types";
 
-interface AnuncioRecord extends TableRow<"anuncios"> {}
+type AnuncioRecord = TableRow<"anuncios">
 type PlataformaOption = { id: string; nome: string };
 
 async function fetchAnuncios(empresaId: string) {
@@ -112,7 +112,7 @@ export default function Anuncios() {
 
             <div className="flex flex-wrap gap-2">
 
-              <Button variant="outline" onClick={() => navigate('/estoque')}>Ir para estoque</Button>
+              <Button variant="outline" onClick={() => navigate('/app/estoque')}>Ir para estoque</Button>
 
               <Button variant="ghost" onClick={() => setShowCreatePanel(false)}>Concluir</Button>
 

@@ -1,7 +1,9 @@
 // Definição do estado e ações da store de autenticação
 
-import { supabase } from "@/lib/supabaseClient";
-import type { AuthState } from "@/types";
+import { create } from "zustand"
+
+import { supabase } from "@/lib/supabaseClient"
+import type { AuthState } from "@/types"
 
 export const useAuthStore = create<AuthState>((set) => {
   const refreshEmpresaId = async () => {

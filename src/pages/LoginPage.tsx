@@ -21,7 +21,7 @@ export function LoginPage() {
 
   const user = useAuthStore((state) => state.user);
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/app" replace />;
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

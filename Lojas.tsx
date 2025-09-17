@@ -13,8 +13,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/authStore";
 import type { TableRow } from "@/types";
 
-interface LojaRecord extends TableRow<"lojas"> {}
-interface LocalRecord extends TableRow<"locais"> {}
+type LojaRecord = TableRow<"lojas">
+type LocalRecord = TableRow<"locais">
 
 async function fetchLojas(empresaId: string) {
   const { data, error } = await supabase

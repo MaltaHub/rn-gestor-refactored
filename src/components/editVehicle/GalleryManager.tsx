@@ -5,6 +5,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -130,11 +131,15 @@ export function GalleryManager({ vehicleId }: { vehicleId: string }) {
     setFotos((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-    if (active.id !== over.id) {
-      const oldIndex = fotos.findIndex((f) => f.id === active.id);
-      const newIndex = fotos.findIndex((f) => f.id === over.id);
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = fotos.findIndex((f) => f.id === active.id);
+    const newIndex = fotos.findIndex((f) => f.id === over.id);
+
+    if (oldIndex >= 0 && newIndex >= 0) {
       setFotos((items) => arrayMove(items, oldIndex, newIndex));
     }
   };
