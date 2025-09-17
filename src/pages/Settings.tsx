@@ -1,63 +1,29 @@
 
 import { useState, type FormEvent } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Factory, Loader2, MapPin, Settings2, Store, Tags } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { supabase } from "@/lib/supabaseClient"
 import { useAuthStore } from "@/store/authStore"
-import type { TableInsert, TableRow } from "@/types"
-
-type LojaRecord = TableRow<"lojas">
-type LocalRecord = TableRow<"locais">
-type CaracteristicaRecord = TableRow<"caracteristicas">
-type ModeloRecord = TableRow<"modelos">
-
-async function fetchLojas(empresaId: string) {
-  const { data, error } = await supabase
-    .from("lojas")
-    .select("id, nome")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []) as LojaRecord[]
-}
-
-async function fetchLocais(empresaId: string) {
-  const { data, error } = await supabase
-    .from("locais")
-    .select("id, nome")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []) as LocalRecord[]
-}
-
-async function fetchCaracteristicas(empresaId: string) {
-  const { data, error } = await supabase
-    .from("caracteristicas")
-    .select("id, nome")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []) as CaracteristicaRecord[]
-}
-
-async function fetchModelos(empresaId: string) {
-  const { data, error } = await supabase
-    .from("modelos")
-    .select("id, nome, marca, ano_inicial, ano_final")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []) as ModeloRecord[]
-}
+import {
+  useCaracteristicas,
+  useCreateCaracteristica,
+  useCreateLocal,
+  useCreateLoja,
+  useCreateModelo,
+  useDeleteCaracteristica,
+  useDeleteLocal,
+  useDeleteLoja,
+  useDeleteModelo,
+  useLocais,
+  useLojas,
+  useModelos,
+  useUpdateCaracteristica,
+  useUpdateLocal,
+  useUpdateLoja,
+  useUpdateModelo,
+} from "@/hooks/useCompanyConfigurations"
 
 const parseYear = (value: string) => {
   if (!value) return null
@@ -67,7 +33,6 @@ const parseYear = (value: string) => {
 
 export default function Settings() {
   const empresaId = useAuthStore((state) => state.empresaId)
-  const queryClient = useQueryClient()
 
   const [newLojaNome, setNewLojaNome] = useState("")
   const [editingLoja, setEditingLoja] = useState<{ id: string; nome: string } | null>(null)
@@ -84,284 +49,23 @@ export default function Settings() {
     { id: string; nome: string; marca: string; anoInicial: string; anoFinal: string } | null
   >(null)
 
-  const lojasQuery = useQuery({
-    queryKey: ["lojas", empresaId],
-    queryFn: () => fetchLojas(empresaId!),
-    enabled: Boolean(empresaId),
-  })
+  const lojasQuery = useLojas()
+  const locaisQuery = useLocais()
+  const caracteristicasQuery = useCaracteristicas()
+  const modelosQuery = useModelos()
 
-  const locaisQuery = useQuery({
-    queryKey: ["locais", empresaId],
-    queryFn: () => fetchLocais(empresaId!),
-    enabled: Boolean(empresaId),
-  })
-
-  const caracteristicasQuery = useQuery({
-    queryKey: ["caracteristicas", empresaId],
-    queryFn: () => fetchCaracteristicas(empresaId!),
-    enabled: Boolean(empresaId),
-  })
-
-  const modelosQuery = useQuery({
-    queryKey: ["modelos", empresaId],
-    queryFn: () => fetchModelos(empresaId!),
-    enabled: Boolean(empresaId),
-  })
-  const createLoja = useMutation({
-    mutationFn: async ({ nome }: { nome: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase.from("lojas").insert({ nome, empresa_id: empresaId })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setNewLojaNome("")
-      queryClient.invalidateQueries({ queryKey: ["lojas", empresaId] })
-      toast.success("Loja criada com sucesso")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel criar a loja"
-      toast.error(message)
-    },
-  })
-
-  const updateLoja = useMutation({
-    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase
-        .from("lojas")
-        .update({ nome })
-        .eq("empresa_id", empresaId)
-        .eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setEditingLoja(null)
-      queryClient.invalidateQueries({ queryKey: ["lojas", empresaId] })
-      toast.success("Loja atualizada")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel atualizar a loja"
-      toast.error(message)
-    },
-  })
-
-  const deleteLoja = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase.from("lojas").delete().eq("empresa_id", empresaId).eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lojas", empresaId] })
-      toast.success("Loja removida")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel remover a loja"
-      toast.error(message)
-    },
-  })
-  const createLocal = useMutation({
-    mutationFn: async ({ nome }: { nome: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase.from("locais").insert({ nome, empresa_id: empresaId })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setNewLocalNome("")
-      queryClient.invalidateQueries({ queryKey: ["locais", empresaId] })
-      toast.success("Local criado")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel criar o local"
-      toast.error(message)
-    },
-  })
-
-  const updateLocal = useMutation({
-    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase
-        .from("locais")
-        .update({ nome })
-        .eq("empresa_id", empresaId)
-        .eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setEditingLocal(null)
-      queryClient.invalidateQueries({ queryKey: ["locais", empresaId] })
-      toast.success("Local atualizado")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel atualizar o local"
-      toast.error(message)
-    },
-  })
-
-  const deleteLocal = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase.from("locais").delete().eq("empresa_id", empresaId).eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["locais", empresaId] })
-      toast.success("Local removido")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel remover o local"
-      toast.error(message)
-    },
-  })
-  const createCaracteristica = useMutation({
-    mutationFn: async ({ nome }: { nome: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase
-        .from("caracteristicas")
-        .insert({ nome, empresa_id: empresaId })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setNewCaracteristica("")
-      queryClient.invalidateQueries({ queryKey: ["caracteristicas", empresaId] })
-      toast.success("Caracteristica criada")
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : "Nao foi possivel criar a caracteristica"
-      toast.error(message)
-    },
-  })
-
-  const updateCaracteristica = useMutation({
-    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase
-        .from("caracteristicas")
-        .update({ nome })
-        .eq("empresa_id", empresaId)
-        .eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setEditingCaracteristica(null)
-      queryClient.invalidateQueries({ queryKey: ["caracteristicas", empresaId] })
-      toast.success("Caracteristica atualizada")
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : "Nao foi possivel atualizar a caracteristica"
-      toast.error(message)
-    },
-  })
-
-  const deleteCaracteristica = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase
-        .from("caracteristicas")
-        .delete()
-        .eq("empresa_id", empresaId)
-        .eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["caracteristicas", empresaId] })
-      toast.success("Caracteristica removida")
-    },
-    onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : "Nao foi possivel remover a caracteristica"
-      toast.error(message)
-    },
-  })
-  const createModelo = useMutation({
-    mutationFn: async ({
-      nome,
-      marca,
-      anoInicial,
-      anoFinal,
-    }: {
-      nome: string
-      marca: string
-      anoInicial: string
-      anoFinal: string
-    }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const payload: TableInsert<"modelos"> = {
-        nome,
-        marca,
-        empresa_id: empresaId,
-        ano_inicial: parseYear(anoInicial),
-        ano_final: parseYear(anoFinal),
-      }
-      const { error } = await supabase.from("modelos").insert(payload)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setModeloForm({ nome: "", marca: "", anoInicial: "", anoFinal: "" })
-      queryClient.invalidateQueries({ queryKey: ["modelos", empresaId] })
-      toast.success("Modelo criado")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel criar o modelo"
-      toast.error(message)
-    },
-  })
-
-  const updateModelo = useMutation({
-    mutationFn: async ({
-      id,
-      nome,
-      marca,
-      anoInicial,
-      anoFinal,
-    }: {
-      id: string
-      nome: string
-      marca: string
-      anoInicial: string
-      anoFinal: string
-    }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase
-        .from("modelos")
-        .update({
-          nome,
-          marca,
-          ano_inicial: parseYear(anoInicial),
-          ano_final: parseYear(anoFinal),
-        })
-        .eq("empresa_id", empresaId)
-        .eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setEditingModelo(null)
-      queryClient.invalidateQueries({ queryKey: ["modelos", empresaId] })
-      toast.success("Modelo atualizado")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel atualizar o modelo"
-      toast.error(message)
-    },
-  })
-
-  const deleteModelo = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      if (!empresaId) throw new Error("Empresa nao encontrada")
-      const { error } = await supabase.from("modelos").delete().eq("empresa_id", empresaId).eq("id", id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["modelos", empresaId] })
-      toast.success("Modelo removido")
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Nao foi possivel remover o modelo"
-      toast.error(message)
-    },
-  })
+  const createLoja = useCreateLoja()
+  const updateLoja = useUpdateLoja()
+  const deleteLoja = useDeleteLoja()
+  const createLocal = useCreateLocal()
+  const updateLocal = useUpdateLocal()
+  const deleteLocal = useDeleteLocal()
+  const createCaracteristica = useCreateCaracteristica()
+  const updateCaracteristica = useUpdateCaracteristica()
+  const deleteCaracteristica = useDeleteCaracteristica()
+  const createModelo = useCreateModelo()
+  const updateModelo = useUpdateModelo()
+  const deleteModelo = useDeleteModelo()
   if (!empresaId) {
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-8 text-center">
@@ -377,60 +81,123 @@ export default function Settings() {
     event.preventDefault()
     const nome = newLojaNome.trim()
     if (!nome) return
-    await createLoja.mutateAsync({ nome })
+    try {
+      await createLoja.mutateAsync({ nome })
+      setNewLojaNome("")
+      toast.success("Loja criada com sucesso")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel criar a loja"
+      toast.error(message)
+    }
   }
 
   const handleSaveLoja = async () => {
     if (!editingLoja) return
     const nome = editingLoja.nome.trim()
     if (!nome) return
-    await updateLoja.mutateAsync({ id: editingLoja.id, nome })
+    try {
+      await updateLoja.mutateAsync({ lojaId: editingLoja.id, nome })
+      setEditingLoja(null)
+      toast.success("Loja atualizada")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel atualizar a loja"
+      toast.error(message)
+    }
   }
 
   const handleDeleteLoja = async (id: string) => {
     const confirmed = window.confirm("Deseja remover esta loja?")
     if (!confirmed) return
-    await deleteLoja.mutateAsync({ id })
+    try {
+      await deleteLoja.mutateAsync({ lojaId: id })
+      toast.success("Loja removida")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel remover a loja"
+      toast.error(message)
+    }
   }
 
   const handleCreateLocal = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const nome = newLocalNome.trim()
     if (!nome) return
-    await createLocal.mutateAsync({ nome })
+    try {
+      await createLocal.mutateAsync({ nome })
+      setNewLocalNome("")
+      toast.success("Local criado")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel criar o local"
+      toast.error(message)
+    }
   }
 
   const handleSaveLocal = async () => {
     if (!editingLocal) return
     const nome = editingLocal.nome.trim()
     if (!nome) return
-    await updateLocal.mutateAsync({ id: editingLocal.id, nome })
+    try {
+      await updateLocal.mutateAsync({ localId: editingLocal.id, nome })
+      setEditingLocal(null)
+      toast.success("Local atualizado")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel atualizar o local"
+      toast.error(message)
+    }
   }
 
   const handleDeleteLocal = async (id: string) => {
     const confirmed = window.confirm("Deseja remover este local?")
     if (!confirmed) return
-    await deleteLocal.mutateAsync({ id })
+    try {
+      await deleteLocal.mutateAsync({ localId: id })
+      toast.success("Local removido")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel remover o local"
+      toast.error(message)
+    }
   }
 
   const handleCreateCaracteristica = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const nome = newCaracteristica.trim()
     if (!nome) return
-    await createCaracteristica.mutateAsync({ nome })
+    try {
+      await createCaracteristica.mutateAsync({ nome })
+      setNewCaracteristica("")
+      toast.success("Caracteristica criada")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Nao foi possivel criar a caracteristica"
+      toast.error(message)
+    }
   }
 
   const handleSaveCaracteristica = async () => {
     if (!editingCaracteristica) return
     const nome = editingCaracteristica.nome.trim()
     if (!nome) return
-    await updateCaracteristica.mutateAsync({ id: editingCaracteristica.id, nome })
+    try {
+      await updateCaracteristica.mutateAsync({ caracteristicaId: editingCaracteristica.id, nome })
+      setEditingCaracteristica(null)
+      toast.success("Caracteristica atualizada")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Nao foi possivel atualizar a caracteristica"
+      toast.error(message)
+    }
   }
 
   const handleDeleteCaracteristica = async (id: string) => {
     const confirmed = window.confirm("Deseja remover esta caracteristica?")
     if (!confirmed) return
-    await deleteCaracteristica.mutateAsync({ id })
+    try {
+      await deleteCaracteristica.mutateAsync({ caracteristicaId: id })
+      toast.success("Caracteristica removida")
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Nao foi possivel remover a caracteristica"
+      toast.error(message)
+    }
   }
 
   const handleCreateModelo = async (event: FormEvent<HTMLFormElement>) => {
@@ -438,12 +205,21 @@ export default function Settings() {
     const nome = modeloForm.nome.trim()
     const marca = modeloForm.marca.trim()
     if (!nome || !marca) return
-    await createModelo.mutateAsync({
-      nome,
-      marca,
-      anoInicial: modeloForm.anoInicial.trim(),
-      anoFinal: modeloForm.anoFinal.trim(),
-    })
+    const anoInicial = parseYear(modeloForm.anoInicial.trim())
+    const anoFinal = parseYear(modeloForm.anoFinal.trim())
+    try {
+      await createModelo.mutateAsync({
+        nome,
+        marca,
+        anoInicial,
+        anoFinal,
+      })
+      setModeloForm({ nome: "", marca: "", anoInicial: "", anoFinal: "" })
+      toast.success("Modelo criado")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel criar o modelo"
+      toast.error(message)
+    }
   }
 
   const handleSaveModelo = async () => {
@@ -451,19 +227,34 @@ export default function Settings() {
     const nome = editingModelo.nome.trim()
     const marca = editingModelo.marca.trim()
     if (!nome || !marca) return
-    await updateModelo.mutateAsync({
-      id: editingModelo.id,
-      nome,
-      marca,
-      anoInicial: editingModelo.anoInicial.trim(),
-      anoFinal: editingModelo.anoFinal.trim(),
-    })
+    const anoInicial = parseYear(editingModelo.anoInicial.trim())
+    const anoFinal = parseYear(editingModelo.anoFinal.trim())
+    try {
+      await updateModelo.mutateAsync({
+        modeloId: editingModelo.id,
+        nome,
+        marca,
+        anoInicial,
+        anoFinal,
+      })
+      setEditingModelo(null)
+      toast.success("Modelo atualizado")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel atualizar o modelo"
+      toast.error(message)
+    }
   }
 
   const handleDeleteModelo = async (id: string) => {
     const confirmed = window.confirm("Deseja remover este modelo?")
     if (!confirmed) return
-    await deleteModelo.mutateAsync({ id })
+    try {
+      await deleteModelo.mutateAsync({ modeloId: id })
+      toast.success("Modelo removido")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Nao foi possivel remover o modelo"
+      toast.error(message)
+    }
   }
   return (
     <div className="space-y-8">

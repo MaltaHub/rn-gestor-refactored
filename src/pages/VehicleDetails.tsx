@@ -1,5 +1,4 @@
 import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Calendar, Gauge, PenSquare } from "lucide-react"
 
@@ -11,61 +10,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { supabase } from "@/lib/supabaseClient"
 import { useVehicles } from "@/hooks/useVehicles"
-import { useAuthStore } from "@/store/authStore"
 import type { VehicleRecord } from "@/services/veiculos"
-
-interface LocalOption {
-  id: string
-  nome: string
-}
-
-interface ModeloOption {
-  id: string
-  nome: string
-  marca: string | null
-}
-
-async function fetchLocais(empresaId: string): Promise<LocalOption[]> {
-  const { data, error } = await supabase
-    .from("locais")
-    .select("id, nome")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []).map((item) => ({ id: item.id, nome: item.nome }))
-}
-
-async function fetchModelos(empresaId: string): Promise<ModeloOption[]> {
-  const { data, error } = await supabase
-    .from("modelos")
-    .select("id, nome, marca")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []).map((item) => ({ id: item.id, nome: item.nome, marca: item.marca }))
-}
+import { useLocais, useModelos } from "@/hooks/useCompanyConfigurations"
 
 export function VehicleDetails() {
   const { vehicleId } = useParams<{ vehicleId: string }>()
   const navigate = useNavigate()
   const { data: vehicles, isLoading, isError, error } = useVehicles()
-  const empresaId = useAuthStore((state) => state.empresaId)
-
-  const locaisQuery = useQuery({
-    queryKey: ["locais", empresaId],
-    queryFn: () => fetchLocais(empresaId!),
-    enabled: Boolean(empresaId),
-  })
-
-  const modelosQuery = useQuery({
-    queryKey: ["modelos", empresaId],
-    queryFn: () => fetchModelos(empresaId!),
-    enabled: Boolean(empresaId),
-  })
+  const locaisQuery = useLocais()
+  const modelosQuery = useModelos()
 
   const vehicle: VehicleRecord | undefined = useMemo(
     () => vehicles?.find((item) => item.id === vehicleId),

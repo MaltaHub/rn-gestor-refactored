@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Filter,
@@ -19,8 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useVehicles, useCreateVehicle, useDeleteVehicle } from "@/hooks/useVehicles";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuthStore } from "@/store/authStore";
+import { useLocais, useModelos } from "@/hooks/useCompanyConfigurations";
 import type { VehicleInsertInput } from "@/services/veiculos";
 
 const ESTADO_VENDA_OPTIONS = [
@@ -40,9 +38,6 @@ const ESTADO_VEICULO_OPTIONS = [
   "sujo",
 ] as const;
 
-type LocalOption = { id: string; nome: string };
-type ModeloOption = { id: string; nome: string; marca: string | null };
-
 type VehicleFilters = {
   search: string;
   estadoVenda: string;
@@ -59,37 +54,7 @@ const DEFAULT_FILTERS: VehicleFilters = {
   modeloId: "",
 };
 
-async function fetchLocais(empresaId: string): Promise<LocalOption[]> {
-  const { data, error } = await supabase
-    .from("locais")
-    .select("id, nome")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []).map((item) => ({
-    id: item.id,
-    nome: item.nome,
-  }));
-}
-
-async function fetchModelos(empresaId: string): Promise<ModeloOption[]> {
-  const { data, error } = await supabase
-    .from("modelos")
-    .select("id, nome, marca")
-    .eq("empresa_id", empresaId)
-    .order("nome", { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []).map((item) => ({
-    id: item.id,
-    nome: item.nome,
-    marca: item.marca,
-  }));
-}
-
 export function Inventory() {
-  const empresaId = useAuthStore((state) => state.empresaId);
   const location = useLocation();
   const navigate = useNavigate();
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -100,17 +65,8 @@ export function Inventory() {
   const { data: vehicles, isLoading, isFetching } = useVehicles();
   const createVehicle = useCreateVehicle();
   const deleteVehicle = useDeleteVehicle();
-  const { data: locais } = useQuery({
-    queryKey: ["locais", empresaId],
-    queryFn: () => fetchLocais(empresaId!),
-    enabled: Boolean(empresaId),
-  });
-
-  const { data: modelos } = useQuery({
-    queryKey: ["modelos", empresaId],
-    queryFn: () => fetchModelos(empresaId!),
-    enabled: Boolean(empresaId),
-  });
+  const { data: locais } = useLocais();
+  const { data: modelos } = useModelos();
 
   useEffect(() => {
     const state = (location.state as { openCreate?: boolean } | null) ?? null;
