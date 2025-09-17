@@ -31,3 +31,6 @@ export type AuthState = {
   refreshEmpresa: () => Promise<void>
   logout: () => Promise<void>
 }
+
+export * as Tabelas from "./supabase_tables"
+export * as Utils from "./utils"

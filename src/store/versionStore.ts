@@ -1,126 +1,121 @@
-// version-monolith.ts (exemplo de arquivo único)
-import { create } from "zustand";
-import { supabase } from "../lib/supabaseClient"; // ajuste o import para seu projeto
+import { create } from "zustand"
 
-// tipos simples
-export type VersionRow = { table_name: string; version: string };
-export type VersionMap = Record<string, string>;
+import { supabase } from "@/lib/supabaseClient"
+import type { Database } from "@/types"
 
-// ---------- Zustand store (somente versões públicas) ----------
+export type VersionRow = { table_name: string; version: string }
+export type VersionMap = Record<string, string>
+
 interface VersionStore {
-  versions: VersionMap;
-  loadFromStorage: () => void;
+  versions: VersionMap
+  loadFromStorage: () => void
 }
 
-// chave para localStorage
-const STORAGE_KEY = "app_versions";
+const STORAGE_KEY = "app_versions"
+const VERSION_TABLE = "versions" as const
+
+type PublicTable = keyof Database["public"]["Tables"]
+
+type VersionQueryResult = { data: VersionRow[] | null; error: Error | null }
 
 export const useVersionStore = create<VersionStore>((set) => ({
   versions: {},
   loadFromStorage: () => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return set({ versions: {} });
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) {
+      set({ versions: {} })
+      return
+    }
+
     try {
-      const parsed = JSON.parse(raw) as Record<string, string>;
-      set({ versions: parsed });
+      const parsed = JSON.parse(raw) as VersionMap
+      set({ versions: parsed })
     } catch {
-      set({ versions: {} });
+      set({ versions: {} })
     }
   },
-}));
+}))
 
-// ---------- util simples ----------
 function mapFromRows(rows: VersionRow[] = []): VersionMap {
-  const out: VersionMap = {};
-  for (const r of rows) out[r.table_name] = String(r.version);
-  return out;
-}
-function mapsEqual(a: VersionMap, b: VersionMap): boolean {
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
-  if (aKeys.length !== bKeys.length) return false;
-  for (const k of aKeys) if (a[k] !== b[k]) return false;
-  return true;
+  return rows.reduce<VersionMap>((accumulator, row) => {
+    accumulator[row.table_name] = String(row.version)
+    return accumulator
+  }, {})
 }
 
-// ---------- VersionManager (POO, simples) ----------
+function mapsEqual(a: VersionMap, b: VersionMap): boolean {
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+  if (aKeys.length !== bKeys.length) return false
+  return aKeys.every((key) => a[key] === b[key])
+}
+
 export class VersionManager {
-  private intervalMs: number;
-  private timerId: number | null = null;
-  private lastSaved: VersionMap = {};
-  private fetching = false;
-  private tableName = "versions";
+  private intervalMs: number
+  private timerId: number | null = null
+  private lastSaved: VersionMap = {}
+  private fetching = false
+  private readonly tableName: typeof VERSION_TABLE = VERSION_TABLE
 
   constructor(intervalMs = 5000) {
-    this.intervalMs = intervalMs;
-    // hydrate store from localStorage immediately
-    useVersionStore.getState().loadFromStorage();
-    this.lastSaved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    this.intervalMs = intervalMs
+    useVersionStore.getState().loadFromStorage()
+    try {
+      this.lastSaved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}")
+    } catch {
+      this.lastSaved = {}
+    }
   }
 
   setIntervalMs(ms: number) {
-    this.intervalMs = ms;
-    if (this.timerId) {
-      this.stop();
-      this.start();
-    }
+    this.intervalMs = ms
+    if (!this.timerId) return
+    this.stop()
+    this.start()
   }
 
   start() {
-    if (this.timerId) return; // idempotente
-    // run immediately
-    void this.tick();
-    this.timerId = window.setInterval(() => void this.tick(), this.intervalMs);
+    if (this.timerId) return
+    void this.tick()
+    this.timerId = window.setInterval(() => {
+      void this.tick()
+    }, this.intervalMs)
   }
 
   stop() {
-    if (!this.timerId) return;
-    clearInterval(this.timerId);
-    this.timerId = null;
+    if (!this.timerId) return
+    window.clearInterval(this.timerId)
+    this.timerId = null
   }
 
-  // fetch once and process
   async tick() {
-    if (this.fetching) return;
-    this.fetching = true;
+    if (this.fetching) return
+    this.fetching = true
+
     try {
-      const { data, error } = await supabase
-        .from(this.tableName)
-        .select("table_name, version");
-      if (error) {
-        console.error("[VersionManager] fetch error:", error);
-        return;
+      const relation = this.tableName as unknown as PublicTable
+      const response = (await supabase.from(relation as never).select("table_name, version")) as VersionQueryResult
+
+      if (response.error) {
+        console.error("[VersionManager] fetch error:", response.error)
+        return
       }
 
-      // transformar em map
-      const next = mapFromRows((data ?? []) as VersionRow[]);
-      const current = useVersionStore.getState().versions;
+      const rows = response.data ?? []
+      const next = mapFromRows(rows)
+      const current = useVersionStore.getState().versions
 
-      // se mudou em relação ao store -> publicar
       if (!mapsEqual(current, next)) {
-        useVersionStore.getState().loadFromStorage(); // ensure we don't overwrite local changes unexpectedly
-        useVersionStore.getState().loadFromStorage(); // keep idempotent (safe)
-        // publish directly
-        useVersionStore.setState({ versions: next });
+        useVersionStore.setState({ versions: next })
       }
 
-      // só salvar no localStorage se diferente do último save
       if (!mapsEqual(this.lastSaved, next)) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-        this.lastSaved = { ...next };
-        
-        console.log("[VersionManager] versions updated:", next);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+        this.lastSaved = { ...next }
+        console.log("[VersionManager] versions updated:", next)
       }
     } finally {
-      this.fetching = false;
+      this.fetching = false
     }
   }
 }
-
-/*
-const vm = new VersionManager(5000); // 5s por padrão
-vm.start();
-
-// @ts-ignore
-window.__versionManager = vm;
-*/

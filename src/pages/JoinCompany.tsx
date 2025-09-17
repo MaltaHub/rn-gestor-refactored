@@ -4,13 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { CheckCircle, Clock, Loader2, XCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/lib/supabaseClient"
 import { acceptInvite } from "@/services/empresa"
 import { useAuthStore } from "@/store/authStore"
@@ -32,14 +26,17 @@ export function JoinCompany() {
   const inviteQuery = useQuery({
     queryKey: ["company-invite-token", token],
     queryFn: async () => {
+      const inviteToken = token ?? ""
+      if (!inviteToken) throw new Error("Token do convite ausente.")
+
       const { data, error } = await supabase
         .from("convites_empresa")
         .select("id, empresa_id, status, expira_em, consumido_em, empresas ( nome )")
-        .eq("token", token)
+        .eq("token", inviteToken)
         .maybeSingle<InviteByToken>()
 
       if (error) throw error
-      if (!data) throw new Error("Convite não encontrado.")
+      if (!data) throw new Error("Convite nao encontrado.")
       return data
     },
     enabled: Boolean(token && user),
@@ -49,7 +46,7 @@ export function JoinCompany() {
   const acceptMutation = useMutation({
     mutationFn: async () => {
       const invite = inviteQuery.data
-      if (!token || !invite) throw new Error("Convite inválido.")
+      if (!token || !invite) throw new Error("Convite invalido.")
       await acceptInvite({ empresaId: invite.empresa_id, token })
       await refreshEmpresa()
     },
@@ -70,7 +67,7 @@ export function JoinCompany() {
   const inviteUnavailable = !invite || isExpired || isConsumed
 
   if (!token) {
-    return <ErrorState title="Convite inválido" message="O token informado é inválido ou está ausente." />
+    return <ErrorState title="Convite invalido" message="O token informado esta ausente ou invalido." />
   }
 
   if (loading) {
@@ -101,21 +98,18 @@ export function JoinCompany() {
         </CardHeader>
         <CardContent className="space-y-6">
           {inviteQuery.isError ? (
-            <ErrorState
-              title="Não foi possível carregar o convite"
-              message={(inviteQuery.error as Error).message}
-            />
+            <ErrorState title="Nao foi possivel carregar o convite" message={(inviteQuery.error as Error).message} />
           ) : inviteQuery.isLoading ? (
             <div className="flex items-center justify-center gap-3 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Buscando informações do convite...
+              <Loader2 className="h-4 w-4 animate-spin" /> Buscando informacoes do convite...
             </div>
           ) : inviteUnavailable ? (
             <ErrorState
-              title="Convite indisponível"
+              title="Convite indisponivel"
               message={
                 isExpired
                   ? "Este convite expirou. Solicite um novo convite ao administrador da empresa."
-                  : "Este convite já foi utilizado."
+                  : "Este convite ja foi utilizado."
               }
             />
           ) : (
@@ -131,12 +125,7 @@ export function JoinCompany() {
                 </div>
               </div>
 
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={() => acceptMutation.mutate()}
-                disabled={acceptMutation.isPending}
-              >
+              <Button className="w-full" size="lg" onClick={() => acceptMutation.mutate()} disabled={acceptMutation.isPending}>
                 {acceptMutation.isPending ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" /> Processando convite
@@ -147,16 +136,13 @@ export function JoinCompany() {
               </Button>
 
               <p className="text-xs text-muted-foreground">
-                Ao aceitar, sua conta será vinculada a esta empresa e você terá acesso às lojas, estoques e fluxos compartilhados no Gestor Motors.
+                Ao aceitar, sua conta sera vinculada a esta empresa e voce tera acesso aos estoques e fluxos compartilhados no Gestor Motors.
               </p>
             </div>
           )}
 
           {acceptMutation.isError && (
-            <ErrorState
-              title="Erro ao aceitar convite"
-              message={(acceptMutation.error as Error).message}
-            />
+            <ErrorState title="Erro ao aceitar convite" message={(acceptMutation.error as Error).message} />
           )}
 
           {acceptMutation.isSuccess && !acceptMutation.isPending && (

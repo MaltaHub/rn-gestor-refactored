@@ -1,348 +1,276 @@
-// src/pages/RegisterVehicle.tsx
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Tabelas } from "../types";
-import { useVehicles } from "../hooks/useVehicles";
-import { supabase } from "../lib/supabaseClient";
-import { useAuthStore } from "../store/authStore";
+import { type FormEvent } from "react"
+import { useNavigate } from "react-router-dom"
+import { Loader2, ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
+import { useQuery } from "@tanstack/react-query"
 
-type VeiculoUpload = Tabelas.VeiculoUpload;
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useCreateVehicle } from "@/hooks/useVehicles"
+import { supabase } from "@/lib/supabaseClient"
+import { useAuthStore } from "@/store/authStore"
+import type { VehicleInsertInput } from "@/services/veiculos"
 
-interface Modelo {
-    id: string;
-    nome: string;
-    marca: string;
-    combustivel: string;
-    tipo_cambio: string;
-    carroceria: string;
+const ESTADO_VENDA_OPTIONS = [
+  "disponivel",
+  "reservado",
+  "vendido",
+  "repassado",
+  "restrito",
+] as const
+
+const ESTADO_VEICULO_OPTIONS = [
+  "novo",
+  "seminovo",
+  "usado",
+  "sucata",
+  "limpo",
+  "sujo",
+] as const
+
+type LocalOption = { id: string; nome: string }
+type ModeloOption = { id: string; nome: string; marca: string | null }
+
+async function fetchLocais(empresaId: string): Promise<LocalOption[]> {
+  const { data, error } = await supabase
+    .from("locais")
+    .select("id, nome")
+    .eq("empresa_id", empresaId)
+    .order("nome", { ascending: true })
+
+  if (error) throw error
+  return (data ?? []).map((item) => ({ id: item.id, nome: item.nome }))
 }
 
-const RegisterVehicle: React.FC = () => {
-    const navigate = useNavigate();
-    const { createVehicle } = useVehicles();
-    const [loading, setLoading] = useState(false);
-    const [modelos, setModelos] = useState<Modelo[]>([]);
+async function fetchModelos(empresaId: string): Promise<ModeloOption[]> {
+  const { data, error } = await supabase
+    .from("modelos")
+    .select("id, nome, marca")
+    .eq("empresa_id", empresaId)
+    .order("nome", { ascending: true })
 
-    const [form, setForm] = useState<VeiculoUpload>({
-        placa: "",
-        modelo_id: null,
-        local: "",
-        hodometro: 0,
-        estagio_documentacao: null,
-        estado_venda: "disponivel",
-        estado_veiculo: null,
-        cor: "",
-        preco_venda: null,
-        chassi: null,
-        ano_modelo: null,
-        ano_fabricacao: null,
-        repetido_id: null,
-        observacao: null,
-    });
+  if (error) throw error
+  return (data ?? []).map((item) => ({ id: item.id, nome: item.nome, marca: item.marca }))
+}
 
-    const [showNewModelForm, setShowNewModelForm] = useState(false);
-    const [newModel, setNewModel] = useState<Partial<Modelo>>({
-        nome: "",
-        marca: "",
-        combustivel: "gasolina",
-        tipo_cambio: "manual",
-        carroceria: "hatch",
-    });
-    const [savingModel, setSavingModel] = useState(false);
+export default function RegisterVehicle() {
+  const empresaId = useAuthStore((state) => state.empresaId)
+  const navigate = useNavigate()
+  const createVehicle = useCreateVehicle()
 
-    // carregar locais disponíveis
-    const [locais, setLocais] = useState<{ id: string; nome: string }[]>([]);
+  const { data: locais } = useQuery({
+    queryKey: ["locais", empresaId],
+    queryFn: () => fetchLocais(empresaId!),
+    enabled: Boolean(empresaId),
+  })
 
-    const fetchLocais = async () => {
-        const { data, error } = await supabase
-            .from("locais")
-            .select("id,nome")
-            .order("nome", { ascending: true });
+  const { data: modelos } = useQuery({
+    queryKey: ["modelos", empresaId],
+    queryFn: () => fetchModelos(empresaId!),
+    enabled: Boolean(empresaId),
+  })
 
-        if (error) {
-            console.error(error);
-            return;
-        }
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
 
-        setLocais(data ?? []);
-    };
+    const dados: VehicleInsertInput = {
+      placa: String(formData.get("placa") ?? "").trim().toUpperCase(),
+      cor: String(formData.get("cor") ?? "").trim(),
+      estado_venda: formData.get("estado_venda") as VehicleInsertInput["estado_venda"],
+      hodometro: Number(formData.get("hodometro") ?? 0),
+      estado_veiculo: (formData.get("estado_veiculo") || null) as VehicleInsertInput["estado_veiculo"],
+      modelo_id: (formData.get("modelo_id") || null) as VehicleInsertInput["modelo_id"],
+      local_id: (formData.get("local_id") || null) as VehicleInsertInput["local_id"],
+      preco_venal: formData.get("preco_venal") ? Number(formData.get("preco_venal")) : null,
+      observacao: (formData.get("observacao") || null) as VehicleInsertInput["observacao"],
+    }
 
-    useEffect(() => {
-        fetchLocais();
-    }, []);
+    try {
+      await createVehicle.mutateAsync({ dados })
+      event.currentTarget.reset()
+      toast.success("Veiculo cadastrado com sucesso.")
+      navigate("/app/estoque")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Nao foi possivel cadastrar o veiculo."
+      toast.error(message)
+    }
+  }
 
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <Button variant="ghost" onClick={() => navigate(-1)} className="flex w-fit items-center gap-2">
+        <ArrowLeft className="h-4 w-4" />
+        Voltar
+      </Button>
 
-    // Carregar modelos disponíveis
-    const fetchModelos = async () => {
-        const { data, error } = await supabase
-            .from("modelo")
-            .select("id,nome,marca,combustivel,tipo_cambio,carroceria")
-            .order("nome", { ascending: true });
+      <Card className="shadow-card">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Cadastrar veiculo</CardTitle>
+          <CardDescription>Informe os dados basicos para adicionar um veiculo ao estoque.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-4" onSubmit={handleSubmit}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="placa">
+                  Placa
+                </label>
+                <input
+                  id="placa"
+                  name="placa"
+                  required
+                  placeholder="ABC1D23"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm uppercase"
+                />
+              </div>
 
-        if (error) {
-            console.error(error);
-            return;
-        }
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="cor">
+                  Cor
+                </label>
+                <input
+                  id="cor"
+                  name="cor"
+                  required
+                  placeholder="Prata"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                />
+              </div>
 
-        setModelos(data ?? []);
-    };
-
-    useEffect(() => {
-        fetchModelos();
-    }, []);
-
-    const handleSaveVehicle = async () => {
-        try {
-            setLoading(true);
-
-            const payload = Object.fromEntries(
-                Object.entries(form).map(([k, v]) => [k, v === "" ? null : v])
-            ) as VeiculoUpload;
-
-            await createVehicle(payload);
-            toast.success("Veículo registrado com sucesso!");
-            navigate("/app/estoque");
-        } catch (err) {
-            console.error(err);
-            toast.error("Erro ao registrar veículo!");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSaveModel = async () => {
-        try {
-            setSavingModel(true);
-
-            // Inserir novo modelo no Supabase
-            const { data, error } = await supabase.from("modelo").insert([newModel]).select();
-
-            if (error || !data) {
-                console.error(error);
-                toast.error("Erro ao cadastrar modelo!");
-                return;
-            }
-
-            toast.success("Modelo cadastrado com sucesso!");
-            setShowNewModelForm(false);
-            setNewModel({
-                nome: "",
-                marca: "",
-                combustivel: "gasolina",
-                tipo_cambio: "manual",
-                carroceria: "hatch",
-            });
-
-            fetchModelos(); // Atualiza lista de modelos
-        } finally {
-            setSavingModel(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-            <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-6 space-y-4">
-                <button
-                    onClick={() => useAuthStore.getState().logout()}
-                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="estado_venda">
+                  Estado de venda
+                </label>
+                <select
+                  id="estado_venda"
+                  name="estado_venda"
+                  required
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
                 >
-                    X Log out ( )
-                </button>
-                <h1 className="text-2xl font-bold mb-4">Registrar Novo Veículo</h1>
+                  {ESTADO_VENDA_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <Input
-                    label="Placa"
-                    value={form.placa}
-                    onChange={(v) => setForm({ ...form, placa: v.toUpperCase() })}
-                    required
-                />
-
-                {/* Select de Modelo */}
-                <div className="flex flex-col">
-                    <label className="text-gray-700 font-medium mb-1">Modelo</label>
-                    <div className="flex gap-2 items-center">
-                        <select
-                            value={form.modelo_id ?? ""}
-                            onChange={(e) =>
-                                setForm({ ...form, modelo_id: e.target.value || null })
-                            }
-                            className="border text-gray-700 rounded p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="">-- Selecione um modelo --</option>
-                            {modelos.map((m) => (
-                                <option key={m.id} value={m.id}>
-                                    {m.marca} - {m.nome}
-                                </option>
-                            ))}
-                        </select>
-
-                        <button
-                            onClick={() => setShowNewModelForm(!showNewModelForm)}
-                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
-                        >
-                            + Novo Modelo
-                        </button>
-                    </div>
-                </div>
-
-                {/* Formulário de novo modelo */}
-                {showNewModelForm && (
-                    <div className="bg-gray-50 p-4 rounded shadow space-y-2 mt-2">
-                        <Input
-                            label="Marca"
-                            value={newModel.marca ?? ""}
-                            onChange={(v) => setNewModel({ ...newModel, marca: v })}
-                        />
-                        <Input
-                            label="Nome"
-                            value={newModel.nome ?? ""}
-                            onChange={(v) => setNewModel({ ...newModel, nome: v })}
-                        />
-                        <Input
-                            label="Combustível"
-                            value={newModel.combustivel ?? ""}
-                            onChange={(v) => setNewModel({ ...newModel, combustivel: v })}
-                        />
-                        <Input
-                            label="Câmbio"
-                            value={newModel.tipo_cambio ?? ""}
-                            onChange={(v) => setNewModel({ ...newModel, tipo_cambio: v })}
-                        />
-                        <Input
-                            label="Carroceria"
-                            value={newModel.carroceria ?? ""}
-                            onChange={(v) => setNewModel({ ...newModel, carroceria: v })}
-                        />
-                        <button
-                            onClick={handleSaveModel}
-                            disabled={savingModel}
-                            className="w-full mt-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-                        >
-                            {savingModel ? "Salvando..." : "Salvar Modelo"}
-                        </button>
-                    </div>
-                )}
-
-                <div className="flex flex-col">
-                    <label className="text-gray-700 font-medium mb-1">Local</label>
-                    <select
-                        value={form.local ?? ""}
-                        onChange={(e) => setForm({ ...form, local: e.target.value })}
-                        className="border text-gray-700 rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                        <option value="">-- Selecione um local --</option>
-                        {locais.map((l) => (
-                            <option key={l.id} value={l.id}>
-                                {l.nome}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-
-                <Input
-                    label="Hodômetro"
-                    type="number"
-                    value={form.hodometro}
-                    onChange={(v) => setForm({ ...form, hodometro: Number(v) })}
-                />
-
-                <Input
-                    label="Cor"
-                    value={form.cor}
-                    onChange={(v) => setForm({ ...form, cor: v })}
-                />
-
-                <Input
-                    label="Preço de Venda"
-                    type="number"
-                    value={form.preco_venda ?? ""}
-                    onChange={(v) =>
-                        setForm({ ...form, preco_venda: v ? Number(v) : null })
-                    }
-                />
-
-                <Input
-                    label="Ano do Modelo"
-                    type="number"
-                    value={form.ano_modelo ?? ""}
-                    onChange={(v) =>
-                        setForm({ ...form, ano_modelo: v ? Number(v) : null })
-                    }
-                />
-
-                <Input
-                    label="Ano de Fabricação"
-                    type="number"
-                    value={form.ano_fabricacao ?? ""}
-                    onChange={(v) =>
-                        setForm({ ...form, ano_fabricacao: v ? Number(v) : null })
-                    }
-                />
-
-                <Textarea
-                    label="Observação"
-                    value={form.observacao ?? ""}
-                    onChange={(v) => setForm({ ...form, observacao: v || null })}
-                />
-
-                <button
-                    onClick={handleSaveVehicle}
-                    disabled={loading}
-                    className="mt-4 w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="estado_veiculo">
+                  Estado do veiculo
+                </label>
+                <select
+                  id="estado_veiculo"
+                  name="estado_veiculo"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
                 >
-                    {loading ? "Salvando..." : "Registrar Veículo"}
-                </button>
+                  <option value="">Selecionar</option>
+                  {ESTADO_VEICULO_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="hodometro">
+                  Hodometro (km)
+                </label>
+                <input
+                  id="hodometro"
+                  name="hodometro"
+                  type="number"
+                  min={0}
+                  required
+                  placeholder="0"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="preco_venal">
+                  Preco venal
+                </label>
+                <input
+                  id="preco_venal"
+                  name="preco_venal"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0,00"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="local_id">
+                  Local
+                </label>
+                <select
+                  id="local_id"
+                  name="local_id"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  <option value="">Selecionar</option>
+                  {locais?.map((local) => (
+                    <option key={local.id} value={local.id}>
+                      {local.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="modelo_id">
+                  Modelo
+                </label>
+                <select
+                  id="modelo_id"
+                  name="modelo_id"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  <option value="">Selecionar</option>
+                  {modelos?.map((modelo) => (
+                    <option key={modelo.id} value={modelo.id}>
+                      {(modelo.marca ?? "Marca") + " " + modelo.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-        </div>
-    );
-};
 
-export default RegisterVehicle;
+            <div>
+              <label className="mb-1 block text-sm font-medium text-muted-foreground" htmlFor="observacao">
+                Observacao
+              </label>
+              <textarea
+                id="observacao"
+                name="observacao"
+                rows={4}
+                placeholder="Informacoes adicionais"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
 
-/* ===== COMPONENTES AUXILIARES ===== */
-const Input = ({
-    label,
-    value,
-    onChange,
-    type = "text",
-    required = false,
-}: {
-    label: string;
-    value: string | number;
-    onChange: (v: string) => void;
-    type?: string;
-    required?: boolean;
-}) => (
-    <div className="flex flex-col">
-        <label className="text-gray-700 font-medium mb-1">{label}</label>
-        <input
-            type={type}
-            value={value}
-            required={required}
-            onChange={(e) => onChange(e.target.value)}
-            className="border text-gray-700 rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createVehicle.isPending}>
+                {createVehicle.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Salvando
+                  </span>
+                ) : (
+                  "Cadastrar"
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
-);
-
-const Textarea = ({
-    label,
-    value,
-    onChange,
-}: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-}) => (
-    <div className="flex flex-col">
-        <label className="text-gray-700 font-medium mb-1">{label}</label>
-        <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="border text-gray-700 rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            rows={4}
-        />
-    </div>
-);
+  )
+}

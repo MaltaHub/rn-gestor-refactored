@@ -1,74 +1,73 @@
-import { Tabelas } from "../../types";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"
 
-type VeiculoRead = Tabelas.VeiculoRead;
+import { Tabelas } from "@/types"
 
-export function VehicleCard({ vehicle }: { vehicle: VeiculoRead }) {
-  const navigate = useNavigate();
+type VeiculoRead = Tabelas.VeiculoRead
+
+type Caracteristica = NonNullable<VeiculoRead["caracteristicas"]>[number]
+
+type Props = {
+  vehicle: VeiculoRead
+}
+
+export function VehicleCard({ vehicle }: Props) {
+  const navigate = useNavigate()
+
+  const caracteristicas = vehicle.caracteristicas ?? []
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1 hover:scale-105 duration-300">
-      <div className="p-5 space-y-3">
-        {/* Header */}
-        <h3 className="font-bold text-xl text-indigo-600 truncate">
-          {vehicle.modelo?.nome ?? "Modelo não informado"}
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg transition duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-2xl">
+      <div className="space-y-3 p-5">
+        <h3 className="truncate text-xl font-bold text-indigo-600">
+          {vehicle.modelo?.nome ?? "Modelo nao informado"}
         </h3>
 
         <div className="flex flex-wrap gap-2 text-gray-700">
-          <span>Ano: {vehicle.ano_modelo ?? "—"}</span>
+          <span>Ano: {vehicle.ano_modelo ?? "---"}</span>
           <span>KM: {vehicle.hodometro.toLocaleString()}</span>
-          <span>Local: {vehicle.local?.nome ?? "Não informado"}</span>
+          <span>Local: {vehicle.local?.nome ?? "Nao informado"}</span>
         </div>
 
         <p className="text-gray-700">
-          Estado de Venda:{" "}
-          <span className="font-medium">{vehicle.estado_venda}</span>
+          Estado de venda: <span className="font-medium">{vehicle.estado_venda}</span>
         </p>
 
         {vehicle.estado_veiculo && (
           <p className="text-gray-700">
-            Estado Veículo: <span className="font-medium">{vehicle.estado_veiculo}</span>
+            Estado veiculo: <span className="font-medium">{vehicle.estado_veiculo}</span>
           </p>
         )}
 
         <p className="text-gray-700">
-          Preço:{" "}
-          <span className="font-semibold text-green-600">
-            {vehicle.preco_venda
-              ? `R$ ${vehicle.preco_venda.toLocaleString()}`
-              : "Não informado"}
+          Preco:
+          <span className="ml-1 font-semibold text-green-600">
+            {vehicle.preco_venal ? `R$ ${vehicle.preco_venal.toLocaleString()}` : "Nao informado"}
           </span>
         </p>
 
-        {/* Características */}
-        {vehicle.caracteristicas?.length ? (
+        {caracteristicas.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {vehicle.caracteristicas.map((c) => (
-              <span
-                key={c.id}
-                className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full"
-              >
-                {c.nome}
+            {caracteristicas.map((caracteristica: Caracteristica) => (
+              <span key={caracteristica.id} className="rounded-full bg-indigo-100 px-2 py-1 text-xs text-indigo-800">
+                {caracteristica.nome}
               </span>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400 italic">Sem características</p>
+          <p className="text-sm italic text-gray-400">Sem caracteristicas</p>
         )}
 
-        {/* Observação */}
         {vehicle.observacao && (
-          <p className="text-sm text-gray-500 italic">Obs: {vehicle.observacao}</p>
+          <p className="text-sm italic text-gray-500">Obs: {vehicle.observacao}</p>
         )}
 
-        {/* Botão Editar */}
         <button
           onClick={() => navigate(`/editar/${vehicle.id}`)}
-          className="mt-3 w-full text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg py-2 font-medium transition"
+          className="mt-3 w-full rounded-lg bg-indigo-600 py-2 font-medium text-white transition hover:bg-indigo-700"
         >
           Editar
         </button>
       </div>
     </div>
-  );
+  )
 }
