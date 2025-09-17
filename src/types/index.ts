@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿import type { Database } from "./supabase";
 
 export type { Database };
@@ -31,3 +32,14 @@ export type AuthState = {
   refreshEmpresa: () => Promise<void>;
   logout: () => Promise<void>;
 };
+=======
+import * as supabase_tables from './supabase_tables';
+import * as supabase_auth from './supabase_auth';
+import * as utils from './utils';
+
+export { 
+    supabase_tables as Tabelas, 
+    supabase_auth as Auth,
+    utils as Utils
+};
+>>>>>>> 4a9cd9a764550d3359743d5484686b69da2b76a3

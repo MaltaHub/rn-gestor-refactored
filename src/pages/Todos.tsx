@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿import { useEffect, useMemo, type ReactNode } from "react";
+=======
+import React, { useEffect } from "react";
+>>>>>>> 4a9cd9a764550d3359743d5484686b69da2b76a3
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 
@@ -61,25 +65,56 @@ async function fetchDocumentacao(empresaId: string): Promise<DocumentacaoItem[]>
   }));
 }
 
-export default function Todos() {
+export default function Todos( props : {table_name : string}): React.JSX.Element {
   const queryClient = useQueryClient();
+<<<<<<< HEAD
   const empresaId = useAuthStore((state) => state.empresaId);
   const version = useVersionStore((state) => state.versions.todos);
   const updateVersion = useVersionStore((state) => state.updateVersion);
+=======
+  const versions = useVersionStore((s) => s.versions);
+  const v = versions[props.table_name] ?? "0";
+>>>>>>> 4a9cd9a764550d3359743d5484686b69da2b76a3
 
   useEffect(() => {
     queryClient.invalidateQueries({
+<<<<<<< HEAD
       predicate: (query) => query.queryKey[0] === "documentacao" && query.queryKey[1] !== version,
     });
     queryClient.removeQueries({
       predicate: (query) => query.queryKey[0] === "documentacao" && query.queryKey[1] !== version,
+=======
+      predicate: (query) =>
+        query.queryKey[0] === props.table_name && query.queryKey[1] !== v,
     });
-  }, [version, queryClient]);
+    queryClient.removeQueries({
+      predicate: (query) =>
+        query.queryKey[0] === props.table_name && query.queryKey[1] !== v,
+>>>>>>> 4a9cd9a764550d3359743d5484686b69da2b76a3
+    });
+  }, [v, queryClient]);
 
+<<<<<<< HEAD
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["documentacao", version, empresaId],
     queryFn: () => fetchDocumentacao(empresaId!),
     enabled: Boolean(empresaId),
+=======
+  const { data, isLoading, isFetching } = useQuery<Todo[]>({
+    queryKey: [props.table_name, v],
+    queryFn: async () => {
+      console.log("Query atual:", queryClient.getQueryData([props.table_name, v]));
+      const { data, error } = await supabase.from("veiculos").select("*");
+      if (error) {
+        throw new Error("No data found");
+      }
+
+      //console.log("Fetched todos from Supabase",data);
+      console.log("Queries Ativas:", queryClient.getQueryCache().getAll());
+
+      return data as Todo[];
+    },
+>>>>>>> 4a9cd9a764550d3359743d5484686b69da2b76a3
   });
 
   const resumo = useMemo(() => {
@@ -99,6 +134,7 @@ export default function Todos() {
   }, [data]);
 
   return (
+<<<<<<< HEAD
     <div className="space-y-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -201,6 +237,23 @@ export default function Todos() {
           )}
         </CardContent>
       </Card>
+=======
+    <div>
+      <h2>Todos (Versão: {v})</h2>
+      <button onClick={() => {console.log("Atualizando versão de todos")}}>
+        Atualizar versão de "todos"
+      </button>
+      <p>{isFetching ? "Buscando..." : "Dados renderizados"}</p>
+      {isLoading ? (
+        <div>Carregando...</div>
+      ) : (
+        <ul>
+          {data?.map((todo) => (
+            <li key={todo.id}>{todo.title}</li>
+          ))}
+        </ul>
+      )}
+>>>>>>> 4a9cd9a764550d3359743d5484686b69da2b76a3
     </div>
   );
 }
