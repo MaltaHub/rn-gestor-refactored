@@ -1,0 +1,282 @@
+| table_name                | constraint_name                                                 | constraint_type | column_name       | foreign_table             | foreign_column    |
+| ------------------------- | --------------------------------------------------------------- | --------------- | ----------------- | ------------------------- | ----------------- |
+| anuncios                  | 2200_22325_8_not_null                                           | CHECK           | null              | null                      | null              |
+| anuncios                  | anuncios_tipo_anuncio_check                                     | CHECK           | null              | anuncios                  | tipo_anuncio      |
+| anuncios                  | anuncios_preco_check                                            | CHECK           | null              | anuncios                  | preco             |
+| anuncios                  | 2200_22325_1_not_null                                           | CHECK           | null              | null                      | null              |
+| anuncios                  | 2200_22325_2_not_null                                           | CHECK           | null              | null                      | null              |
+| anuncios                  | 2200_22325_4_not_null                                           | CHECK           | null              | null                      | null              |
+| anuncios                  | 2200_22325_5_not_null                                           | CHECK           | null              | null                      | null              |
+| anuncios                  | 2200_22325_6_not_null                                           | CHECK           | null              | null                      | null              |
+| anuncios                  | anuncios_plataforma_id_fkey                                     | FOREIGN KEY     | plataforma_id     | plataformas               | id                |
+| anuncios                  | anuncios_loja_id_fkey                                           | FOREIGN KEY     | loja_id           | lojas                     | id                |
+| anuncios                  | anuncios_empresa_id_fkey                                        | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| anuncios                  | anuncios_pkey                                                   | PRIMARY KEY     | id                | anuncios                  | id                |
+| anuncios                  | anuncios_loja_id_plataforma_id_key                              | UNIQUE          | loja_id           | anuncios                  | loja_id           |
+| anuncios                  | anuncios_loja_id_plataforma_id_key                              | UNIQUE          | plataforma_id     | anuncios                  | plataforma_id     |
+| anuncios                  | anuncios_loja_id_plataforma_id_key                              | UNIQUE          | plataforma_id     | anuncios                  | loja_id           |
+| anuncios                  | anuncios_loja_id_plataforma_id_key                              | UNIQUE          | loja_id           | anuncios                  | plataforma_id     |
+| caracteristicas           | 2200_22099_1_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas           | 2200_22099_2_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas           | 2200_22099_3_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas           | caracteristicas_empresa_id_fkey                                 | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| caracteristicas           | caracteristicas_pkey                                            | PRIMARY KEY     | id                | caracteristicas           | id                |
+| caracteristicas           | caracteristicas_empresa_id_nome_key                             | UNIQUE          | nome              | caracteristicas           | empresa_id        |
+| caracteristicas           | caracteristicas_empresa_id_nome_key                             | UNIQUE          | empresa_id        | caracteristicas           | empresa_id        |
+| caracteristicas           | caracteristicas_empresa_id_nome_key                             | UNIQUE          | empresa_id        | caracteristicas           | nome              |
+| caracteristicas           | caracteristicas_empresa_id_nome_key                             | UNIQUE          | nome              | caracteristicas           | nome              |
+| caracteristicas_repetidos | 2200_22411_3_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_repetidos | 2200_22411_4_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_repetidos | 2200_22411_2_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_repetidos | 2200_22411_1_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_fkey                       | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| caracteristicas_repetidos | caracteristicas_repetidos_caracteristica_id_fkey                | FOREIGN KEY     | caracteristica_id | caracteristicas           | id                |
+| caracteristicas_repetidos | caracteristicas_repetidos_repetido_id_fkey                      | FOREIGN KEY     | repetido_id       | repetidos                 | id                |
+| caracteristicas_repetidos | caracteristicas_repetidos_pkey                                  | PRIMARY KEY     | id                | caracteristicas_repetidos | id                |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | caracteristica_id | caracteristicas_repetidos | caracteristica_id |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | repetido_id       | caracteristicas_repetidos | repetido_id       |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | empresa_id        | caracteristicas_repetidos | empresa_id        |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | caracteristica_id | caracteristicas_repetidos | repetido_id       |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | caracteristica_id | caracteristicas_repetidos | empresa_id        |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | repetido_id       | caracteristicas_repetidos | caracteristica_id |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | repetido_id       | caracteristicas_repetidos | empresa_id        |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | empresa_id        | caracteristicas_repetidos | caracteristica_id |
+| caracteristicas_repetidos | caracteristicas_repetidos_empresa_id_repetido_id_caracteris_key | UNIQUE          | empresa_id        | caracteristicas_repetidos | repetido_id       |
+| caracteristicas_veiculos  | 2200_22388_3_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_veiculos  | 2200_22388_2_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_veiculos  | 2200_22388_1_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_veiculos  | 2200_22388_4_not_null                                           | CHECK           | null              | null                      | null              |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_fkey                        | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| caracteristicas_veiculos  | caracteristicas_veiculos_caracteristica_id_fkey                 | FOREIGN KEY     | caracteristica_id | caracteristicas           | id                |
+| caracteristicas_veiculos  | caracteristicas_veiculos_veiculo_id_fkey                        | FOREIGN KEY     | veiculo_id        | veiculos                  | id                |
+| caracteristicas_veiculos  | caracteristicas_veiculos_pkey                                   | PRIMARY KEY     | id                | caracteristicas_veiculos  | id                |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | caracteristica_id | caracteristicas_veiculos  | empresa_id        |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | veiculo_id        | caracteristicas_veiculos  | veiculo_id        |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | veiculo_id        | caracteristicas_veiculos  | empresa_id        |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | veiculo_id        | caracteristicas_veiculos  | caracteristica_id |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | empresa_id        | caracteristicas_veiculos  | veiculo_id        |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | empresa_id        | caracteristicas_veiculos  | empresa_id        |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | empresa_id        | caracteristicas_veiculos  | caracteristica_id |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | caracteristica_id | caracteristicas_veiculos  | veiculo_id        |
+| caracteristicas_veiculos  | caracteristicas_veiculos_empresa_id_veiculo_id_caracteristi_key | UNIQUE          | caracteristica_id | caracteristicas_veiculos  | caracteristica_id |
+| convites_empresa          | convites_empresa_status_check                                   | CHECK           | null              | convites_empresa          | status            |
+| convites_empresa          | 2200_22080_8_not_null                                           | CHECK           | null              | null                      | null              |
+| convites_empresa          | 2200_22080_5_not_null                                           | CHECK           | null              | null                      | null              |
+| convites_empresa          | 2200_22080_4_not_null                                           | CHECK           | null              | null                      | null              |
+| convites_empresa          | 2200_22080_3_not_null                                           | CHECK           | null              | null                      | null              |
+| convites_empresa          | 2200_22080_2_not_null                                           | CHECK           | null              | null                      | null              |
+| convites_empresa          | 2200_22080_1_not_null                                           | CHECK           | null              | null                      | null              |
+| convites_empresa          | convites_empresa_empresa_id_fkey                                | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| convites_empresa          | convites_empresa_pkey                                           | PRIMARY KEY     | id                | convites_empresa          | id                |
+| convites_empresa          | convites_empresa_token_key                                      | UNIQUE          | token             | convites_empresa          | token             |
+| documentacao_veiculos     | 2200_22518_3_not_null                                           | CHECK           | null              | null                      | null              |
+| documentacao_veiculos     | 2200_22518_5_not_null                                           | CHECK           | null              | null                      | null              |
+| documentacao_veiculos     | 2200_22518_1_not_null                                           | CHECK           | null              | null                      | null              |
+| documentacao_veiculos     | 2200_22518_2_not_null                                           | CHECK           | null              | null                      | null              |
+| documentacao_veiculos     | documentacao_veiculos_empresa_id_fkey                           | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| documentacao_veiculos     | documentacao_veiculos_veiculo_id_fkey                           | FOREIGN KEY     | veiculo_id        | veiculos                  | id                |
+| documentacao_veiculos     | documentacao_veiculos_loja_id_fkey                              | FOREIGN KEY     | loja_id           | lojas                     | id                |
+| documentacao_veiculos     | documentacao_veiculos_pkey                                      | PRIMARY KEY     | id                | documentacao_veiculos     | id                |
+| documentacao_veiculos     | documentacao_veiculos_empresa_id_veiculo_id_key                 | UNIQUE          | empresa_id        | documentacao_veiculos     | empresa_id        |
+| documentacao_veiculos     | documentacao_veiculos_empresa_id_veiculo_id_key                 | UNIQUE          | veiculo_id        | documentacao_veiculos     | veiculo_id        |
+| documentacao_veiculos     | documentacao_veiculos_empresa_id_veiculo_id_key                 | UNIQUE          | veiculo_id        | documentacao_veiculos     | empresa_id        |
+| documentacao_veiculos     | documentacao_veiculos_empresa_id_veiculo_id_key                 | UNIQUE          | empresa_id        | documentacao_veiculos     | veiculo_id        |
+| empresas                  | 2200_22051_1_not_null                                           | CHECK           | null              | null                      | null              |
+| empresas                  | 2200_22051_2_not_null                                           | CHECK           | null              | null                      | null              |
+| empresas                  | empresas_pkey                                                   | PRIMARY KEY     | id                | empresas                  | id                |
+| empresas                  | empresas_dominio_key                                            | UNIQUE          | dominio           | empresas                  | dominio           |
+| fotos_veiculos            | 2200_22563_5_not_null                                           | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_12_not_null                                          | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_2_not_null                                           | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_3_not_null                                           | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_4_not_null                                           | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_11_not_null                                          | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_10_not_null                                          | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_8_not_null                                           | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | 2200_22563_1_not_null                                           | CHECK           | null              | null                      | null              |
+| fotos_veiculos            | fotos_veiculo_por_loja_loja_id_fkey                             | FOREIGN KEY     | loja_id           | lojas                     | id                |
+| fotos_veiculos            | fotos_veiculo_por_loja_veiculo_id_fkey                          | FOREIGN KEY     | veiculo_id        | veiculos                  | id                |
+| fotos_veiculos            | fotos_veiculo_por_loja_empresa_id_fkey                          | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| fotos_veiculos            | fotos_veiculo_por_loja_pkey                                     | PRIMARY KEY     | id                | fotos_veiculos            | id                |
+| locais                    | 2200_22114_3_not_null                                           | CHECK           | null              | null                      | null              |
+| locais                    | 2200_22114_1_not_null                                           | CHECK           | null              | null                      | null              |
+| locais                    | 2200_22114_2_not_null                                           | CHECK           | null              | null                      | null              |
+| locais                    | locais_empresa_id_fkey                                          | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| locais                    | locais_pkey                                                     | PRIMARY KEY     | id                | locais                    | id                |
+| locais                    | locais_empresa_id_nome_key                                      | UNIQUE          | nome              | locais                    | nome              |
+| locais                    | locais_empresa_id_nome_key                                      | UNIQUE          | nome              | locais                    | empresa_id        |
+| locais                    | locais_empresa_id_nome_key                                      | UNIQUE          | empresa_id        | locais                    | nome              |
+| locais                    | locais_empresa_id_nome_key                                      | UNIQUE          | empresa_id        | locais                    | empresa_id        |
+| lojas                     | 2200_22129_3_not_null                                           | CHECK           | null              | null                      | null              |
+| lojas                     | 2200_22129_1_not_null                                           | CHECK           | null              | null                      | null              |
+| lojas                     | 2200_22129_2_not_null                                           | CHECK           | null              | null                      | null              |
+| lojas                     | lojas_empresa_id_fkey                                           | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| lojas                     | lojas_pkey                                                      | PRIMARY KEY     | id                | lojas                     | id                |
+| lojas                     | lojas_empresa_id_nome_key                                       | UNIQUE          | nome              | lojas                     | nome              |
+| lojas                     | lojas_empresa_id_nome_key                                       | UNIQUE          | nome              | lojas                     | empresa_id        |
+| lojas                     | lojas_empresa_id_nome_key                                       | UNIQUE          | empresa_id        | lojas                     | empresa_id        |
+| lojas                     | lojas_empresa_id_nome_key                                       | UNIQUE          | empresa_id        | lojas                     | nome              |
+| membros_empresa           | 2200_22064_3_not_null                                           | CHECK           | null              | null                      | null              |
+| membros_empresa           | 2200_22064_1_not_null                                           | CHECK           | null              | null                      | null              |
+| membros_empresa           | 2200_22064_2_not_null                                           | CHECK           | null              | null                      | null              |
+| membros_empresa           | membros_empresa_empresa_id_fkey                                 | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| membros_empresa           | membros_empresa_pkey                                            | PRIMARY KEY     | id                | membros_empresa           | id                |
+| membros_empresa           | membros_empresa_empresa_id_usuario_id_key                       | UNIQUE          | empresa_id        | membros_empresa           | empresa_id        |
+| membros_empresa           | membros_empresa_empresa_id_usuario_id_key                       | UNIQUE          | usuario_id        | membros_empresa           | usuario_id        |
+| membros_empresa           | membros_empresa_empresa_id_usuario_id_key                       | UNIQUE          | usuario_id        | membros_empresa           | empresa_id        |
+| membros_empresa           | membros_empresa_empresa_id_usuario_id_key                       | UNIQUE          | empresa_id        | membros_empresa           | usuario_id        |
+| modelos                   | modelos_valvulas_check                                          | CHECK           | null              | modelos                   | valvulas          |
+| modelos                   | modelos_lugares_check                                           | CHECK           | null              | modelos                   | lugares           |
+| modelos                   | modelos_check                                                   | CHECK           | null              | modelos                   | ano_final         |
+| modelos                   | modelos_ano_inicial_check                                       | CHECK           | null              | modelos                   | ano_inicial       |
+| modelos                   | modelos_ano_final_check                                         | CHECK           | null              | modelos                   | ano_final         |
+| modelos                   | 2200_22159_1_not_null                                           | CHECK           | null              | null                      | null              |
+| modelos                   | modelos_portas_check                                            | CHECK           | null              | modelos                   | portas            |
+| modelos                   | 2200_22159_4_not_null                                           | CHECK           | null              | null                      | null              |
+| modelos                   | 2200_22159_2_not_null                                           | CHECK           | null              | null                      | null              |
+| modelos                   | 2200_22159_3_not_null                                           | CHECK           | null              | null                      | null              |
+| modelos                   | modelos_cilindros_check                                         | CHECK           | null              | modelos                   | cilindros         |
+| modelos                   | modelos_check                                                   | CHECK           | null              | modelos                   | ano_inicial       |
+| modelos                   | modelos_empresa_id_fkey                                         | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| modelos                   | modelos_pkey                                                    | PRIMARY KEY     | id                | modelos                   | id                |
+| permissoes_papel          | 2200_25523_4_not_null                                           | CHECK           | null              | null                      | null              |
+| permissoes_papel          | 2200_25523_3_not_null                                           | CHECK           | null              | null                      | null              |
+| permissoes_papel          | 2200_25523_2_not_null                                           | CHECK           | null              | null                      | null              |
+| permissoes_papel          | 2200_25523_1_not_null                                           | CHECK           | null              | null                      | null              |
+| permissoes_papel          | 2200_25523_5_not_null                                           | CHECK           | null              | null                      | null              |
+| permissoes_papel          | permissoes_empresa_empresa_id_fkey                              | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| permissoes_papel          | permissoes_empresa_pkey                                         | PRIMARY KEY     | id                | permissoes_papel          | id                |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | empresa_id        | permissoes_papel          | operacao          |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | empresa_id        | permissoes_papel          | empresa_id        |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | empresa_id        | permissoes_papel          | papel             |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | papel             | permissoes_papel          | operacao          |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | papel             | permissoes_papel          | empresa_id        |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | papel             | permissoes_papel          | papel             |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | operacao          | permissoes_papel          | operacao          |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | operacao          | permissoes_papel          | papel             |
+| permissoes_papel          | permissoes_empresa_empresa_id_papel_operacao_key                | UNIQUE          | operacao          | permissoes_papel          | empresa_id        |
+| plataformas               | 2200_22144_2_not_null                                           | CHECK           | null              | null                      | null              |
+| plataformas               | 2200_22144_3_not_null                                           | CHECK           | null              | null                      | null              |
+| plataformas               | 2200_22144_1_not_null                                           | CHECK           | null              | null                      | null              |
+| plataformas               | plataformas_empresa_id_fkey                                     | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| plataformas               | plataformas_pkey                                                | PRIMARY KEY     | id                | plataformas               | id                |
+| plataformas               | plataformas_empresa_id_nome_key                                 | UNIQUE          | empresa_id        | plataformas               | empresa_id        |
+| plataformas               | plataformas_empresa_id_nome_key                                 | UNIQUE          | empresa_id        | plataformas               | nome              |
+| plataformas               | plataformas_empresa_id_nome_key                                 | UNIQUE          | nome              | plataformas               | empresa_id        |
+| plataformas               | plataformas_empresa_id_nome_key                                 | UNIQUE          | nome              | plataformas               | nome              |
+| promocoes                 | 2200_22358_1_not_null                                           | CHECK           | null              | null                      | null              |
+| promocoes                 | promocoes_check1                                                | CHECK           | null              | promocoes                 | veiculo_loja_id   |
+| promocoes                 | promocoes_check1                                                | CHECK           | null              | promocoes                 | tipo_promocao     |
+| promocoes                 | promocoes_check1                                                | CHECK           | null              | promocoes                 | anuncio_id        |
+| promocoes                 | promocoes_check                                                 | CHECK           | null              | promocoes                 | data_inicio       |
+| promocoes                 | promocoes_tipo_promocao_check                                   | CHECK           | null              | promocoes                 | tipo_promocao     |
+| promocoes                 | promocoes_preco_promocional_check                               | CHECK           | null              | promocoes                 | preco_promocional |
+| promocoes                 | promocoes_check                                                 | CHECK           | null              | promocoes                 | data_fim          |
+| promocoes                 | 2200_22358_9_not_null                                           | CHECK           | null              | null                      | null              |
+| promocoes                 | 2200_22358_7_not_null                                           | CHECK           | null              | null                      | null              |
+| promocoes                 | 2200_22358_6_not_null                                           | CHECK           | null              | null                      | null              |
+| promocoes                 | 2200_22358_5_not_null                                           | CHECK           | null              | null                      | null              |
+| promocoes                 | 2200_22358_2_not_null                                           | CHECK           | null              | null                      | null              |
+| promocoes                 | promocoes_anuncio_id_fkey                                       | FOREIGN KEY     | anuncio_id        | anuncios                  | id                |
+| promocoes                 | promocoes_veiculo_loja_id_fkey                                  | FOREIGN KEY     | veiculo_loja_id   | veiculos_loja             | id                |
+| promocoes                 | promocoes_empresa_id_fkey                                       | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| promocoes                 | promocoes_pkey                                                  | PRIMARY KEY     | id                | promocoes                 | id                |
+| repetidos                 | 2200_22181_5_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | 2200_22181_4_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | 2200_22181_8_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | 2200_22181_7_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | 2200_22181_6_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | 2200_22181_1_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | 2200_22181_2_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | 2200_22181_3_not_null                                           | CHECK           | null              | null                      | null              |
+| repetidos                 | repetidos_empresa_id_fkey                                       | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| repetidos                 | repetidos_modelo_id_fkey                                        | FOREIGN KEY     | modelo_id         | modelos                   | id                |
+| repetidos                 | repetidos_pkey                                                  | PRIMARY KEY     | id                | repetidos                 | id                |
+| tem_fotos                 | 2200_29262_1_not_null                                           | CHECK           | null              | null                      | null              |
+| tem_fotos                 | 2200_29262_3_not_null                                           | CHECK           | null              | null                      | null              |
+| tem_fotos                 | 2200_29262_4_not_null                                           | CHECK           | null              | null                      | null              |
+| tem_fotos                 | 2200_29262_5_not_null                                           | CHECK           | null              | null                      | null              |
+| tem_fotos                 | tem_fotos_qtd_fotos_check                                       | CHECK           | null              | tem_fotos                 | qtd_fotos         |
+| tem_fotos                 | 2200_29262_2_not_null                                           | CHECK           | null              | null                      | null              |
+| tem_fotos                 | tem_fotos_veiculo_id_fkey                                       | FOREIGN KEY     | veiculo_id        | veiculos                  | id                |
+| tem_fotos                 | tem_fotos_empresa_id_fkey                                       | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| tem_fotos                 | tem_fotos_loja_id_fkey                                          | FOREIGN KEY     | loja_id           | lojas                     | id                |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | veiculo_id        | tem_fotos                 | loja_id           |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | empresa_id        | tem_fotos                 | empresa_id        |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | loja_id           | tem_fotos                 | loja_id           |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | loja_id           | tem_fotos                 | empresa_id        |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | veiculo_id        | tem_fotos                 | veiculo_id        |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | loja_id           | tem_fotos                 | veiculo_id        |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | empresa_id        | tem_fotos                 | loja_id           |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | empresa_id        | tem_fotos                 | veiculo_id        |
+| tem_fotos                 | tem_fotos_pkey                                                  | PRIMARY KEY     | veiculo_id        | tem_fotos                 | empresa_id        |
+| veiculos                  | 2200_22201_18_not_null                                          | CHECK           | null              | null                      | null              |
+| veiculos                  | 2200_22201_19_not_null                                          | CHECK           | null              | null                      | null              |
+| veiculos                  | veiculos_ano_fabricacao_check                                   | CHECK           | null              | veiculos                  | ano_fabricacao    |
+| veiculos                  | veiculos_ano_modelo_check                                       | CHECK           | null              | veiculos                  | ano_modelo        |
+| veiculos                  | veiculos_hodometro_check                                        | CHECK           | null              | veiculos                  | hodometro         |
+| veiculos                  | 2200_22201_1_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos                  | veiculos_check                                                  | CHECK           | null              | veiculos                  | ano_fabricacao    |
+| veiculos                  | veiculos_check                                                  | CHECK           | null              | veiculos                  | ano_modelo        |
+| veiculos                  | veiculos_preco_venal_check                                      | CHECK           | null              | veiculos                  | preco_venal       |
+| veiculos                  | 2200_22201_2_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos                  | 2200_22201_5_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos                  | 2200_22201_6_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos                  | 2200_22201_7_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos                  | 2200_22201_12_not_null                                          | CHECK           | null              | null                      | null              |
+| veiculos                  | 2200_22201_16_not_null                                          | CHECK           | null              | null                      | null              |
+| veiculos                  | 2200_22201_17_not_null                                          | CHECK           | null              | null                      | null              |
+| veiculos                  | veiculos_modelo_id_fkey                                         | FOREIGN KEY     | modelo_id         | modelos                   | id                |
+| veiculos                  | veiculos_local_id_fkey                                          | FOREIGN KEY     | local_id          | locais                    | id                |
+| veiculos                  | veiculos_empresa_id_fkey                                        | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| veiculos                  | veiculos_pkey                                                   | PRIMARY KEY     | id                | veiculos                  | id                |
+| veiculos                  | veiculos_chassi_key                                             | UNIQUE          | chassi            | veiculos                  | chassi            |
+| veiculos                  | veiculos_placa_key                                              | UNIQUE          | placa             | veiculos                  | placa             |
+| veiculos_loja             | 2200_22258_4_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_loja             | 2200_22258_3_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_loja             | 2200_22258_2_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_loja             | 2200_22258_1_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_loja             | 2200_22258_8_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_loja             | veiculos_loja_empresa_id_fkey                                   | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| veiculos_loja             | veiculos_loja_loja_id_fkey                                      | FOREIGN KEY     | loja_id           | lojas                     | id                |
+| veiculos_loja             | veiculos_loja_veiculo_id_fkey                                   | FOREIGN KEY     | veiculo_id        | veiculos                  | id                |
+| veiculos_loja             | veiculos_loja_pkey                                              | PRIMARY KEY     | id                | veiculos_loja             | id                |
+| veiculos_repetidos        | 2200_22234_2_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_repetidos        | 2200_22234_4_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_repetidos        | 2200_22234_1_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_repetidos        | 2200_22234_3_not_null                                           | CHECK           | null              | null                      | null              |
+| veiculos_repetidos        | veiculos_repetidos_empresa_id_fkey                              | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| veiculos_repetidos        | veiculos_repetidos_veiculo_id_fkey                              | FOREIGN KEY     | veiculo_id        | veiculos                  | id                |
+| veiculos_repetidos        | veiculos_repetidos_repetido_id_fkey                             | FOREIGN KEY     | repetido_id       | repetidos                 | id                |
+| veiculos_repetidos        | veiculos_repetidos_pkey                                         | PRIMARY KEY     | id                | veiculos_repetidos        | id                |
+| veiculos_repetidos        | veiculos_repetidos_repetido_id_veiculo_id_key                   | UNIQUE          | veiculo_id        | veiculos_repetidos        | repetido_id       |
+| veiculos_repetidos        | veiculos_repetidos_repetido_id_veiculo_id_key                   | UNIQUE          | repetido_id       | veiculos_repetidos        | veiculo_id        |
+| veiculos_repetidos        | veiculos_repetidos_repetido_id_veiculo_id_key                   | UNIQUE          | repetido_id       | veiculos_repetidos        | repetido_id       |
+| veiculos_repetidos        | veiculos_repetidos_repetido_id_veiculo_id_key                   | UNIQUE          | veiculo_id        | veiculos_repetidos        | veiculo_id        |
+| vendas                    | vendas_check                                                    | CHECK           | null              | vendas                    | preco_entrada     |
+| vendas                    | vendas_valor_seguro_check                                       | CHECK           | null              | vendas                    | valor_seguro      |
+| vendas                    | vendas_valor_parcela_check                                      | CHECK           | null              | vendas                    | valor_parcela     |
+| vendas                    | vendas_valor_financiado_check                                   | CHECK           | null              | vendas                    | valor_financiado  |
+| vendas                    | vendas_preco_venda_check                                        | CHECK           | null              | vendas                    | preco_venda       |
+| vendas                    | 2200_22479_1_not_null                                           | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_2_not_null                                           | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_3_not_null                                           | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_4_not_null                                           | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_5_not_null                                           | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_6_not_null                                           | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_10_not_null                                          | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_11_not_null                                          | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_14_not_null                                          | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_21_not_null                                          | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_24_not_null                                          | CHECK           | null              | null                      | null              |
+| vendas                    | 2200_22479_30_not_null                                          | CHECK           | null              | null                      | null              |
+| vendas                    | vendas_preco_entrada_check                                      | CHECK           | null              | vendas                    | preco_entrada     |
+| vendas                    | vendas_comissao_vendedor_check                                  | CHECK           | null              | vendas                    | comissao_vendedor |
+| vendas                    | vendas_comissao_loja_check                                      | CHECK           | null              | vendas                    | comissao_loja     |
+| vendas                    | vendas_check                                                    | CHECK           | null              | vendas                    | valor_financiado  |
+| vendas                    | vendas_check                                                    | CHECK           | null              | vendas                    | preco_venda       |
+| vendas                    | vendas_numero_parcelas_check                                    | CHECK           | null              | vendas                    | numero_parcelas   |
+| vendas                    | vendas_veiculo_id_fkey                                          | FOREIGN KEY     | veiculo_id        | veiculos                  | id                |
+| vendas                    | vendas_loja_id_fkey                                             | FOREIGN KEY     | loja_id           | lojas                     | id                |
+| vendas                    | vendas_empresa_id_fkey                                          | FOREIGN KEY     | empresa_id        | empresas                  | id                |
+| vendas                    | vendas_pkey                                                     | PRIMARY KEY     | id                | vendas                    | id                |

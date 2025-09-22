@@ -62,11 +62,11 @@ export const coreModules: ModuleDescriptor[] = [
   },
   {
     slug: "configuracoes",
-    name: "Preferências da operação",
-    summary: "Personalize identidade, horários e automações para o seu contexto.",
+    name: "Cadastros operacionais",
+    summary: "Gerencie lojas, características, plataformas, locais e modelos em um só lugar.",
     href: "/app/configuracoes",
     icon: Settings,
-    highlight: "Orquestre a operação com ajustes cirúrgicos."
+    highlight: "Centralize dados mestres para acelerar integrações."
   }
 ];
 

@@ -4,14 +4,24 @@ import { FormEvent } from "react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 
+import { signInWithPassword } from "../../../../backend/modules/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // action: conectar aqui a autenticação (ex: chamada ao provider ou supabase.auth.signInWithPassword)
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    if (typeof email !== "string" || typeof password !== "string") {
+      return;
+    }
+
+    const response = await signInWithPassword.mock({ email, password });
+    console.info("Login solicitado", response.access_token);
   };
 
   return (
@@ -34,13 +44,13 @@ export default function LoginPage() {
               <label className="text-sm font-semibold text-slate-200" htmlFor="email">
                 Email corporativo
               </label>
-              <Input id="email" type="email" required placeholder="nome@empresa.com" />
+              <Input id="email" name="email" type="email" required placeholder="nome@empresa.com" />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-slate-200" htmlFor="password">
                 Senha
               </label>
-              <Input id="password" type="password" required placeholder="********" />
+              <Input id="password" name="password" type="password" required placeholder="********" />
             </div>
             <div className="flex flex-col gap-4">
               <Button type="submit" size="lg" className="w-full">

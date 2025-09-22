@@ -1,96 +1,96 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, BarChart3, ClipboardList, Megaphone, Package, Plus, ShieldCheck, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import type { DashboardChecklistItem, DashboardMetric, InventoryVehicle } from "../../../backend/fixtures";
+import { getChecklist, getMetrics, getRecentVehicles } from "../../../backend/modules/dashboard";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { coreModules } from "@/data/modules";
 
-const metrics = [
-  {
-    title: "Veículos em estoque",
-    helper: "Organizados por status",
-    value: 18,
-    icon: Package,
-    tone: "text-sky-300"
-  },
-  {
-    title: "Anúncios ativos",
-    helper: "Portais sincronizados",
-    value: 12,
-    icon: Megaphone,
-    tone: "text-indigo-300"
-  },
-  {
-    title: "Vendas no mês",
-    helper: "Contratos fechados",
-    value: 6,
-    icon: TrendingUp,
-    tone: "text-emerald-300"
-  },
-  {
-    title: "Promoções vigentes",
-    helper: "Campanhas em execução",
-    value: 3,
-    icon: BarChart3,
-    tone: "text-amber-300"
-  }
-];
-
-const checklist = [
-  {
-    title: "Documentação pendente",
-    description: "Valide CRLV e laudos antes de liberar a venda.",
-    icon: ClipboardList
-  },
-  {
-    title: "Revisar campanhas",
-    description: "Confirme valores e datas com marketing.",
-    icon: ShieldCheck
-  },
-  {
-    title: "Acompanhar metas",
-    description: "Compare volume vendido com a meta semanal.",
-    icon: TrendingUp
-  }
-];
-
-const recentVehicles = [
-  { placa: "ABC2D34", cor: "Azul metálico", estado: "Disponível", data: "2024-02-05" },
-  { placa: "XYZ1H22", cor: "Branco perolizado", estado: "Reservado", data: "2024-02-03" },
-  { placa: "KLM5P90", cor: "Preto sólido", estado: "Em preparação", data: "2024-02-01" }
-];
-
 const moduleActions = coreModules.slice(0, 4);
+
+const metricIconMap: Record<string, { icon: typeof Package; tone: string }> = {
+  "estoque-total": { icon: Package, tone: "text-sky-300" },
+  "anuncios-ativos": { icon: Megaphone, tone: "text-indigo-300" },
+  "vendas-mes": { icon: TrendingUp, tone: "text-emerald-300" },
+  "promocoes-vigentes": { icon: BarChart3, tone: "text-amber-300" }
+};
+
+const checklistIconMap: Record<string, typeof ClipboardList> = {
+  docs: ClipboardList,
+  marketing: ShieldCheck,
+  metas: TrendingUp
+};
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
+  const [checklistItems, setChecklistItems] = useState<DashboardChecklistItem[]>([]);
+  const [recentVehicles, setRecentVehicles] = useState<InventoryVehicle[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    setIsRefreshing(true);
+    const [metricsData, checklistData, vehiclesData] = await Promise.all([
+      getMetrics.mock({}),
+      getChecklist.mock({}),
+      getRecentVehicles.mock({ limit: 3 })
+    ]);
+    setMetrics(metricsData);
+    setChecklistItems(checklistData);
+    setRecentVehicles(vehiclesData);
+    setIsRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const formattedVehicles = useMemo(
     () =>
       recentVehicles.map((vehicle) => ({
         ...vehicle,
-        formattedDate: new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(new Date(vehicle.data))
+        formattedDate: new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(
+          new Date(vehicle.atualizado_em)
+        )
       })),
-    []
+    [recentVehicles]
   );
 
   const handleCreateVehicle = () => {
-    // action: iniciar fluxo de cadastro (ex: router.push para drawer ou abrir modal controlado)
     router.push("/app/estoque?drawer=novo-veiculo");
   };
 
   const handleRefresh = () => {
-    // action: acoplar consulta ao serviço que atualiza métricas e listas
-    console.info("Atualização do painel solicitada");
+    void loadDashboard();
   };
 
   const handleNavigate = (target: string) => {
-    // action: substituir por navegação + telemetria (ex: router.push e rastrear analytics)
     router.push(target);
+  };
+
+  const formatCurrency = (value: number | null) => {
+    if (value == null) return "Sem preço";
+    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
+
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case "disponivel":
+        return "Disponível";
+      case "reservado":
+        return "Reservado";
+      case "em_preparacao":
+        return "Em preparação";
+      case "vendido":
+        return "Vendido";
+      default:
+        return status;
+    }
   };
 
   return (
@@ -104,28 +104,32 @@ export default function DashboardPage() {
               <Plus className="h-4 w-4" />
               Novo veículo
             </Button>
-            <Button variant="outline" size="lg" onClick={handleRefresh}>
-              Atualizar painel
+            <Button variant="outline" size="lg" onClick={handleRefresh} disabled={isRefreshing}>
+              {isRefreshing ? "Atualizando..." : "Atualizar painel"}
             </Button>
           </>
         }
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ title, helper, value, icon: Icon, tone }) => (
-          <Card key={title} className="border-white/10 bg-slate-900/70">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-slate-300">{title}</CardTitle>
-              <span className={`rounded-full bg-white/5 p-2 ${tone}`}>
-                <Icon className="h-4 w-4" />
-              </span>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-semibold text-white">{value}</p>
-              <p className="text-xs uppercase tracking-wide text-slate-500">{helper}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {metrics.map(({ id, titulo, valor }) => {
+          const IconDefinition = metricIconMap[id]?.icon ?? Package;
+          const tone = metricIconMap[id]?.tone ?? "text-slate-300";
+          return (
+            <Card key={id} className="border-white/10 bg-slate-900/70">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-sm text-slate-300">{titulo}</CardTitle>
+                <span className={`rounded-full bg-white/5 p-2 ${tone}`}>
+                  <IconDefinition className="h-4 w-4" />
+                </span>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-semibold text-white">{valor}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Indicador chave</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -133,9 +137,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-start justify-between">
             <div className="space-y-1">
               <CardTitle>Últimos veículos cadastrados</CardTitle>
-              <CardDescription>
-                Exemplos de dados estáticos para conectar com o serviço de inventário.
-              </CardDescription>
+              <CardDescription>Dados exibem os últimos registros retornados pela operação do estoque.</CardDescription>
             </div>
             <Button variant="ghost" className="gap-1 px-3 text-sm" onClick={() => handleNavigate("/app/estoque")}>
               Ver estoque
@@ -144,15 +146,15 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {formattedVehicles.map(({ placa, cor, estado, formattedDate }) => (
+              {formattedVehicles.map(({ id, placa, modelo_nome, estado_venda, preco_venal, formattedDate }) => (
                 <li
-                  key={placa}
+                  key={id}
                   className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3"
                 >
                   <div className="space-y-1">
                     <p className="text-sm font-semibold uppercase tracking-wide text-white">{placa}</p>
                     <p className="text-xs text-slate-400">
-                      {cor} • {estado}
+                      {modelo_nome} • {formatStatus(estado_venda)} • {formatCurrency(preco_venal)}
                     </p>
                   </div>
                   <span className="text-xs text-slate-500">{formattedDate}</span>
@@ -169,17 +171,20 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-4">
-              {checklist.map(({ title, description, icon: Icon }) => (
-                <li key={title} className="flex items-start gap-3 rounded-2xl bg-slate-950/40 p-3">
-                  <span className="rounded-full bg-slate-800/80 p-2 text-sky-200">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{title}</p>
-                    <p className="text-xs text-slate-400">{description}</p>
-                  </div>
-                </li>
-              ))}
+              {checklistItems.map(({ id, titulo, descricao }) => {
+                const IconDefinition = checklistIconMap[id] ?? ClipboardList;
+                return (
+                  <li key={id} className="flex items-start gap-3 rounded-2xl bg-slate-950/40 p-3">
+                    <span className="rounded-full bg-slate-800/80 p-2 text-sky-200">
+                      <IconDefinition className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{titulo}</p>
+                      <p className="text-xs text-slate-400">{descricao}</p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </CardContent>
         </Card>

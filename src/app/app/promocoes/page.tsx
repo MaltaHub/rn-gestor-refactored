@@ -1,39 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, Flame, Gift, Plus } from "lucide-react";
 
+import type { PromotionRecord } from "../../../../backend/fixtures";
+import {
+  createPromotion,
+  listPromotions,
+  schedulePromotion,
+  togglePromotion
+} from "../../../../backend/modules/promocoes";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const campaigns = [
-  {
-    nome: "Feirão SUV",
-    periodo: "01-10 Fev",
-    beneficio: "Bônus de R$ 3.000",
-    status: "Ativa"
-  },
-  {
-    nome: "Taxa zero sedan",
-    periodo: "05-20 Fev",
-    beneficio: "0% em 24x",
-    status: "Configurando"
-  }
-];
+const promotionTypeLabel: Record<string, string> = {
+  bonus: "Bônus em dinheiro",
+  "taxa-zero": "Taxa zero",
+  desconto: "Desconto",
+  pacote: "Pacote especial"
+};
 
 export default function PromotionsPage() {
-  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
+  const [selectedPromotion, setSelectedPromotion] = useState<string | null>(null);
+  const [promotions, setPromotions] = useState<PromotionRecord[]>([]);
 
-  const handleCreatePromotion = () => {
-    // action: iniciar criação de campanha (ex: abrindo formulário multi-etapas)
-    console.info("Criar promoção");
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPromotions = async () => {
+      const data = await listPromotions.mock({ ativo: undefined });
+      if (!cancelled) {
+        setPromotions(data);
+      }
+    };
+
+    void loadPromotions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleCreatePromotion = async () => {
+    const promotion = await createPromotion.mock({
+      tipo_promocao: "bonus",
+      preco_promocional: 3000,
+      data_inicio: new Date().toISOString(),
+      usuario_id: "user-1"
+    });
+    console.info("Criar promoção", promotion);
   };
 
-  const handleToggleCampaign = (campaign: string) => {
-    // action: ligar/desligar campanha no backend ou na automação de anúncios
-    console.info("Alternar campanha", campaign);
+  const handleTogglePromotion = async (promotionId: string) => {
+    const result = await togglePromotion.mock({ promocao_id: promotionId, usuario_id: "user-1" });
+    console.info("Alternar promoção", result);
   };
+
+  const handleSchedule = async (promotionId: string) => {
+    const schedule = await schedulePromotion.mock({
+      promocao_id: promotionId,
+      run_at: new Date().toISOString(),
+      usuario_id: "user-1"
+    });
+    console.info("Agendar promoção", schedule);
+  };
+
+  const formatType = (tipo: string) => promotionTypeLabel[tipo] ?? tipo;
+
+  const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString("pt-BR") : "Sem data");
 
   return (
     <div className="space-y-8">
@@ -50,37 +85,38 @@ export default function PromotionsPage() {
 
       <Card className="border-white/10 bg-slate-900/70">
         <CardHeader className="gap-2">
-          <CardTitle>Campanhas ativas</CardTitle>
-          <CardDescription>Seções comentadas para ligar com o motor de promoções.</CardDescription>
+          <CardTitle>Campanhas</CardTitle>
+          <CardDescription>Seções prontas para ligar com o motor de promoções.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          {campaigns.map(({ nome, periodo, beneficio, status }) => (
+          {promotions.map(({ id, tipo_promocao, preco_promocional, data_inicio, data_fim, ativo }) => (
             <div
-              key={nome}
+              key={id}
               className="flex flex-col gap-4 rounded-2xl border border-white/5 bg-slate-950/40 p-4"
-              onMouseEnter={() => setSelectedCampaign(nome)}
-              onMouseLeave={() => setSelectedCampaign((value) => (value === nome ? null : value))}
+              onMouseEnter={() => setSelectedPromotion(id)}
+              onMouseLeave={() => setSelectedPromotion((value) => (value === id ? null : value))}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">{nome}</p>
-                  <p className="text-xs text-slate-400">Período {periodo}</p>
+                  <p className="text-sm font-semibold text-white">{formatType(tipo_promocao)}</p>
+                  <p className="text-xs text-slate-400">
+                    Início {formatDate(data_inicio)}
+                    {data_fim ? ` • Fim ${formatDate(data_fim)}` : ""}
+                  </p>
                 </div>
-                <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs text-sky-200">{status}</span>
+                <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs text-sky-200">
+                  {ativo ? "Ativa" : "Pausada"}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm text-slate-300">
                 <Gift className="h-4 w-4 text-sky-200" />
-                {beneficio}
+                {preco_promocional.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
               </div>
-              <Button
-                variant="outline"
-                className="gap-2 text-xs"
-                onClick={() => handleToggleCampaign(nome)}
-              >
+              <Button variant="outline" className="gap-2 text-xs" onClick={() => handleTogglePromotion(id)}>
                 Alternar status
                 <Flame className="h-4 w-4" />
               </Button>
-              {selectedCampaign === nome && (
+              {selectedPromotion === id && (
                 <p className="text-xs text-slate-400">
                   Ao conectar com o backend, exiba aqui KPIs de conversão, verba consumida e próximos passos.
                 </p>
@@ -103,10 +139,7 @@ export default function PromotionsPage() {
           <Button
             variant="ghost"
             className="gap-2 text-sm"
-            onClick={() => {
-              // action: abrir agenda compartilhada / integração com calendário
-              console.info("Agendar campanha");
-            }}
+            onClick={() => handleSchedule(promotions[0]?.id ?? "promo-mock")}
           >
             Agendar nova janela
           </Button>
