@@ -1,15 +1,18 @@
 import { supabase } from "@/lib/supabaseClient"
-import type { TableInsert, TableRow, TableUpdate } from "@/types"
+import type { TableRow, TableInsert, TableUpdate } from "@/types"
 
 export type LojaRecord = TableRow<"lojas">
 export type LocalRecord = TableRow<"locais">
 export type CaracteristicaRecord = TableRow<"caracteristicas">
 export type ModeloRecord = TableRow<"modelos">
 
-const LOJAS_TABLE = "lojas"
-const LOCAIS_TABLE = "locais"
-const CARACTERISTICAS_TABLE = "caracteristicas"
-const MODELOS_TABLE = "modelos"
+// Operações disponíveis no módulo configuração
+const OPS = {
+  lojas: "gerenciar_lojas",
+  locais: "gerenciar_locais",
+  caracteristicas: "gerenciar_caracteristicas",
+  modelos: "gerenciar_modelos",
+} as const
 
 interface EmpresaScopedArgs {
   empresaId: string
@@ -68,179 +71,148 @@ interface DeleteModeloArgs extends EmpresaScopedArgs {
 }
 
 export class CompanyConfigurationsService {
-  static async listLojas({ empresaId }: EmpresaScopedArgs) {
-    const { data, error } = await supabase
-      .from(LOJAS_TABLE)
-      .select("id, nome")
-      .eq("empresa_id", empresaId)
-      .order("nome", { ascending: true })
-
+  // --- utilitário interno para chamar executor ---
+  private static async callExecutor<T>(
+    operacao: string,
+    payload: Record<string, any>
+  ): Promise<T> {
+    const { data, error } = await supabase.rpc("executor", {
+      p_operacao: operacao,
+      p_payload: payload,
+    })
     if (error) throw error
-    return (data ?? []) as LojaRecord[]
+    return data as T
+  }
+
+  // --- LOJAS ---
+  static async listLojas({ empresaId }: EmpresaScopedArgs) {
+    return this.callExecutor<LojaRecord[]>(OPS.lojas, {
+      empresa_id: empresaId,
+      operacao: "listar",
+    })
   }
 
   static async createLoja({ empresaId, nome }: CreateLojaArgs) {
-    const payload: TableInsert<"lojas"> = {
+    return this.callExecutor(OPS.lojas, {
       empresa_id: empresaId,
-      nome,
-    }
-
-    const { error } = await supabase.from(LOJAS_TABLE).insert(payload)
-    if (error) throw error
+      operacao: "criar",
+      dados: { nome },
+    })
   }
 
   static async updateLoja({ empresaId, lojaId, dados }: UpdateLojaArgs) {
-    const { error } = await supabase
-      .from(LOJAS_TABLE)
-      .update(dados)
-      .eq("empresa_id", empresaId)
-      .eq("id", lojaId)
-
-    if (error) throw error
+    return this.callExecutor(OPS.lojas, {
+      empresa_id: empresaId,
+      operacao: "atualizar",
+      alvo_id: lojaId,
+      dados,
+    })
   }
 
   static async deleteLoja({ empresaId, lojaId }: DeleteLojaArgs) {
-    const { error } = await supabase
-      .from(LOJAS_TABLE)
-      .delete()
-      .eq("empresa_id", empresaId)
-      .eq("id", lojaId)
-
-    if (error) throw error
+    return this.callExecutor(OPS.lojas, {
+      empresa_id: empresaId,
+      operacao: "apagar",
+      alvo_id: lojaId,
+    })
   }
 
+  // --- LOCAIS ---
   static async listLocais({ empresaId }: EmpresaScopedArgs) {
-    const { data, error } = await supabase
-      .from(LOCAIS_TABLE)
-      .select("id, nome")
-      .eq("empresa_id", empresaId)
-      .order("nome", { ascending: true })
-
-    if (error) throw error
-    return (data ?? []) as LocalRecord[]
+    return this.callExecutor<LocalRecord[]>(OPS.locais, {
+      empresa_id: empresaId,
+      operacao: "listar",
+    })
   }
 
   static async createLocal({ empresaId, nome }: CreateLocalArgs) {
-    const payload: TableInsert<"locais"> = {
+    return this.callExecutor(OPS.locais, {
       empresa_id: empresaId,
-      nome,
-    }
-
-    const { error } = await supabase.from(LOCAIS_TABLE).insert(payload)
-    if (error) throw error
+      operacao: "criar",
+      dados: { nome },
+    })
   }
 
   static async updateLocal({ empresaId, localId, dados }: UpdateLocalArgs) {
-    const { error } = await supabase
-      .from(LOCAIS_TABLE)
-      .update(dados)
-      .eq("empresa_id", empresaId)
-      .eq("id", localId)
-
-    if (error) throw error
+    return this.callExecutor(OPS.locais, {
+      empresa_id: empresaId,
+      operacao: "atualizar",
+      alvo_id: localId,
+      dados,
+    })
   }
 
   static async deleteLocal({ empresaId, localId }: DeleteLocalArgs) {
-    const { error } = await supabase
-      .from(LOCAIS_TABLE)
-      .delete()
-      .eq("empresa_id", empresaId)
-      .eq("id", localId)
-
-    if (error) throw error
+    return this.callExecutor(OPS.locais, {
+      empresa_id: empresaId,
+      operacao: "apagar",
+      alvo_id: localId,
+    })
   }
 
+  // --- CARACTERÍSTICAS ---
   static async listCaracteristicas({ empresaId }: EmpresaScopedArgs) {
-    const { data, error } = await supabase
-      .from(CARACTERISTICAS_TABLE)
-      .select("id, nome")
-      .eq("empresa_id", empresaId)
-      .order("nome", { ascending: true })
-
-    if (error) throw error
-    return (data ?? []) as CaracteristicaRecord[]
+    return this.callExecutor<CaracteristicaRecord[]>(OPS.caracteristicas, {
+      empresa_id: empresaId,
+      operacao: "listar",
+    })
   }
 
   static async createCaracteristica({ empresaId, nome }: CreateCaracteristicaArgs) {
-    const payload: TableInsert<"caracteristicas"> = {
+    return this.callExecutor(OPS.caracteristicas, {
       empresa_id: empresaId,
-      nome,
-    }
-
-    const { error } = await supabase.from(CARACTERISTICAS_TABLE).insert(payload)
-    if (error) throw error
+      operacao: "criar",
+      dados: { nome },
+    })
   }
 
-  static async updateCaracteristica({
-    empresaId,
-    caracteristicaId,
-    dados,
-  }: UpdateCaracteristicaArgs) {
-    const { error } = await supabase
-      .from(CARACTERISTICAS_TABLE)
-      .update(dados)
-      .eq("empresa_id", empresaId)
-      .eq("id", caracteristicaId)
-
-    if (error) throw error
+  static async updateCaracteristica({ empresaId, caracteristicaId, dados }: UpdateCaracteristicaArgs) {
+    return this.callExecutor(OPS.caracteristicas, {
+      empresa_id: empresaId,
+      operacao: "atualizar",
+      alvo_id: caracteristicaId,
+      dados,
+    })
   }
 
   static async deleteCaracteristica({ empresaId, caracteristicaId }: DeleteCaracteristicaArgs) {
-    const { error } = await supabase
-      .from(CARACTERISTICAS_TABLE)
-      .delete()
-      .eq("empresa_id", empresaId)
-      .eq("id", caracteristicaId)
-
-    if (error) throw error
+    return this.callExecutor(OPS.caracteristicas, {
+      empresa_id: empresaId,
+      operacao: "apagar",
+      alvo_id: caracteristicaId,
+    })
   }
 
+  // --- MODELOS ---
   static async listModelos({ empresaId }: EmpresaScopedArgs) {
-    const { data, error } = await supabase
-      .from(MODELOS_TABLE)
-      .select("id, nome, marca, ano_inicial, ano_final")
-      .eq("empresa_id", empresaId)
-      .order("nome", { ascending: true })
-
-    if (error) throw error
-    return (data ?? []) as ModeloRecord[]
+    return this.callExecutor<ModeloRecord[]>(OPS.modelos, {
+      empresa_id: empresaId,
+      operacao: "listar",
+    })
   }
 
   static async createModelo({ empresaId, dados }: CreateModeloArgs) {
-    const payload: TableInsert<"modelos"> = {
+    return this.callExecutor(OPS.modelos, {
       empresa_id: empresaId,
-      nome: dados.nome,
-      marca: dados.marca,
-      ano_inicial: dados.ano_inicial ?? null,
-      ano_final: dados.ano_final ?? null,
-    }
-
-    const { error } = await supabase.from(MODELOS_TABLE).insert(payload)
-    if (error) throw error
+      operacao: "criar",
+      dados,
+    })
   }
 
   static async updateModelo({ empresaId, modeloId, dados }: UpdateModeloArgs) {
-    const { error } = await supabase
-      .from(MODELOS_TABLE)
-      .update({
-        nome: dados.nome,
-        marca: dados.marca,
-        ano_inicial: dados.ano_inicial ?? null,
-        ano_final: dados.ano_final ?? null,
-      })
-      .eq("empresa_id", empresaId)
-      .eq("id", modeloId)
-
-    if (error) throw error
+    return this.callExecutor(OPS.modelos, {
+      empresa_id: empresaId,
+      operacao: "atualizar",
+      alvo_id: modeloId,
+      dados,
+    })
   }
 
   static async deleteModelo({ empresaId, modeloId }: DeleteModeloArgs) {
-    const { error } = await supabase
-      .from(MODELOS_TABLE)
-      .delete()
-      .eq("empresa_id", empresaId)
-      .eq("id", modeloId)
-
-    if (error) throw error
+    return this.callExecutor(OPS.modelos, {
+      empresa_id: empresaId,
+      operacao: "apagar",
+      alvo_id: modeloId,
+    })
   }
 }
