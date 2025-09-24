@@ -21,7 +21,11 @@ import {
   MOCK_VEHICLES_SUMMARY,
   MOCK_VENDA_INSIGHT,
   MOCK_VENDAS,
-  MOCK_VENDAS_RESUMO
+  MOCK_VENDAS_RESUMO,
+  MOCK_VITRINE_DETALHES,
+  MOCK_VITRINE_DISPONIVEIS,
+  MOCK_VITRINE_RELACIONAMENTOS,
+  MOCK_VITRINE_RESUMO
 } from "./mock-data";
 import type { ReadHandler, RequestScope, WriteHandler } from "./types";
 import type { ReadResource, WriteResource } from "./operations";
@@ -210,6 +214,49 @@ const readMockImplementations = defineReadMocks({
     assertLoja({ ...scope, loja: lojaId }, "promocoes.campanhas");
     return lojaId ? MOCK_PROMOCOES.filter((promo) => promo.lojaId === lojaId) : MOCK_PROMOCOES;
   },
+  "vitrine.listar": (filtros, scope) => {
+    assertLoja(scope, "vitrine.listar");
+    const lojaId = scope.loja ?? filtros.lojaId;
+    return lojaId
+      ? MOCK_VITRINE_RESUMO.filter((entrada) => entrada.lojaId === lojaId)
+      : MOCK_VITRINE_RESUMO;
+  },
+  "vitrine.disponiveis": (filtros, scope) => {
+    assertLoja(scope, "vitrine.disponiveis");
+    const lojaId = scope.loja ?? filtros.lojaId;
+    return MOCK_VITRINE_DISPONIVEIS.map((item) => ({
+      ...item,
+      jaNaLoja:
+        item.jaNaLoja && (!!lojaId ? MOCK_VITRINE_RESUMO.some((entrada) => entrada.lojaId === lojaId && entrada.veiculoId === item.veiculoId) : true)
+    }));
+  },
+  "vitrine.resumo": ({ veiculoId }, scope) => {
+    assertLoja(scope, "vitrine.resumo");
+    const lojaId = scope.loja;
+    return (
+      MOCK_VITRINE_RESUMO.find(
+        (entrada) =>
+          entrada.veiculoId === veiculoId && (!lojaId || entrada.lojaId === lojaId)
+      ) ?? null
+    );
+  },
+  "vitrine.detalhes": ({ veiculoId }, scope) => {
+    assertLoja(scope, "vitrine.detalhes");
+    const lojaId = scope.loja;
+    return (
+      MOCK_VITRINE_DETALHES.find(
+        (entrada) =>
+          entrada.veiculoId === veiculoId && (!lojaId || entrada.lojaId === lojaId)
+      ) ?? null
+    );
+  },
+  "vitrine.relacionamentos": ({ lojaId }, scope) => {
+    const effectiveLoja = scope.loja ?? lojaId;
+    assertLoja({ ...scope, loja: effectiveLoja }, "vitrine.relacionamentos");
+    return effectiveLoja
+      ? MOCK_VITRINE_RELACIONAMENTOS.filter((rel) => rel.lojaId === effectiveLoja)
+      : MOCK_VITRINE_RELACIONAMENTOS;
+  },
   "usuarios.lojasDisponiveis": () => MOCK_LOJAS_DISPONIVEIS,
   "usuarios.perfil": () => MOCK_USUARIO,
   "usuarios.preferencias": () => MOCK_PREFERENCIAS,
@@ -256,6 +303,8 @@ const writeMockImplementations = defineWriteMocks({
   ) => ({ atualizado: true }),
   "anuncios.remover": async ({ veiculoId: _veiculoId, plataformaId: _plataformaId, lojaId: _lojaId }, _scope) => ({ removido: true }),
   "anuncios.syncLote": async ({ arquivoId: _arquivoId, lojaId: _lojaId }, _scope) => ({ protocolo: `SYNC-${Date.now()}` }),
+  "vitrine.removerVeiculo": async ({ veiculoId: _veiculoId, lojaId: _lojaId }, _scope) => ({ removido: true }),
+  "vitrine.adicionarVeiculo": async ({ veiculoId: _veiculoId, lojaId: _lojaId }, _scope) => ({ adicionado: true }),
   "vendas.registrar": async ({ dados: _dados, lojaId: _lojaId }, _scope) => ({ vendaId: `ven-${Math.floor(Math.random() * 1000)}` }),
   "vendas.atualizar": async ({ id: _id, dados: _dados, lojaId: _lojaId }, _scope) => ({ atualizado: true }),
   "promocoes.aplicarAjuste": async (
