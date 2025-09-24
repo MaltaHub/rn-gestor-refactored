@@ -3,7 +3,7 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 import { clsx } from "clsx";
 
-type ButtonVariant = "primary" | "outline" | "ghost";
+type ButtonVariant = "primary" | "default" | "outline" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,9 +11,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
 }
 
+const primaryVariantClasses =
+  "bg-sky-500 text-white shadow-md shadow-sky-500/30 hover:bg-sky-400 focus-visible:ring focus-visible:ring-sky-300";
+
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    "bg-sky-500 text-white shadow-md shadow-sky-500/30 hover:bg-sky-400 focus-visible:ring focus-visible:ring-sky-300",
+  primary: primaryVariantClasses,
+  default: primaryVariantClasses,
   outline:
     "border border-sky-400/40 text-sky-200 hover:bg-sky-400/10 focus-visible:ring focus-visible:ring-sky-300",
   ghost:
