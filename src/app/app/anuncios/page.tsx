@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Megaphone, UploadCloud } from "lucide-react";
 
-import type { MarketplaceSummary } from "../../../../backend/fixtures";
-import { listPlatformStatus, updatePlatform } from "../../../../backend/modules/anuncios";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface MarketplaceSummary {
+  plataforma_id: string;
+  plataforma_nome: string;
+  status_operacao: string;
+  anuncios_publicados: number;
+  ultima_sincronizacao: string;
+}
 
 const statusLabels: Record<string, string> = {
   sincronizado: "Sincronizado",
@@ -15,48 +21,57 @@ const statusLabels: Record<string, string> = {
   erro: "Erro"
 };
 
+const initialChannels: MarketplaceSummary[] = [
+  {
+    plataforma_id: "plat-01",
+    plataforma_nome: "Webmotors",
+    status_operacao: "sincronizado",
+    anuncios_publicados: 34,
+    ultima_sincronizacao: new Date().toISOString()
+  },
+  {
+    plataforma_id: "plat-02",
+    plataforma_nome: "OLX Autos",
+    status_operacao: "pendente",
+    anuncios_publicados: 12,
+    ultima_sincronizacao: new Date().toISOString()
+  },
+  {
+    plataforma_id: "plat-03",
+    plataforma_nome: "iCarros",
+    status_operacao: "erro",
+    anuncios_publicados: 5,
+    ultima_sincronizacao: new Date().toISOString()
+  }
+];
+
 export default function AnnouncementsPage() {
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
-  const [channels, setChannels] = useState<MarketplaceSummary[]>([]);
+  const [channels, setChannels] = useState<MarketplaceSummary[]>(initialChannels);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadChannels = async () => {
-      const data = await listPlatformStatus.mock({});
-      if (!cancelled) {
-        setChannels(data);
-      }
-    };
-
-    void loadChannels();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const handleUpdatePlatform = async (plataformaId: string) => {
-    const response = await updatePlatform.mock({
-      plataforma_id: plataformaId,
-      empresa_id: "company-1",
-      dados: { ultima_sincronizacao: new Date().toISOString() }
-    });
-    console.info("Atualizar plataforma", response);
+  const handleUpdatePlatform = (plataformaId: string) => {
+    setChannels((current) =>
+      current.map((channel) =>
+        channel.plataforma_id === plataformaId
+          ? { ...channel, status_operacao: "sincronizado", ultima_sincronizacao: new Date().toISOString() }
+          : channel
+      )
+    );
+    console.info("Atualizar plataforma", plataformaId);
   };
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Gestão de anúncios"
-        description="Conecte marketplaces, acompanhe status e orquestre reprocessamentos com segurança."
+        title="Gestao de anuncios"
+        description="Conecte marketplaces, acompanhe status e orquestre reprocessamentos com seguranca."
       />
 
       <Card className="border-white/10 bg-slate-900/70">
         <CardHeader className="gap-3">
           <CardTitle>Portais conectados</CardTitle>
           <CardDescription>
-            Comentários marcam os pontos de conexão com seus serviços de anúncios.
+            Comentarios marcam os pontos de conexao com seus servicos de anuncios.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -73,7 +88,7 @@ export default function AnnouncementsPage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-white">{plataforma_nome}</p>
-                  <p className="text-xs text-slate-500">Última atualização {new Date(ultima_sincronizacao).toLocaleString("pt-BR")}</p>
+                  <p className="text-xs text-slate-500">Ultima atualizacao {new Date(ultima_sincronizacao).toLocaleString("pt-BR")}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -84,10 +99,10 @@ export default function AnnouncementsPage() {
                   Atualizar plataforma
                 </Button>
               </div>
-              <div className="text-xs text-slate-400">Anúncios publicados: {anuncios_publicados}</div>
+              <div className="text-xs text-slate-400">Anuncios publicados: {anuncios_publicados}</div>
               {selectedChannel === plataforma_id && (
                 <p className="text-xs text-slate-400">
-                  Ao conectar com o backend, exiba aqui logs, fila de erros ou métricas do canal.
+                  Ao conectar com o backend, exiba aqui logs, fila de erros ou metricas do canal.
                 </p>
               )}
             </div>
@@ -99,12 +114,12 @@ export default function AnnouncementsPage() {
         <CardHeader className="gap-3">
           <CardTitle>Upload massivo</CardTitle>
           <CardDescription>
-            Exemplo de chamada pronta para receber upload de planilhas ou integração com DMS.
+            Exemplo de chamada pronta para receber upload de planilhas ou integracao com DMS.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-300">
-            Faça upload manual ou conecte automações que alimentam o estoque com atualizações frequentes.
+            Faca upload manual ou conecte automacoes que alimentam o estoque com atualizacoes frequentes.
           </p>
           <Button className="gap-2" onClick={() => {
             console.info("Upload acionado");

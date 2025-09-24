@@ -1,0 +1,11 @@
+export * as marketingService from "./marketing";
+export * as authService from "./auth";
+export * as contextoService from "./contexto";
+export * as estoqueService from "./estoque";
+export * as anunciosService from "./anuncios";
+export * as vendasService from "./vendas";
+export * as promocoesService from "./promocoes";
+export * as usuariosService from "./usuarios";
+export * as cadastrosService from "./cadastros";
+export * as avisosService from "./avisos";
+export * as dashboardService from "./dashboard";

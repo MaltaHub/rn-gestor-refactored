@@ -4,7 +4,6 @@ import { FormEvent } from "react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 
-import { signInWithPassword } from "../../../../backend/modules/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,8 +19,7 @@ export default function LoginPage() {
       return;
     }
 
-    const response = await signInWithPassword.mock({ email, password });
-    console.info("Login solicitado", response.access_token);
+    console.info("Login solicitado", { email, password: "******" });
   };
 
   return (
@@ -34,7 +32,7 @@ export default function LoginPage() {
           <div>
             <CardTitle className="text-2xl">Acesse o cockpit</CardTitle>
             <CardDescription>
-              Interface pronta para ligar com o fluxo de autenticação do seu produto.
+              Interface pronta para ligar com o fluxo de autenticacao do seu produto.
             </CardDescription>
           </div>
         </CardHeader>

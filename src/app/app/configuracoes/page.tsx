@@ -1,37 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 
-import type {
-  CharacteristicRecord,
-  LocationRecord,
-  ModelRecord,
-  PlatformRecord,
-  StoreRecord
-} from "../../../../backend/fixtures";
-import {
-  createCharacteristic,
-  createLocation,
-  createModel,
-  createPlatform,
-  createStore,
-  deleteCharacteristic,
-  deleteLocation,
-  deleteModel,
-  deletePlatform,
-  deleteStore,
-  listCharacteristics,
-  listLocations,
-  listModels,
-  listPlatforms,
-  listStores,
-  updateCharacteristic,
-  updateLocation,
-  updateModel,
-  updatePlatform,
-  updateStore
-} from "../../../../backend/modules/configuracoes";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +11,18 @@ import { Input } from "@/components/ui/input";
 interface SimpleItem {
   id: string;
   nome: string;
+}
+
+interface ModelRecord {
+  id: string;
+  marca: string;
+  nome: string;
+  edicao: string | null;
+  carroceria: string | null;
+  combustivel: string | null;
+  tipo_cambio: string | null;
+  ano_inicial: number | null;
+  ano_final: number | null;
 }
 
 interface SimpleManagerProps {
@@ -51,6 +34,55 @@ interface SimpleManagerProps {
   onCreate: (nome: string) => Promise<void>;
   onUpdate: (id: string, nome: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+}
+
+const initialStores: SimpleItem[] = [
+  { id: "store-01", nome: "Matriz" },
+  { id: "store-02", nome: "Filial Norte" }
+];
+
+const initialCharacteristics: SimpleItem[] = [
+  { id: "char-01", nome: "Blindado" },
+  { id: "char-02", nome: "Garantia de fabrica" }
+];
+
+const initialPlatforms: SimpleItem[] = [
+  { id: "plat-01", nome: "Webmotors" },
+  { id: "plat-02", nome: "OLX Autos" }
+];
+
+const initialLocations: SimpleItem[] = [
+  { id: "loc-01", nome: "Showroom" },
+  { id: "loc-02", nome: "Piso -1" }
+];
+
+const initialModels: ModelRecord[] = [
+  {
+    id: "model-01",
+    marca: "Jeep",
+    nome: "Compass",
+    edicao: "Longitude",
+    carroceria: "suv",
+    combustivel: "flex",
+    tipo_cambio: "automatico",
+    ano_inicial: 2021,
+    ano_final: 2024
+  },
+  {
+    id: "model-02",
+    marca: "Toyota",
+    nome: "Corolla",
+    edicao: "Altis",
+    carroceria: "sedan",
+    combustivel: "hibrido",
+    tipo_cambio: "cvtt",
+    ano_inicial: 2020,
+    ano_final: null
+  }
+];
+
+function createId(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function SimpleManager({
@@ -68,7 +100,7 @@ function SimpleManager({
   const [editingValue, setEditingValue] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const sortedItems = [...items].sort((a, b) => a.nome.localeCompare(b.nome));
+  const sortedItems = useMemo(() => [...items].sort((a, b) => a.nome.localeCompare(b.nome)), [items]);
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -138,13 +170,7 @@ function SimpleManager({
                       disabled={isProcessing}
                     />
                     <div className="flex gap-2">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="gap-2"
-                        onClick={handleSaveEdit}
-                        disabled={isProcessing}
-                      >
+                      <Button size="sm" className="gap-2" onClick={handleSaveEdit} disabled={isProcessing}>
                         <Save className="h-4 w-4" />
                         Salvar
                       </Button>
@@ -230,111 +256,92 @@ const emptyModelForm: ModelFormState = {
   ano_final: ""
 };
 
-const empresaId = "company-1";
+type CatalogTabKey = "stores" | "characteristics" | "platforms" | "locations" | "models";
+
+const catalogTabs: Array<{ key: CatalogTabKey; label: string; description: string }> = [
+  {
+    key: "stores",
+    label: "Lojas",
+    description: "Cadastre e mantenha os pontos de venda disponíveis para associação com veículos e vendas."
+  },
+  {
+    key: "characteristics",
+    label: "Caracteristicas",
+    description: "Organize atributos que enriquecem o catálogo de veículos para anúncios e propostas."
+  },
+  {
+    key: "platforms",
+    label: "Plataformas",
+    description: "Mapeie canais de venda e marketplaces para conectar integrações de publicação."
+  },
+  {
+    key: "locations",
+    label: "Locais",
+    description: "Defina áreas físicas para controles logísticos e visibilidade de estoque."
+  },
+  {
+    key: "models",
+    label: "Modelos",
+    description: "Estruture marca, edição e período para conectar catálogos internos e plataformas externas."
+  }
+];
 
 export default function CatalogManagementPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [stores, setStores] = useState<StoreRecord[]>([]);
-  const [characteristics, setCharacteristics] = useState<CharacteristicRecord[]>([]);
-  const [platforms, setPlatforms] = useState<PlatformRecord[]>([]);
-  const [locations, setLocations] = useState<LocationRecord[]>([]);
-  const [models, setModels] = useState<ModelRecord[]>([]);
+  const [activeTab, setActiveTab] = useState<CatalogTabKey>("stores");
+  const [stores, setStores] = useState<SimpleItem[]>(initialStores);
+  const [characteristics, setCharacteristics] = useState<SimpleItem[]>(initialCharacteristics);
+  const [platforms, setPlatforms] = useState<SimpleItem[]>(initialPlatforms);
+  const [locations, setLocations] = useState<SimpleItem[]>(initialLocations);
+  const [models, setModels] = useState<ModelRecord[]>(initialModels);
   const [modelForm, setModelForm] = useState<ModelFormState>(emptyModelForm);
   const [editingModelId, setEditingModelId] = useState<string | null>(null);
   const [isModelProcessing, setIsModelProcessing] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const [storesData, characteristicsData, platformsData, locationsData, modelsData] = await Promise.all([
-          listStores.mock({ empresa_id: empresaId }),
-          listCharacteristics.mock({ empresa_id: empresaId }),
-          listPlatforms.mock({ empresa_id: empresaId }),
-          listLocations.mock({ empresa_id: empresaId }),
-          listModels.mock({ empresa_id: empresaId })
-        ]);
-
-        if (!cancelled) {
-          setStores(storesData ?? []);
-          setCharacteristics(characteristicsData ?? []);
-          setPlatforms(platformsData ?? []);
-          setLocations(locationsData ?? []);
-          setModels(modelsData ?? []);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const handleCreateStore = async (nome: string) => {
-    const { id } = await createStore.mock({ empresa_id: empresaId, nome });
-    setStores((current) => [...current, { id, empresa_id: empresaId, nome }]);
+    setStores((current) => [...current, { id: createId("store"), nome }]);
   };
 
   const handleUpdateStore = async (id: string, nome: string) => {
-    await updateStore.mock({ empresa_id: empresaId, id, nome });
     setStores((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
   };
 
   const handleDeleteStore = async (id: string) => {
-    await deleteStore.mock({ empresa_id: empresaId, id });
     setStores((current) => current.filter((item) => item.id !== id));
   };
 
   const handleCreateCharacteristic = async (nome: string) => {
-    const { id } = await createCharacteristic.mock({ empresa_id: empresaId, nome });
-    setCharacteristics((current) => [...current, { id, empresa_id: empresaId, nome }]);
+    setCharacteristics((current) => [...current, { id: createId("char"), nome }]);
   };
 
   const handleUpdateCharacteristic = async (id: string, nome: string) => {
-    await updateCharacteristic.mock({ empresa_id: empresaId, id, nome });
     setCharacteristics((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
   };
 
   const handleDeleteCharacteristic = async (id: string) => {
-    await deleteCharacteristic.mock({ empresa_id: empresaId, id });
     setCharacteristics((current) => current.filter((item) => item.id !== id));
   };
 
   const handleCreatePlatform = async (nome: string) => {
-    const { id } = await createPlatform.mock({ empresa_id: empresaId, nome });
-    setPlatforms((current) => [...current, { id, empresa_id: empresaId, nome }]);
+    setPlatforms((current) => [...current, { id: createId("plat"), nome }]);
   };
 
   const handleUpdatePlatform = async (id: string, nome: string) => {
-    await updatePlatform.mock({ empresa_id: empresaId, id, nome });
     setPlatforms((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
   };
 
   const handleDeletePlatform = async (id: string) => {
-    await deletePlatform.mock({ empresa_id: empresaId, id });
     setPlatforms((current) => current.filter((item) => item.id !== id));
   };
 
   const handleCreateLocation = async (nome: string) => {
-    const { id } = await createLocation.mock({ empresa_id: empresaId, nome });
-    setLocations((current) => [...current, { id, empresa_id: empresaId, nome }]);
+    setLocations((current) => [...current, { id: createId("loc"), nome }]);
   };
 
   const handleUpdateLocation = async (id: string, nome: string) => {
-    await updateLocation.mock({ empresa_id: empresaId, id, nome });
     setLocations((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
   };
 
   const handleDeleteLocation = async (id: string) => {
-    await deleteLocation.mock({ empresa_id: empresaId, id });
     setLocations((current) => current.filter((item) => item.id !== id));
   };
 
@@ -357,7 +364,6 @@ export default function CatalogManagementPage() {
     if (!marca || !nome) return;
 
     const normalized: Omit<ModelRecord, "id"> = {
-      empresa_id: empresaId,
       marca,
       nome,
       edicao: modelForm.edicao.trim() || null,
@@ -372,36 +378,9 @@ export default function CatalogManagementPage() {
 
     try {
       if (editingModelId) {
-        await updateModel.mock({
-          empresa_id: empresaId,
-          id: editingModelId,
-          marca: normalized.marca,
-          nome: normalized.nome,
-          edicao: normalized.edicao ?? undefined,
-          carroceria: normalized.carroceria ?? undefined,
-          combustivel: normalized.combustivel ?? undefined,
-          tipo_cambio: normalized.tipo_cambio ?? undefined,
-          ano_inicial: normalized.ano_inicial ?? undefined,
-          ano_final: normalized.ano_final ?? undefined
-        });
-
-        setModels((current) =>
-          current.map((item) => (item.id === editingModelId ? { ...item, ...normalized } : item))
-        );
+        setModels((current) => current.map((item) => (item.id === editingModelId ? { ...item, ...normalized } : item)));
       } else {
-        const { id } = await createModel.mock({
-          empresa_id: empresaId,
-          marca: normalized.marca,
-          nome: normalized.nome,
-          edicao: normalized.edicao ?? undefined,
-          carroceria: normalized.carroceria ?? undefined,
-          combustivel: normalized.combustivel ?? undefined,
-          tipo_cambio: normalized.tipo_cambio ?? undefined,
-          ano_inicial: normalized.ano_inicial ?? undefined,
-          ano_final: normalized.ano_final ?? undefined
-        });
-
-        setModels((current) => [...current, { ...normalized, id }]);
+        setModels((current) => [...current, { id: createId("model"), ...normalized }]);
       }
 
       resetModelForm();
@@ -425,255 +404,285 @@ export default function CatalogManagementPage() {
   };
 
   const handleDeleteModel = async (id: string) => {
-    await deleteModel.mock({ empresa_id: empresaId, id });
     setModels((current) => current.filter((item) => item.id !== id));
     if (editingModelId === id) {
       resetModelForm();
     }
   };
 
+  const renderSimpleManager = (config: {
+    key: Exclude<CatalogTabKey, "models">;
+    placeholder: string;
+    emptyMessage: string;
+    items: SimpleItem[];
+    onCreate: (nome: string) => Promise<void>;
+    onUpdate: (id: string, nome: string) => Promise<void>;
+    onDelete: (id: string) => Promise<void>;
+  }) => (
+    <SimpleManager
+      title={catalogTabs.find((tab) => tab.key === config.key)?.label ?? ""}
+      description={catalogTabs.find((tab) => tab.key === config.key)?.description ?? ""}
+      items={config.items}
+      emptyMessage={config.emptyMessage}
+      placeholder={config.placeholder}
+      onCreate={config.onCreate}
+      onUpdate={config.onUpdate}
+      onDelete={config.onDelete}
+    />
+  );
+
+  const activeTabDescription = catalogTabs.find((tab) => tab.key === activeTab)?.description ?? "";
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Gerenciar cadastros operacionais"
-        description="Conecte os cadastros base a partir de um ponto único antes de acoplar o backend real."
+        description="Use a barra horizontal para alternar entre as tabelas e manter os dados de referência alinhados."
       />
 
-      {isLoading ? (
+      <Card className="border-white/10 bg-slate-900/70">
+        <CardHeader className="gap-2">
+          <CardTitle>Catalogos disponiveis</CardTitle>
+          <CardDescription>{activeTabDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <div className="flex gap-3 pb-2">
+              {catalogTabs.map((tab) => {
+                const isActive = tab.key === activeTab;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tab.key);
+                      if (tab.key !== "models") {
+                        resetModelForm();
+                      }
+                    }}
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
+                      isActive
+                        ? "bg-sky-500 text-white shadow-md shadow-sky-500/30"
+                        : "border border-white/10 bg-slate-950/40 text-slate-200 hover:border-sky-400/40"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {activeTab === "stores"
+        ? renderSimpleManager({
+            key: "stores",
+            placeholder: "Nome da loja",
+            emptyMessage: "Nenhuma loja cadastrada até o momento.",
+            items: stores,
+            onCreate: handleCreateStore,
+            onUpdate: handleUpdateStore,
+            onDelete: handleDeleteStore
+          })
+        : null}
+
+      {activeTab === "characteristics"
+        ? renderSimpleManager({
+            key: "characteristics",
+            placeholder: "Nome da caracteristica",
+            emptyMessage: "Nenhuma caracteristica cadastrada.",
+            items: characteristics,
+            onCreate: handleCreateCharacteristic,
+            onUpdate: handleUpdateCharacteristic,
+            onDelete: handleDeleteCharacteristic
+          })
+        : null}
+
+      {activeTab === "platforms"
+        ? renderSimpleManager({
+            key: "platforms",
+            placeholder: "Nome da plataforma",
+            emptyMessage: "Nenhuma plataforma cadastrada.",
+            items: platforms,
+            onCreate: handleCreatePlatform,
+            onUpdate: handleUpdatePlatform,
+            onDelete: handleDeletePlatform
+          })
+        : null}
+
+      {activeTab === "locations"
+        ? renderSimpleManager({
+            key: "locations",
+            placeholder: "Nome do local",
+            emptyMessage: "Nenhum local cadastrado.",
+            items: locations,
+            onCreate: handleCreateLocation,
+            onUpdate: handleUpdateLocation,
+            onDelete: handleDeleteLocation
+          })
+        : null}
+
+      {activeTab === "models" ? (
         <Card className="border-white/10 bg-slate-900/70">
-          <CardContent className="py-8">
-            <p className="text-sm text-slate-400">Carregando catálogos de referência...</p>
+          <CardHeader className="gap-2">
+            <CardTitle>Modelos</CardTitle>
+            <CardDescription>{activeTabDescription}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmitModel} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-marca">
+                    Marca
+                  </label>
+                  <Input
+                    id="model-marca"
+                    value={modelForm.marca}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, marca: event.target.value }))}
+                    placeholder="Ex.: Jeep"
+                    disabled={isModelProcessing}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-nome">
+                    Nome do modelo
+                  </label>
+                  <Input
+                    id="model-nome"
+                    value={modelForm.nome}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, nome: event.target.value }))}
+                    placeholder="Ex.: Compass"
+                    disabled={isModelProcessing}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-edicao">
+                    Edicao
+                  </label>
+                  <Input
+                    id="model-edicao"
+                    value={modelForm.edicao}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, edicao: event.target.value }))}
+                    placeholder="Ex.: Longitude 2.0"
+                    disabled={isModelProcessing}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-carroceria">
+                    Carroceria
+                  </label>
+                  <Input
+                    id="model-carroceria"
+                    value={modelForm.carroceria}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, carroceria: event.target.value }))}
+                    placeholder="Ex.: suv"
+                    disabled={isModelProcessing}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-combustivel">
+                    Combustivel
+                  </label>
+                  <Input
+                    id="model-combustivel"
+                    value={modelForm.combustivel}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, combustivel: event.target.value }))}
+                    placeholder="Ex.: flex"
+                    disabled={isModelProcessing}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-cambio">
+                    Tipo de cambio
+                  </label>
+                  <Input
+                    id="model-cambio"
+                    value={modelForm.tipo_cambio}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, tipo_cambio: event.target.value }))}
+                    placeholder="Ex.: automatico"
+                    disabled={isModelProcessing}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-ano-inicial">
+                    Ano inicial
+                  </label>
+                  <Input
+                    id="model-ano-inicial"
+                    value={modelForm.ano_inicial}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, ano_inicial: event.target.value }))}
+                    placeholder="Ex.: 2020"
+                    disabled={isModelProcessing}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-ano-final">
+                    Ano final
+                  </label>
+                  <Input
+                    id="model-ano-final"
+                    value={modelForm.ano_final}
+                    onChange={(event) => setModelForm((prev) => ({ ...prev, ano_final: event.target.value }))}
+                    placeholder="Ex.: 2024"
+                    disabled={isModelProcessing}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button type="submit" className="gap-2" disabled={isModelProcessing}>
+                  <Save className="h-4 w-4" />
+                  {editingModelId ? "Atualizar" : "Cadastrar"}
+                </Button>
+                {editingModelId ? (
+                  <Button type="button" variant="ghost" onClick={resetModelForm} disabled={isModelProcessing}>
+                    Cancelar edicao
+                  </Button>
+                ) : null}
+              </div>
+            </form>
+
+            <div className="space-y-3">
+              {models.length === 0 ? (
+                <p className="text-sm text-slate-400">Nenhum modelo cadastrado por enquanto.</p>
+              ) : (
+                models.map((model) => (
+                  <div key={model.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-white">{model.marca} {model.nome}</p>
+                        <p className="text-xs text-slate-400">
+                          {model.edicao ?? "Sem edicao"} • {model.carroceria ?? "Sem carroceria"} • {model.combustivel ?? "Sem combustivel"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleEditModel(model)}>
+                          <Pencil className="h-4 w-4" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1 text-red-300 hover:text-red-200"
+                          onClick={() => handleDeleteModel(model.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Vigencia {model.ano_inicial ?? "?"} - {model.ano_final ?? "atual"}. Ajuste conforme conectar ao catálogo oficial.
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
-      ) : (
-        <>
-          <div className="grid gap-6 xl:grid-cols-2">
-            <SimpleManager
-              title="Lojas"
-              description="Cadastre e mantenha os pontos de venda disponíveis para associação com veículos e vendas."
-              items={stores.map(({ id, nome }) => ({ id, nome }))}
-              emptyMessage="Nenhuma loja cadastrada até o momento."
-              placeholder="Nome da loja"
-              onCreate={handleCreateStore}
-              onUpdate={handleUpdateStore}
-              onDelete={handleDeleteStore}
-            />
-            <SimpleManager
-              title="Características"
-              description="Organize atributos que enriquecem o catálogo de veículos para anúncios e propostas."
-              items={characteristics.map(({ id, nome }) => ({ id, nome }))}
-              emptyMessage="Nenhuma característica cadastrada."
-              placeholder="Nome da característica"
-              onCreate={handleCreateCharacteristic}
-              onUpdate={handleUpdateCharacteristic}
-              onDelete={handleDeleteCharacteristic}
-            />
-            <SimpleManager
-              title="Plataformas"
-              description="Mapeie canais de venda e marketplaces para conectar integrações de publicação."
-              items={platforms.map(({ id, nome }) => ({ id, nome }))}
-              emptyMessage="Nenhuma plataforma cadastrada."
-              placeholder="Nome da plataforma"
-              onCreate={handleCreatePlatform}
-              onUpdate={handleUpdatePlatform}
-              onDelete={handleDeletePlatform}
-            />
-            <SimpleManager
-              title="Locais"
-              description="Defina áreas físicas para controles logísticos e visibilidade de estoque."
-              items={locations.map(({ id, nome }) => ({ id, nome }))}
-              emptyMessage="Nenhum local cadastrado."
-              placeholder="Nome do local"
-              onCreate={handleCreateLocation}
-              onUpdate={handleUpdateLocation}
-              onDelete={handleDeleteLocation}
-            />
-          </div>
-
-          <Card className="border-white/10 bg-slate-900/70">
-            <CardHeader className="gap-2">
-              <CardTitle>Modelos</CardTitle>
-              <CardDescription>
-                Estruture marca, edição e período para conectar catálogos internos e plataformas externas.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <form onSubmit={handleSubmitModel} className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-marca">
-                      Marca
-                    </label>
-                    <Input
-                      id="model-marca"
-                      value={modelForm.marca}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, marca: event.target.value }))}
-                      placeholder="Ex.: Jeep"
-                      disabled={isModelProcessing}
-                      required
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-nome">
-                      Nome do modelo
-                    </label>
-                    <Input
-                      id="model-nome"
-                      value={modelForm.nome}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, nome: event.target.value }))}
-                      placeholder="Ex.: Compass"
-                      disabled={isModelProcessing}
-                      required
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-edicao">
-                      Edição
-                    </label>
-                    <Input
-                      id="model-edicao"
-                      value={modelForm.edicao}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, edicao: event.target.value }))}
-                      placeholder="Ex.: Longitude 2.0"
-                      disabled={isModelProcessing}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-carroceria">
-                      Carroceria
-                    </label>
-                    <Input
-                      id="model-carroceria"
-                      value={modelForm.carroceria}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, carroceria: event.target.value }))}
-                      placeholder="Ex.: suv"
-                      disabled={isModelProcessing}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-combustivel">
-                      Combustível
-                    </label>
-                    <Input
-                      id="model-combustivel"
-                      value={modelForm.combustivel}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, combustivel: event.target.value }))}
-                      placeholder="Ex.: flex"
-                      disabled={isModelProcessing}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-cambio">
-                      Tipo de câmbio
-                    </label>
-                    <Input
-                      id="model-cambio"
-                      value={modelForm.tipo_cambio}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, tipo_cambio: event.target.value }))}
-                      placeholder="Ex.: automatico"
-                      disabled={isModelProcessing}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-ano-inicial">
-                      Ano inicial
-                    </label>
-                    <Input
-                      id="model-ano-inicial"
-                      value={modelForm.ano_inicial}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, ano_inicial: event.target.value }))}
-                      placeholder="Ex.: 2022"
-                      disabled={isModelProcessing}
-                      inputMode="numeric"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-200" htmlFor="model-ano-final">
-                      Ano final
-                    </label>
-                    <Input
-                      id="model-ano-final"
-                      value={modelForm.ano_final}
-                      onChange={(event) => setModelForm((prev) => ({ ...prev, ano_final: event.target.value }))}
-                      placeholder="Ex.: 2024"
-                      disabled={isModelProcessing}
-                      inputMode="numeric"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3">
-                  {editingModelId ? (
-                    <Button variant="ghost" onClick={resetModelForm} disabled={isModelProcessing} className="gap-2">
-                      <X className="h-4 w-4" />
-                      Cancelar edição
-                    </Button>
-                  ) : null}
-                  <Button type="submit" className="gap-2" disabled={isModelProcessing}>
-                    <Save className="h-4 w-4" />
-                    {editingModelId ? "Atualizar modelo" : "Adicionar modelo"}
-                  </Button>
-                </div>
-              </form>
-
-              {models.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {[...models]
-                    .sort((a, b) => a.marca.localeCompare(b.marca) || a.nome.localeCompare(b.nome))
-                    .map((model) => (
-                      <div
-                        key={model.id}
-                        className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-white">
-                            {model.marca} {model.nome}
-                          </p>
-                          {model.edicao ? (
-                            <p className="text-xs text-slate-400">{model.edicao}</p>
-                          ) : null}
-                        </div>
-                        <div className="space-y-1 text-xs text-slate-400">
-                          {model.carroceria ? <p>Carroceria: {model.carroceria}</p> : null}
-                          {model.combustivel ? <p>Combustivel: {model.combustivel}</p> : null}
-                          {model.tipo_cambio ? <p>Cambio: {model.tipo_cambio}</p> : null}
-                          {model.ano_inicial || model.ano_final ? (
-                            <p>
-                              Anos: {model.ano_inicial ?? "?"} - {model.ano_final ?? "?"}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() => handleEditModel(model)}
-                            disabled={isModelProcessing}
-                          >
-                            <Pencil className="h-4 w-4" />
-                            Editar
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-2 text-red-300 hover:text-red-200"
-                            onClick={() => handleDeleteModel(model.id)}
-                            disabled={isModelProcessing}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Remover
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400">Nenhum modelo cadastrado até o momento.</p>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+      ) : null}
     </div>
   );
 }

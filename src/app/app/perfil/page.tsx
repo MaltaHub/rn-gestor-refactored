@@ -1,83 +1,79 @@
 "use client";
 
-import { ChangeEvent, ReactNode, useEffect, useState } from "react";
+import { ChangeEvent, ReactNode, useState } from "react";
 import { ShieldCheck, Smartphone, User2 } from "lucide-react";
 import { clsx } from "clsx";
 
-import type { PreferenceRecord, ProfileRecord } from "../../../../backend/fixtures";
-import {
-  configureMfa,
-  getPreferences,
-  getProfile,
-  requestPasswordReset,
-  updatePreferences,
-  updateProfile
-} from "../../../../backend/modules/perfil";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+interface ProfileRecord {
+  id: string;
+  nome: string;
+  cargo: string;
+  email: string;
+  telefone: string;
+  bio: string;
+}
+
+interface PreferenceRecord {
+  notificacoes: boolean;
+  resumo_semanal: boolean;
+  compartilhar_dados: boolean;
+}
+
+const defaultProfile: ProfileRecord = {
+  id: "user-01",
+  nome: "Ana Gestora",
+  cargo: "Diretora comercial",
+  email: "ana@empresa.com",
+  telefone: "+55 11 99999-0000",
+  bio: "Responsavel por liderar a operacao comercial e conectar diferentes times na jornada do cliente."
+};
+
+const defaultPreferences: PreferenceRecord = {
+  notificacoes: true,
+  resumo_semanal: false,
+  compartilhar_dados: true
+};
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<ProfileRecord>();
-  const [preferences, setPreferences] = useState<PreferenceRecord>();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      const [profileData, preferenceData] = await Promise.all([getProfile.mock({}), getPreferences.mock({})]);
-      if (!cancelled) {
-        setProfile(profileData);
-        setPreferences(preferenceData);
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!profile || !preferences) {
-    return <p className="text-sm text-slate-400">Carregando perfil...</p>;
-  }
+  const [profile, setProfile] = useState<ProfileRecord>(defaultProfile);
+  const [preferences, setPreferences] = useState<PreferenceRecord>(defaultPreferences);
 
   const handleProfileChange = (field: keyof ProfileRecord) => (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setProfile((previous) => (previous ? { ...previous, [field]: event.target.value } : previous));
+    setProfile((previous) => ({ ...previous, [field]: event.target.value }));
   };
 
   const togglePreference = (field: keyof PreferenceRecord) => () => {
-    setPreferences((previous) => (previous ? { ...previous, [field]: !previous[field] } : previous));
+    setPreferences((previous) => ({ ...previous, [field]: !previous[field] }));
   };
 
-  const handleSave = async () => {
-    if (!profile || !preferences) return;
-    await Promise.all([updateProfile.mock(profile), updatePreferences.mock(preferences)]);
+  const handleSave = () => {
     console.info("Salvar perfil", profile, preferences);
   };
 
-  const handleReset = async () => {
-    const [profileData, preferenceData] = await Promise.all([getProfile.mock({}), getPreferences.mock({})]);
-    setProfile(profileData);
-    setPreferences(preferenceData);
+  const handleReset = () => {
+    setProfile(defaultProfile);
+    setPreferences(defaultPreferences);
   };
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Perfil pessoal"
-        description="Revise informações individuais e mantenha o cockpit alinhado às suas preferências."
+        description="Revise informacoes individuais e mantenha o cockpit alinhado as suas preferencias."
         actions={
           <div className="flex gap-2">
             <Button variant="ghost" onClick={handleReset}>
               Reverter
             </Button>
             <Button onClick={handleSave}>
-              Salvar alterações
+              Salvar alteracoes
             </Button>
           </div>
         }
@@ -90,16 +86,16 @@ export default function ProfilePage() {
               <span className="rounded-full bg-sky-500/10 p-2 text-sky-200">
                 <User2 className="h-4 w-4" />
               </span>
-              Dados básicos
+              Dados basicos
             </CardTitle>
-            <CardDescription>Mapeie os campos essenciais para integrações futuras.</CardDescription>
+            <CardDescription>Mapeie os campos essenciais para integracoes futuras.</CardDescription>
           </CardHeader>
           <CardContent className="gap-6">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Nome completo">
                 <Input value={profile.nome} onChange={handleProfileChange("nome")} />
               </Field>
-              <Field label="Cargo / função">
+              <Field label="Cargo / funcao">
                 <Input value={profile.cargo} onChange={handleProfileChange("cargo")} />
               </Field>
               <Field label="Email corporativo">
@@ -125,14 +121,14 @@ export default function ProfilePage() {
               <span className="rounded-full bg-sky-500/10 p-2 text-sky-200">
                 <Smartphone className="h-4 w-4" />
               </span>
-              Preferências rápidas
+              Preferencias rapidas
             </CardTitle>
-            <CardDescription>Defina comunicações prioritárias enquanto conecta o restante do stack.</CardDescription>
+            <CardDescription>Defina comunicacoes prioritarias enquanto conecta o restante do stack.</CardDescription>
           </CardHeader>
           <CardContent className="gap-3">
             <PreferenceToggle
-              label="Notificações em tempo real"
-              description="Receba alertas sobre mudanças críticas diretamente no cockpit."
+              label="Notificacoes em tempo real"
+              description="Receba alertas sobre mudancas criticas diretamente no cockpit."
               active={preferences.notificacoes}
               onToggle={togglePreference("notificacoes")}
             />
@@ -144,7 +140,7 @@ export default function ProfilePage() {
             />
             <PreferenceToggle
               label="Compartilhar dados com marketing"
-              description="Autorize sincronização de leads e campanhas entre times."
+              description="Autorize sincronizacao de leads e campanhas entre times."
               active={preferences.compartilhar_dados}
               onToggle={togglePreference("compartilhar_dados")}
             />
@@ -158,32 +154,30 @@ export default function ProfilePage() {
             <span className="rounded-full bg-sky-500/10 p-2 text-sky-200">
               <ShieldCheck className="h-4 w-4" />
             </span>
-            Segurança e auditoria
+            Seguranca e auditoria
           </CardTitle>
           <CardDescription>
-            Configure revisões periódicas e registre atividades críticas para manter a operação rastreável.
+            Configure revisoes periodicas e registre atividades criticas para manter a operacao rastreavel.
           </CardDescription>
         </CardHeader>
         <CardContent className="gap-4 text-sm text-slate-300">
           <p>
-            Use este espaço para conectar políticas de segurança, redefinição de senha e autenticação multifator. Os
-            comentários `action` indicam onde registrar confirmações com o backend.
+            Use este espaco para conectar politicas de seguranca, redefinicao de senha e autenticacao multifator. Os
+            comentarios `action` indicam onde registrar confirmacoes com integrações reais.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
-              onClick={async () => {
-                const response = await requestPasswordReset.mock({ email: profile.email });
-                console.info("Alteração de senha", response);
+              onClick={() => {
+                console.info("Alteracao de senha", profile.email);
               }}
             >
               Alterar senha
             </Button>
             <Button
               variant="outline"
-              onClick={async () => {
-                const response = await configureMfa.mock({ usuario_id: profile.id });
-                console.info("Configurar MFA", response);
+              onClick={() => {
+                console.info("Configurar MFA", profile.id);
               }}
             >
               Ativar MFA
