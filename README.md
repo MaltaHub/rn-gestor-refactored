@@ -1,69 +1,26 @@
-# React + TypeScript + Vite
+# Gestor Automotivo UI (Next.js)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface declarativa construída com Next.js 14 (App Router), focada em demonstrar os principais fluxos de um gestor automotivo sem dependências de back-end. Cada ação relevante possui comentários destacados (`// action:`) indicando onde conectar regras de negócio, integrações externas e automações — mantendo a simplicidade com proficiência operacional.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- `npm run dev` — inicia o servidor de desenvolvimento em modo App Router.
+- `npm run build` — gera o build de produção.
+- `npm run start` — inicia o build de produção.
+- `npm run lint` — executa a verificação padrão do Next.js.
 
-## Expanding the ESLint configuration
+## Estrutura
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- `src/app/(site)` — landing e login usando o layout público padrão (`MarketingLayout` + `StandardLayout`).
+- `src/app/app` — cockpit interno com layout privado (`AppShell`) e módulos operacionais.
+- `src/app/app/perfil` — módulo dedicado ao perfil pessoal e ajustes rápidos.
+- `src/components/layout` — layouts compartilhados (`PageHeader`, `StandardLayout`, `MarketingLayout`, `AppShell`).
+- `src/components/ui` — componentes atômicos e tipados (`Button`, `Card`, `Input`, `Badge`).
+- `src/data` — descritores de módulos e highlights usados na landing e no app.
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Próximos passos sugeridos
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Conectar provedores de autenticação no formulário de login (`src/app/(site)/login/page.tsx`).
+2. Integrar serviços e hooks de dados nos módulos (`src/app/app/*`).
+3. Configurar camada de design tokens/tema conforme identidade da empresa.
+4. Automatizar testes de interface após adicionar lógica dinâmica.
