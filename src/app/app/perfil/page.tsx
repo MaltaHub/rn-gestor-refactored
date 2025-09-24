@@ -1,119 +1,243 @@
 "use client";
 
-import { ChangeEvent, ReactNode, useState } from "react";
+import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { ShieldCheck, Smartphone, User2 } from "lucide-react";
 import { clsx } from "clsx";
 
+import { LojaSwitch } from "@/components/navigation/loja-switch";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useGlobalLojaId } from "@/hooks/use-loja";
+import { usuariosService } from "@/lib/services/domains";
+import type { LojaDisponivel, UsuarioPerfil, UsuarioPreferencias } from "@/types/domain";
 
-interface ProfileRecord {
-  id: string;
-  nome: string;
-  cargo: string;
-  email: string;
-  telefone: string;
-  bio: string;
-}
-
-interface PreferenceRecord {
-  notificacoes: boolean;
-  resumo_semanal: boolean;
-  compartilhar_dados: boolean;
-}
-
-const defaultProfile: ProfileRecord = {
-  id: "user-01",
-  nome: "Ana Gestora",
-  cargo: "Diretora comercial",
-  email: "ana@empresa.com",
-  telefone: "+55 11 99999-0000",
-  bio: "Responsavel por liderar a operacao comercial e conectar diferentes times na jornada do cliente."
-};
-
-const defaultPreferences: PreferenceRecord = {
-  notificacoes: true,
-  resumo_semanal: false,
-  compartilhar_dados: true
-};
+type PerfilCampo = keyof UsuarioPerfil;
+type PreferenciaCampo = keyof UsuarioPreferencias;
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<ProfileRecord>(defaultProfile);
-  const [preferences, setPreferences] = useState<PreferenceRecord>(defaultPreferences);
+  const globalLojaId = useGlobalLojaId();
+  const [lojasDisponiveis, setLojasDisponiveis] = useState<LojaDisponivel[]>([]);
+  const [perfil, setPerfil] = useState<UsuarioPerfil | null>(null);
+  const [perfilOriginal, setPerfilOriginal] = useState<UsuarioPerfil | null>(null);
+  const [preferencias, setPreferencias] = useState<UsuarioPreferencias | null>(null);
+  const [preferenciasOriginais, setPreferenciasOriginais] = useState<UsuarioPreferencias | null>(null);
+  const [lojaAtual, setLojaAtual] = useState<string | null>(null);
+  const [alterandoLoja, setAlterandoLoja] = useState(false);
+  const [isCarregando, setIsCarregando] = useState(true);
+  const [isSalvando, setIsSalvando] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  const handleProfileChange = (field: keyof ProfileRecord) => (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setProfile((previous) => ({ ...previous, [field]: event.target.value }));
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      try {
+        const [dadosPerfil, dadosPreferencias, lojas] = await Promise.all([
+          usuariosService.obterPerfilUsuario(),
+          usuariosService.obterPreferenciasUsuario(),
+          usuariosService.listarLojasDisponiveis()
+        ]);
+        if (!ativo) return;
+        setPerfil(dadosPerfil);
+        setPerfilOriginal(dadosPerfil);
+        setPreferencias(dadosPreferencias);
+        setPreferenciasOriginais(dadosPreferencias);
+        setLojasDisponiveis(lojas);
+      } catch (error) {
+        console.error("Falha ao carregar dados do perfil", error);
+        setFeedback("Não foi possível carregar os dados do perfil.");
+      } finally {
+        if (ativo) {
+          setIsCarregando(false);
+        }
+      }
+    })();
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setLojaAtual(globalLojaId ?? null);
+  }, [globalLojaId]);
+
+  const lojaOptions = useMemo(
+    () =>
+      lojasDisponiveis.map((loja) => ({
+        id: loja.id,
+        nome: loja.nome,
+        cidade: loja.cidade,
+        uf: loja.uf
+      })),
+    [lojasDisponiveis]
+  );
+
+  const handleProfileChange = (campo: PerfilCampo) => (event: ChangeEvent<HTMLInputElement>) => {
+    const valor = event.target.value;
+    setPerfil((atual) => (atual ? { ...atual, [campo]: valor } : atual));
   };
 
-  const togglePreference = (field: keyof PreferenceRecord) => () => {
-    setPreferences((previous) => ({ ...previous, [field]: !previous[field] }));
-  };
-
-  const handleSave = () => {
-    console.info("Salvar perfil", profile, preferences);
+  const handleSalvar = async () => {
+    if (!perfil || !preferencias) return;
+    setIsSalvando(true);
+    setFeedback(null);
+    try {
+      await Promise.all([
+        usuariosService.atualizarPerfilUsuario({ ...perfil }),
+        usuariosService.atualizarPreferenciasUsuario({ ...preferencias })
+      ]);
+      setPerfilOriginal(perfil);
+      setPreferenciasOriginais(preferencias);
+      setFeedback("Alterações salvas com sucesso.");
+    } catch (error) {
+      console.error("Falha ao salvar alterações de perfil", error);
+      setFeedback("Não foi possível salvar as alterações. Tente novamente.");
+    } finally {
+      setIsSalvando(false);
+    }
   };
 
   const handleReset = () => {
-    setProfile(defaultProfile);
-    setPreferences(defaultPreferences);
+    setPerfil(perfilOriginal);
+    setPreferencias(preferenciasOriginais);
+    setFeedback("Alterações revertidas ao último estado salvo.");
+  };
+
+  const handleAlterarSenha = async () => {
+    const senhaAtual = window.prompt("Informe a senha atual");
+    if (!senhaAtual) return;
+    const novaSenha = window.prompt("Informe a nova senha");
+    if (!novaSenha) return;
+    setFeedback(null);
+    try {
+      await usuariosService.alterarSenhaUsuario(senhaAtual, novaSenha);
+      setFeedback("Senha atualizada com sucesso.");
+    } catch (error) {
+      console.error("Erro ao alterar senha do usuário", error);
+      setFeedback("Não foi possível alterar a senha. Revise as informações e tente novamente.");
+    }
+  };
+
+  const handleAtivarMfa = async () => {
+    const metodo = window.prompt("Escolha o método de MFA (sms/app)", "app");
+    if (!metodo) return;
+    if (metodo !== "sms" && metodo !== "app") {
+      setFeedback("Método de MFA inválido. Utilize 'sms' ou 'app'.");
+      return;
+    }
+    setFeedback(null);
+    try {
+      await usuariosService.ativarMfaUsuario(metodo);
+      setFeedback("Autenticação multifator configurada com sucesso.");
+    } catch (error) {
+      console.error("Falha ao ativar MFA", error);
+      setFeedback("Não foi possível ativar a autenticação multifator.");
+    }
+  };
+
+  const handleTrocarLoja = async (lojaId: string) => {
+    setAlterandoLoja(true);
+    setFeedback(null);
+    try {
+      await usuariosService.definirLojaAtual(lojaId);
+      setLojaAtual(lojaId);
+      setFeedback("Loja atual atualizada com sucesso.");
+    } catch (error) {
+      console.error("Falha ao definir loja atual", error);
+      setFeedback("Não foi possível atualizar a loja atual.");
+    } finally {
+      setAlterandoLoja(false);
+    }
+  };
+
+  const togglePreferencia = (campo: PreferenciaCampo) => async () => {
+    if (!preferencias) return;
+    const novoValor = !preferencias[campo];
+    setPreferencias({ ...preferencias, [campo]: novoValor });
+    setFeedback(null);
+    try {
+      await usuariosService.atualizarPreferenciasUsuario({ [campo]: novoValor });
+      setFeedback("Preferência atualizada.");
+    } catch (error) {
+      console.error("Erro ao atualizar preferência", error);
+      setPreferencias((atual) => (atual ? { ...atual, [campo]: !novoValor } : atual));
+      setFeedback("Não foi possível atualizar a preferência selecionada.");
+    }
   };
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Perfil pessoal"
-        description="Revise informacoes individuais e mantenha o cockpit alinhado as suas preferencias."
+        description="Revise informações individuais, loja padrão e preferências de comunicação."
         actions={
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={handleReset}>
+            <Button variant="ghost" onClick={handleReset} disabled={isCarregando || isSalvando}>
               Reverter
             </Button>
-            <Button onClick={handleSave}>
-              Salvar alteracoes
+            <Button onClick={handleSalvar} disabled={isCarregando || isSalvando}>
+              {isSalvando ? "Salvando..." : "Salvar alterações"}
             </Button>
           </div>
         }
       />
 
+      {feedback ? <p className="text-xs text-slate-400">{feedback}</p> : null}
+
+      {isCarregando ? (
+        <p className="text-sm text-slate-400">Carregando dados do perfil...</p>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <Card className="border-white/10 bg-slate-900/70">
-          <CardHeader className="gap-3">
-            <CardTitle className="flex items-center gap-2 text-white">
-              <span className="rounded-full bg-sky-500/10 p-2 text-sky-200">
-                <User2 className="h-4 w-4" />
-              </span>
-              Dados basicos
-            </CardTitle>
-            <CardDescription>Mapeie os campos essenciais para integracoes futuras.</CardDescription>
-          </CardHeader>
-          <CardContent className="gap-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Nome completo">
-                <Input value={profile.nome} onChange={handleProfileChange("nome")} />
-              </Field>
-              <Field label="Cargo / funcao">
-                <Input value={profile.cargo} onChange={handleProfileChange("cargo")} />
-              </Field>
-              <Field label="Email corporativo">
-                <Input type="email" value={profile.email} onChange={handleProfileChange("email")} />
-              </Field>
-              <Field label="Telefone para contato">
-                <Input value={profile.telefone} onChange={handleProfileChange("telefone")} />
-              </Field>
-            </div>
-            <Field label="Resumo profissional">
-              <textarea
-                value={profile.bio}
-                onChange={handleProfileChange("bio")}
-                className="min-h-[96px] w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sky-400 focus:outline-none"
-              />
-            </Field>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          {lojaOptions.length > 0 ? (
+            <Card className="border-white/10 bg-slate-900/70">
+              <CardHeader className="gap-3">
+                <CardTitle className="text-white">Loja atual</CardTitle>
+                <CardDescription>
+                  Alterar a loja padrão ajusta automaticamente o escopo das operações de escrita.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LojaSwitch
+                  lojas={lojaOptions}
+                  value={lojaAtual}
+                  onChange={handleTrocarLoja}
+                  isLoading={alterandoLoja}
+                />
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card className="border-white/10 bg-slate-900/70">
+            <CardHeader className="gap-3">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <span className="rounded-full bg-sky-500/10 p-2 text-sky-200">
+                  <User2 className="h-4 w-4" />
+                </span>
+                Dados básicos
+              </CardTitle>
+              <CardDescription>Campos carregados diretamente de `usuarios.perfil`.</CardDescription>
+            </CardHeader>
+            <CardContent className="gap-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Nome completo">
+                  <Input value={perfil?.nome ?? ""} onChange={handleProfileChange("nome")} />
+                </Field>
+                <Field label="Cargo / função">
+                  <Input value={perfil?.cargo ?? ""} onChange={handleProfileChange("cargo")} />
+                </Field>
+                <Field label="Email corporativo">
+                  <Input type="email" value={perfil?.email ?? ""} onChange={handleProfileChange("email")} />
+                </Field>
+                <Field label="Telefone para contato">
+                  <Input value={perfil?.telefone ?? ""} onChange={handleProfileChange("telefone")} />
+                </Field>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card className="border-white/10 bg-slate-900/70">
           <CardHeader className="gap-3">
@@ -121,28 +245,38 @@ export default function ProfilePage() {
               <span className="rounded-full bg-sky-500/10 p-2 text-sky-200">
                 <Smartphone className="h-4 w-4" />
               </span>
-              Preferencias rapidas
+              Preferências rápidas
             </CardTitle>
-            <CardDescription>Defina comunicacoes prioritarias enquanto conecta o restante do stack.</CardDescription>
+            <CardDescription>Integração direta com `usuarios.preferencias`.</CardDescription>
           </CardHeader>
           <CardContent className="gap-3">
             <PreferenceToggle
-              label="Notificacoes em tempo real"
-              description="Receba alertas sobre mudancas criticas diretamente no cockpit."
-              active={preferences.notificacoes}
-              onToggle={togglePreference("notificacoes")}
+              label="Notificações por email"
+              description="Receba alertas sobre mudanças críticas diretamente no console."
+              active={Boolean(preferencias?.notificacoesEmail)}
+              onToggle={togglePreferencia("notificacoesEmail")}
+              disabled={!preferencias}
+            />
+            <PreferenceToggle
+              label="Notificações por SMS"
+              description="Acione mensagens para eventos de alta prioridade."
+              active={Boolean(preferencias?.notificacoesSms)}
+              onToggle={togglePreferencia("notificacoesSms")}
+              disabled={!preferencias}
             />
             <PreferenceToggle
               label="Resumo semanal"
-              description="Consolide indicadores em um email de produtividade todas as segundas."
-              active={preferences.resumo_semanal}
-              onToggle={togglePreference("resumo_semanal")}
+              description="Consolide indicadores em um email de produtividade às segundas-feiras."
+              active={Boolean(preferencias?.resumoSemanal)}
+              onToggle={togglePreferencia("resumoSemanal")}
+              disabled={!preferencias}
             />
             <PreferenceToggle
-              label="Compartilhar dados com marketing"
-              description="Autorize sincronizacao de leads e campanhas entre times."
-              active={preferences.compartilhar_dados}
-              onToggle={togglePreference("compartilhar_dados")}
+              label="Tema escuro"
+              description="Mantenha o console no modo noturno em todos os dispositivos."
+              active={Boolean(preferencias?.darkMode)}
+              onToggle={togglePreferencia("darkMode")}
+              disabled={!preferencias}
             />
           </CardContent>
         </Card>
@@ -154,32 +288,22 @@ export default function ProfilePage() {
             <span className="rounded-full bg-sky-500/10 p-2 text-sky-200">
               <ShieldCheck className="h-4 w-4" />
             </span>
-            Seguranca e auditoria
+            Segurança e auditoria
           </CardTitle>
           <CardDescription>
-            Configure revisoes periodicas e registre atividades criticas para manter a operacao rastreavel.
+            Conecte políticas de segurança, redefinição de senha e MFA às operações de escrita.
           </CardDescription>
         </CardHeader>
         <CardContent className="gap-4 text-sm text-slate-300">
           <p>
-            Use este espaco para conectar politicas de seguranca, redefinicao de senha e autenticacao multifator. Os
-            comentarios `action` indicam onde registrar confirmacoes com integrações reais.
+            Os botões abaixo já apontam para `usuarios.alterarSenha` e `usuarios.ativarMFA`. Os logs de auditoria podem ser
+            conectados ao mesmo fluxo para rastrear ações críticas.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                console.info("Alteracao de senha", profile.email);
-              }}
-            >
+            <Button variant="outline" onClick={handleAlterarSenha}>
               Alterar senha
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                console.info("Configurar MFA", profile.id);
-              }}
-            >
+            <Button variant="outline" onClick={handleAtivarMfa}>
               Ativar MFA
             </Button>
           </div>
@@ -203,18 +327,21 @@ interface PreferenceToggleProps {
   description: string;
   active: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }
 
-function PreferenceToggle({ label, description, active, onToggle }: PreferenceToggleProps) {
+function PreferenceToggle({ label, description, active, onToggle, disabled = false }: PreferenceToggleProps) {
   return (
     <button
       type="button"
       onClick={onToggle}
+      disabled={disabled}
       className={clsx(
         "flex w-full flex-col gap-1 rounded-2xl border px-4 py-3 text-left transition-colors",
         active
           ? "border-sky-400/60 bg-sky-400/10 text-slate-100"
-          : "border-white/10 bg-slate-950/40 text-slate-300 hover:border-sky-400/40"
+          : "border-white/10 bg-slate-950/40 text-slate-300 hover:border-sky-400/40",
+        disabled ? "cursor-not-allowed opacity-60" : ""
       )}
     >
       <span className="text-sm font-semibold">{label}</span>

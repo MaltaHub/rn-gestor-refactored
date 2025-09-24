@@ -17,6 +17,10 @@ import type {
   PipelineResumo,
   PromocaoResumo,
   PromocaoTabelaEntrada,
+  VitrineDetalhe,
+  VitrineDisponivelResumo,
+  VitrineRelacionamento,
+  VitrineResumo,
   UsuarioPerfil,
   UsuarioPreferencias,
   VehicleDetail,
@@ -81,8 +85,10 @@ export const MOCK_PERMISSOES: PermissaoModulo[] = [
   { slug: "anuncios", permitido: true },
   { slug: "vendas", permitido: true },
   { slug: "promocoes", permitido: true },
+  { slug: "vitrine", permitido: true },
   { slug: "perfil", permitido: true },
-  { slug: "configuracoes", permitido: true }
+  { slug: "configuracoes", permitido: true },
+  { slug: "avisos", permitido: true }
 ];
 
 export const MOCK_MODELOS_DETALHE: ModeloDetalhe[] = [
@@ -361,6 +367,72 @@ export const MOCK_PROMOCOES: PromocaoResumo[] = [
 ];
 
 export const MOCK_PROMOCOES_TABELA: PromocaoTabelaEntrada[] = MOCK_PROMOCOES.map(({ lojaId, veiculoId, ...rest }) => rest);
+
+function getCapaPorLoja(veiculoId: string, lojaId?: string | null) {
+  const detail = MOCK_VEHICLES_DETAIL.find((item) => item.id === veiculoId);
+  if (!detail) return undefined;
+  const midia = detail.midiaPorLoja.find((item) => (lojaId ? item.lojaId === lojaId : true)) ?? detail.midiaPorLoja[0];
+  return midia?.fotos[0]?.path;
+}
+
+export const MOCK_VITRINE_RESUMO: VitrineResumo[] = [
+  {
+    veiculoId: "veh-001",
+    lojaId: "loja-1",
+    titulo: "Jeep Compass Limited T270 2023",
+    preco: 184900,
+    statusAnuncio: "publicado",
+    disponivel: true,
+    imageUrl: getCapaPorLoja("veh-001", "loja-1")
+  },
+  {
+    veiculoId: "veh-001",
+    lojaId: "loja-2",
+    titulo: "Jeep Compass Limited T270 2023",
+    preco: 186500,
+    statusAnuncio: "pendente",
+    disponivel: true,
+    imageUrl: getCapaPorLoja("veh-001", "loja-2")
+  },
+  {
+    veiculoId: "veh-002",
+    lojaId: "loja-2",
+    titulo: "Toyota Corolla Cross XRE 2022",
+    preco: 172500,
+    statusAnuncio: "pendente",
+    disponivel: true,
+    imageUrl: getCapaPorLoja("veh-002", "loja-2")
+  }
+];
+
+export const MOCK_VITRINE_DISPONIVEIS: VitrineDisponivelResumo[] = MOCK_VEHICLES_SUMMARY.map((veiculo) => ({
+  veiculoId: veiculo.id,
+  titulo: veiculo.anuncioTitulo ?? `${veiculo.modeloMarca ?? ""} ${veiculo.modeloNome ?? ""}`.trim(),
+  preco: veiculo.precoAnuncio ?? veiculo.precoVenal ?? 0,
+  jaNaLoja: MOCK_VITRINE_RESUMO.some((entrada) => entrada.veiculoId === veiculo.id)
+}));
+
+export const MOCK_VITRINE_DETALHES: VitrineDetalhe[] = MOCK_VITRINE_RESUMO.map((resumo) => ({
+  ...resumo,
+  descricao: `Vitrine destacando o veículo ${resumo.titulo} para a loja ${resumo.lojaId}.`,
+  fotos:
+    MOCK_VEHICLES_DETAIL.find((veiculo) => veiculo.id === resumo.veiculoId)?.midiaPorLoja.find(
+      (midia) => midia.lojaId === resumo.lojaId
+    )?.fotos.map((foto) => foto.path) ?? [],
+  promocaoAplicada: MOCK_PROMOCOES.find((promo) => promo.veiculoId === resumo.veiculoId)?.id,
+  ultimaAtualizacao: agora
+}));
+
+export const MOCK_VITRINE_RELACIONAMENTOS: VitrineRelacionamento[] = MOCK_LOJAS.map((loja) => ({
+  lojaId: loja.id,
+  lojaNome: loja.nome,
+  compartilhamentos: MOCK_LOJAS.filter((rel) => rel.id !== loja.id).map((rel) => ({
+    lojaId: rel.id,
+    lojaNome: rel.nome,
+    ativo: Boolean(rel.ativa)
+  })),
+  observacao: "Vitrine sincronizada com estoque único"
+}));
 
 export const MOCK_VENDAS: VendaDetalhe[] = [
   {

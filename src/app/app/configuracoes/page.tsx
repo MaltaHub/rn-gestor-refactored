@@ -1,101 +1,452 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, RefreshCcw, Save, Trash2, X } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cadastrosService } from "@/lib/services/domains";
+import type { CadastroContexto, CadastroItem, ModeloDetalhe } from "@/types/domain";
 
-interface SimpleItem {
-  id: string;
-  nome: string;
-}
-
-interface ModelRecord {
-  id: string;
-  marca: string;
-  nome: string;
-  edicao: string | null;
-  carroceria: string | null;
-  combustivel: string | null;
-  tipo_cambio: string | null;
-  ano_inicial: number | null;
-  ano_final: number | null;
-}
+type CadastroTipo = CadastroContexto["tipo"];
+type CadastroMapa = Partial<Record<CadastroTipo, CadastroItem[]>>;
 
 interface SimpleManagerProps {
+  tipo: CadastroTipo;
   title: string;
   description: string;
-  items: SimpleItem[];
+  items: CadastroItem[];
   emptyMessage: string;
   placeholder: string;
+  isLoading: boolean;
   onCreate: (nome: string) => Promise<void>;
   onUpdate: (id: string, nome: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onRefresh: () => Promise<void>;
 }
 
-const initialStores: SimpleItem[] = [
-  { id: "store-01", nome: "Matriz" },
-  { id: "store-02", nome: "Filial Norte" }
-];
+interface ModeloFormState {
+  id?: string;
+  marca: string;
+  nome: string;
+  versao: string;
+  anoInicial: string;
+  anoFinal: string;
+  ativo: boolean;
+}
 
-const initialCharacteristics: SimpleItem[] = [
-  { id: "char-01", nome: "Blindado" },
-  { id: "char-02", nome: "Garantia de fabrica" }
-];
+const emptyModelo: ModeloFormState = {
+  marca: "",
+  nome: "",
+  versao: "",
+  anoInicial: "",
+  anoFinal: "",
+  ativo: true
+};
 
-const initialPlatforms: SimpleItem[] = [
-  { id: "plat-01", nome: "Webmotors" },
-  { id: "plat-02", nome: "OLX Autos" }
-];
+export default function SettingsPage() {
+  const [contextos, setContextos] = useState<CadastroContexto[]>([]);
+  const [abaAtiva, setAbaAtiva] = useState<CadastroTipo>("stores");
+  const [itensPorTipo, setItensPorTipo] = useState<CadastroMapa>({});
+  const [carregandoContextos, setCarregandoContextos] = useState(true);
+  const [carregandoTipos, setCarregandoTipos] = useState<Partial<Record<CadastroTipo, boolean>>>({});
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-const initialLocations: SimpleItem[] = [
-  { id: "loc-01", nome: "Showroom" },
-  { id: "loc-02", nome: "Piso -1" }
-];
+  const [listaModelos, setListaModelos] = useState<CadastroItem[]>([]);
+  const [modeloSelecionadoId, setModeloSelecionadoId] = useState<string | null>(null);
+  const [modeloForm, setModeloForm] = useState<ModeloFormState>(emptyModelo);
+  const [carregandoModeloDetalhe, setCarregandoModeloDetalhe] = useState(false);
+  const [processandoModelo, setProcessandoModelo] = useState(false);
 
-const initialModels: ModelRecord[] = [
-  {
-    id: "model-01",
-    marca: "Jeep",
-    nome: "Compass",
-    edicao: "Longitude",
-    carroceria: "suv",
-    combustivel: "flex",
-    tipo_cambio: "automatico",
-    ano_inicial: 2021,
-    ano_final: 2024
-  },
-  {
-    id: "model-02",
-    marca: "Toyota",
-    nome: "Corolla",
-    edicao: "Altis",
-    carroceria: "sedan",
-    combustivel: "hibrido",
-    tipo_cambio: "cvtt",
-    ano_inicial: 2020,
-    ano_final: null
-  }
-];
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      try {
+        const dados = await cadastrosService.listarContextos();
+        if (!ativo) return;
+        setContextos(dados);
+        if (dados.length > 0) {
+          setAbaAtiva(dados[0].tipo);
+        }
+      } catch (error) {
+        console.error("Falha ao carregar contextos de cadastro", error);
+        setFeedback("Não foi possível carregar os contextos de cadastro.");
+      } finally {
+        if (ativo) {
+          setCarregandoContextos(false);
+        }
+      }
+    })();
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
-function createId(prefix: string) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+  useEffect(() => {
+    if (!abaAtiva) return;
+    if (abaAtiva === "models") {
+      void carregarModelos();
+    } else {
+      void carregarItensSimples(abaAtiva);
+    }
+  }, [abaAtiva]);
+
+  const carregarItensSimples = async (tipo: CadastroTipo) => {
+    setCarregandoTipos((estado) => ({ ...estado, [tipo]: true }));
+    try {
+      const dados = await cadastrosService.listarCadastros(tipo);
+      setItensPorTipo((prev) => ({ ...prev, [tipo]: dados }));
+    } catch (error) {
+      console.error(`Falha ao carregar cadastros para ${tipo}`, error);
+      setFeedback("Não foi possível carregar os cadastros solicitados.");
+    } finally {
+      setCarregandoTipos((estado) => ({ ...estado, [tipo]: false }));
+    }
+  };
+
+  const carregarModelos = async () => {
+    const tipo: CadastroTipo = "models";
+    setCarregandoTipos((estado) => ({ ...estado, [tipo]: true }));
+    try {
+      const dados = await cadastrosService.listarCadastros("models");
+      setListaModelos(dados);
+      if (dados.length === 0) {
+        setModeloSelecionadoId(null);
+        setModeloForm(emptyModelo);
+      }
+    } catch (error) {
+      console.error("Falha ao carregar modelos", error);
+      setFeedback("Não foi possível carregar os modelos cadastrados.");
+    } finally {
+      setCarregandoTipos((estado) => ({ ...estado, [tipo]: false }));
+    }
+  };
+
+  const carregarDetalheModelo = async (id: string) => {
+    setCarregandoModeloDetalhe(true);
+    try {
+      const detalhe = await cadastrosService.detalharModelo(id);
+      if (!detalhe) {
+        setFeedback("Modelo não encontrado para edição.");
+        return;
+      }
+      setModeloSelecionadoId(id);
+      setModeloForm({
+        id: detalhe.id,
+        marca: detalhe.marca ?? "",
+        nome: detalhe.nome ?? "",
+        versao: detalhe.versao ?? "",
+        anoInicial: detalhe.anoInicial ? String(detalhe.anoInicial) : "",
+        anoFinal: detalhe.anoFinal ? String(detalhe.anoFinal) : "",
+        ativo: Boolean(detalhe.ativo)
+      });
+    } catch (error) {
+      console.error("Erro ao detalhar modelo", error);
+      setFeedback("Não foi possível carregar os detalhes do modelo.");
+    } finally {
+      setCarregandoModeloDetalhe(false);
+    }
+  };
+
+  const handleCreateSimple = (tipo: CadastroTipo) => async (nome: string) => {
+    if (!nome.trim()) return;
+    setFeedback(null);
+    try {
+      await cadastrosService.salvarCadastro(tipo, { nome: nome.trim() });
+      await carregarItensSimples(tipo);
+      setFeedback("Item cadastrado com sucesso.");
+    } catch (error) {
+      console.error("Erro ao criar item de cadastro", error);
+      setFeedback("Não foi possível criar o item.");
+    }
+  };
+
+  const handleUpdateSimple = (tipo: CadastroTipo) => async (id: string, nome: string) => {
+    if (!nome.trim()) return;
+    setFeedback(null);
+    try {
+      await cadastrosService.salvarCadastro(tipo, { id, nome: nome.trim() });
+      await carregarItensSimples(tipo);
+      setFeedback("Cadastro atualizado.");
+    } catch (error) {
+      console.error("Erro ao atualizar cadastro", error);
+      setFeedback("Não foi possível atualizar o item selecionado.");
+    }
+  };
+
+  const handleDeleteSimple = (tipo: CadastroTipo) => async (id: string) => {
+    setFeedback(null);
+    try {
+      await cadastrosService.excluirCadastro(tipo, id);
+      await carregarItensSimples(tipo);
+      setFeedback("Item removido do cadastro.");
+    } catch (error) {
+      console.error("Erro ao remover item de cadastro", error);
+      setFeedback("Não foi possível remover o item selecionado.");
+    }
+  };
+
+  const handleNovoModelo = () => {
+    setModeloSelecionadoId(null);
+    setModeloForm(emptyModelo);
+  };
+
+  const handleAtualizarModelo = (campo: keyof ModeloFormState, valor: string | boolean) => {
+    setModeloForm((atual) => ({ ...atual, [campo]: valor }));
+  };
+
+  const handleSalvarModelo = async () => {
+    setProcessandoModelo(true);
+    setFeedback(null);
+    try {
+      const payload: Partial<ModeloDetalhe> = {
+        marca: modeloForm.marca || undefined,
+        nome: modeloForm.nome || undefined,
+        versao: modeloForm.versao || undefined,
+        anoInicial: modeloForm.anoInicial ? Number(modeloForm.anoInicial) : undefined,
+        anoFinal: modeloForm.anoFinal ? Number(modeloForm.anoFinal) : undefined,
+        ativo: modeloForm.ativo
+      };
+      if (modeloSelecionadoId) {
+        await cadastrosService.atualizarModelo(modeloSelecionadoId, payload);
+        await carregarModelos();
+        if (modeloSelecionadoId) {
+          await carregarDetalheModelo(modeloSelecionadoId);
+        }
+        setFeedback("Modelo atualizado com sucesso.");
+      } else {
+        const resultado = await cadastrosService.criarModelo(payload);
+        await carregarModelos();
+        if (resultado?.id) {
+          await carregarDetalheModelo(resultado.id);
+        }
+        setFeedback("Modelo criado e pronto para integração.");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar modelo", error);
+      setFeedback("Não foi possível salvar o modelo. Verifique os dados informados.");
+    } finally {
+      setProcessandoModelo(false);
+    }
+  };
+
+  const handleRemoverModelo = async () => {
+    if (!modeloSelecionadoId) return;
+    setProcessandoModelo(true);
+    setFeedback(null);
+    try {
+      await cadastrosService.removerModelo(modeloSelecionadoId);
+      setModeloSelecionadoId(null);
+      setModeloForm(emptyModelo);
+      await carregarModelos();
+      setFeedback("Modelo removido com sucesso.");
+    } catch (error) {
+      console.error("Erro ao remover modelo", error);
+      setFeedback("Não foi possível remover o modelo selecionado.");
+    } finally {
+      setProcessandoModelo(false);
+    }
+  };
+
+  const itensAtuais = (tipo: CadastroTipo) => itensPorTipo[tipo] ?? [];
+
+  const simpleManagers = useMemo(() => {
+    return contextos.filter((ctx) => ctx.tipo !== "models");
+  }, [contextos]);
+
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title="Cadastros operacionais"
+        description="Centralize dados mestres diretamente conectados aos serviços de leitura e escrita."
+        actions={
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => (abaAtiva === "models" ? carregarModelos() : carregarItensSimples(abaAtiva))}
+            disabled={carregandoContextos}
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Atualizar lista
+          </Button>
+        }
+      />
+
+      {feedback ? <p className="text-xs text-slate-400">{feedback}</p> : null}
+
+      <div className="flex flex-wrap gap-2">
+        {contextos.map((contexto) => (
+          <Button
+            key={contexto.tipo}
+            variant={abaAtiva === contexto.tipo ? "default" : "ghost"}
+            className="gap-2"
+            onClick={() => setAbaAtiva(contexto.tipo)}
+          >
+            {contexto.label}
+          </Button>
+        ))}
+      </div>
+
+      {carregandoContextos ? (
+        <p className="text-sm text-slate-400">Carregando contextos de cadastro...</p>
+      ) : null}
+
+      <div className="space-y-6">
+        {simpleManagers
+          .filter((manager) => manager.tipo === abaAtiva)
+          .map((manager) => (
+            <SimpleManager
+              key={manager.tipo}
+              tipo={manager.tipo}
+              title={manager.label}
+              description={`Gerencie o contexto de ${manager.label.toLowerCase()} com integrações prontas.`}
+              items={itensAtuais(manager.tipo)}
+              emptyMessage={`Nenhum registro encontrado em ${manager.label.toLowerCase()}.`}
+              placeholder={`Novo item em ${manager.label.toLowerCase()}`}
+              isLoading={Boolean(carregandoTipos[manager.tipo])}
+              onCreate={handleCreateSimple(manager.tipo)}
+              onUpdate={handleUpdateSimple(manager.tipo)}
+              onDelete={handleDeleteSimple(manager.tipo)}
+              onRefresh={() => carregarItensSimples(manager.tipo)}
+            />
+          ))}
+      </div>
+
+      {abaAtiva === "models" ? (
+        <Card className="border-white/10 bg-slate-900/70">
+          <CardHeader className="gap-3">
+            <CardTitle>Modelos</CardTitle>
+            <CardDescription>
+              Operações conectadas a `modelos.detalhes`, `modelos.criar`, `modelos.atualizar` e `modelos.remover`.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-white">Modelos cadastrados</p>
+                <Button size="sm" className="gap-2" onClick={handleNovoModelo}>
+                  <Plus className="h-4 w-4" />
+                  Novo modelo
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {listaModelos.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => carregarDetalheModelo(item.id)}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
+                      modeloSelecionadoId === item.id
+                        ? "border-sky-400/60 bg-sky-400/10 text-slate-100"
+                        : "border-white/10 bg-slate-950/40 text-slate-300 hover:border-sky-400/40"
+                    }`}
+                  >
+                    <span className="font-medium text-white">{item.nome}</span>
+                    <span className="block text-xs text-slate-400">{item.descricao ?? "Modelo cadastrado"}</span>
+                  </button>
+                ))}
+                {listaModelos.length === 0 ? (
+                  <p className="text-sm text-slate-400">Nenhum modelo cadastrado até o momento.</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {carregandoModeloDetalhe ? (
+                <p className="text-sm text-slate-400">Carregando detalhes do modelo...</p>
+              ) : (
+                <>
+                  <div className="grid gap-3">
+                    <label className="text-sm text-slate-300">
+                      <span className="font-semibold text-slate-200">Marca</span>
+                      <Input
+                        value={modeloForm.marca}
+                        onChange={(event) => handleAtualizarModelo("marca", event.target.value)}
+                      />
+                    </label>
+                    <label className="text-sm text-slate-300">
+                      <span className="font-semibold text-slate-200">Modelo</span>
+                      <Input
+                        value={modeloForm.nome}
+                        onChange={(event) => handleAtualizarModelo("nome", event.target.value)}
+                      />
+                    </label>
+                    <label className="text-sm text-slate-300">
+                      <span className="font-semibold text-slate-200">Versão</span>
+                      <Input
+                        value={modeloForm.versao}
+                        onChange={(event) => handleAtualizarModelo("versao", event.target.value)}
+                      />
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-sm text-slate-300">
+                        <span className="font-semibold text-slate-200">Ano inicial</span>
+                        <Input
+                          value={modeloForm.anoInicial}
+                          onChange={(event) => handleAtualizarModelo("anoInicial", event.target.value)}
+                        />
+                      </label>
+                      <label className="text-sm text-slate-300">
+                        <span className="font-semibold text-slate-200">Ano final</span>
+                        <Input
+                          value={modeloForm.anoFinal}
+                          onChange={(event) => handleAtualizarModelo("anoFinal", event.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={modeloForm.ativo}
+                        onChange={(event) => handleAtualizarModelo("ativo", event.target.checked)}
+                        className="h-4 w-4 rounded border-slate-600 bg-slate-950"
+                      />
+                      <span className="font-semibold text-slate-200">Modelo ativo</span>
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button className="gap-2" onClick={handleSalvarModelo} disabled={processandoModelo}>
+                      <Save className="h-4 w-4" />
+                      {processandoModelo ? "Salvando..." : "Salvar modelo"}
+                    </Button>
+                    {modeloSelecionadoId ? (
+                      <Button
+                        variant="ghost"
+                        className="gap-2 text-red-300 hover:bg-red-500/10"
+                        onClick={handleRemoverModelo}
+                        disabled={processandoModelo}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Remover
+                      </Button>
+                    ) : null}
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
 }
 
 function SimpleManager({
+  tipo,
   title,
   description,
   items,
   emptyMessage,
   placeholder,
+  isLoading,
   onCreate,
   onUpdate,
-  onDelete
+  onDelete,
+  onRefresh
 }: SimpleManagerProps) {
-  const [newValue, setNewValue] = useState("");
+  const [novoValor, setNovoValor] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -104,24 +455,21 @@ function SimpleManager({
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const value = newValue.trim();
-    if (!value) return;
+    if (!novoValor.trim()) return;
     setIsProcessing(true);
     try {
-      await onCreate(value);
-      setNewValue("");
+      await onCreate(novoValor.trim());
+      setNovoValor("");
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleSaveEdit = async () => {
-    if (!editingId) return;
-    const value = editingValue.trim();
-    if (!value) return;
+    if (!editingId || !editingValue.trim()) return;
     setIsProcessing(true);
     try {
-      await onUpdate(editingId, value);
+      await onUpdate(editingId, editingValue.trim());
       setEditingId(null);
       setEditingValue("");
     } finally {
@@ -150,539 +498,98 @@ function SimpleManager({
   return (
     <Card className="border-white/10 bg-slate-900/70">
       <CardHeader className="gap-2">
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={onRefresh} disabled={isLoading || isProcessing}>
+            <RefreshCcw className="h-4 w-4" />
+            Atualizar
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-3">
-          {sortedItems.length > 0 ? (
-            sortedItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                {editingId === item.id ? (
-                  <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-                    <Input
-                      value={editingValue}
-                      onChange={(event) => setEditingValue(event.target.value)}
-                      placeholder={placeholder}
-                      disabled={isProcessing}
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" className="gap-2" onClick={handleSaveEdit} disabled={isProcessing}>
-                        <Save className="h-4 w-4" />
-                        Salvar
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-2" onClick={cancelEdit} disabled={isProcessing}>
-                        <X className="h-4 w-4" />
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <span className="text-sm font-medium text-white">{item.nome}</span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => {
-                          setEditingId(item.id);
-                          setEditingValue(item.nome);
-                        }}
+        {isLoading ? (
+          <p className="text-sm text-slate-400">Carregando dados de {title.toLowerCase()}...</p>
+        ) : (
+          <div className="space-y-3">
+            {sortedItems.length > 0 ? (
+              sortedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  {editingId === item.id ? (
+                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+                      <Input
+                        value={editingValue}
+                        onChange={(event) => setEditingValue(event.target.value)}
+                        placeholder={placeholder}
                         disabled={isProcessing}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-2 text-red-300 hover:text-red-200"
-                        onClick={() => handleDelete(item.id)}
-                        disabled={isProcessing}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Remover
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-slate-400">{emptyMessage}</p>
-          )}
-        </div>
-
-        <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row">
-          <Input
-            value={newValue}
-            onChange={(event) => setNewValue(event.target.value)}
-            placeholder={placeholder}
-            disabled={isProcessing}
-          />
-          <Button type="submit" className="gap-2" disabled={isProcessing || !newValue.trim()}>
-            <Plus className="h-4 w-4" />
-            Adicionar
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface ModelFormState {
-  marca: string;
-  nome: string;
-  edicao: string;
-  carroceria: string;
-  combustivel: string;
-  tipo_cambio: string;
-  ano_inicial: string;
-  ano_final: string;
-}
-
-const emptyModelForm: ModelFormState = {
-  marca: "",
-  nome: "",
-  edicao: "",
-  carroceria: "",
-  combustivel: "",
-  tipo_cambio: "",
-  ano_inicial: "",
-  ano_final: ""
-};
-
-type CatalogTabKey = "stores" | "characteristics" | "platforms" | "locations" | "models";
-
-const catalogTabs: Array<{ key: CatalogTabKey; label: string; description: string }> = [
-  {
-    key: "stores",
-    label: "Lojas",
-    description: "Cadastre e mantenha os pontos de venda disponíveis para associação com veículos e vendas."
-  },
-  {
-    key: "characteristics",
-    label: "Caracteristicas",
-    description: "Organize atributos que enriquecem o catálogo de veículos para anúncios e propostas."
-  },
-  {
-    key: "platforms",
-    label: "Plataformas",
-    description: "Mapeie canais de venda e marketplaces para conectar integrações de publicação."
-  },
-  {
-    key: "locations",
-    label: "Locais",
-    description: "Defina áreas físicas para controles logísticos e visibilidade de estoque."
-  },
-  {
-    key: "models",
-    label: "Modelos",
-    description: "Estruture marca, edição e período para conectar catálogos internos e plataformas externas."
-  }
-];
-
-export default function CatalogManagementPage() {
-  const [activeTab, setActiveTab] = useState<CatalogTabKey>("stores");
-  const [stores, setStores] = useState<SimpleItem[]>(initialStores);
-  const [characteristics, setCharacteristics] = useState<SimpleItem[]>(initialCharacteristics);
-  const [platforms, setPlatforms] = useState<SimpleItem[]>(initialPlatforms);
-  const [locations, setLocations] = useState<SimpleItem[]>(initialLocations);
-  const [models, setModels] = useState<ModelRecord[]>(initialModels);
-  const [modelForm, setModelForm] = useState<ModelFormState>(emptyModelForm);
-  const [editingModelId, setEditingModelId] = useState<string | null>(null);
-  const [isModelProcessing, setIsModelProcessing] = useState(false);
-
-  const handleCreateStore = async (nome: string) => {
-    setStores((current) => [...current, { id: createId("store"), nome }]);
-  };
-
-  const handleUpdateStore = async (id: string, nome: string) => {
-    setStores((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
-  };
-
-  const handleDeleteStore = async (id: string) => {
-    setStores((current) => current.filter((item) => item.id !== id));
-  };
-
-  const handleCreateCharacteristic = async (nome: string) => {
-    setCharacteristics((current) => [...current, { id: createId("char"), nome }]);
-  };
-
-  const handleUpdateCharacteristic = async (id: string, nome: string) => {
-    setCharacteristics((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
-  };
-
-  const handleDeleteCharacteristic = async (id: string) => {
-    setCharacteristics((current) => current.filter((item) => item.id !== id));
-  };
-
-  const handleCreatePlatform = async (nome: string) => {
-    setPlatforms((current) => [...current, { id: createId("plat"), nome }]);
-  };
-
-  const handleUpdatePlatform = async (id: string, nome: string) => {
-    setPlatforms((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
-  };
-
-  const handleDeletePlatform = async (id: string) => {
-    setPlatforms((current) => current.filter((item) => item.id !== id));
-  };
-
-  const handleCreateLocation = async (nome: string) => {
-    setLocations((current) => [...current, { id: createId("loc"), nome }]);
-  };
-
-  const handleUpdateLocation = async (id: string, nome: string) => {
-    setLocations((current) => current.map((item) => (item.id === id ? { ...item, nome } : item)));
-  };
-
-  const handleDeleteLocation = async (id: string) => {
-    setLocations((current) => current.filter((item) => item.id !== id));
-  };
-
-  const toNumberOrNull = (value: string) => {
-    if (!value) return null;
-    const parsed = Number(value);
-    return Number.isNaN(parsed) ? null : parsed;
-  };
-
-  const resetModelForm = () => {
-    setEditingModelId(null);
-    setModelForm(emptyModelForm);
-  };
-
-  const handleSubmitModel = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const marca = modelForm.marca.trim();
-    const nome = modelForm.nome.trim();
-
-    if (!marca || !nome) return;
-
-    const normalized: Omit<ModelRecord, "id"> = {
-      marca,
-      nome,
-      edicao: modelForm.edicao.trim() || null,
-      carroceria: modelForm.carroceria.trim() || null,
-      combustivel: modelForm.combustivel.trim() || null,
-      tipo_cambio: modelForm.tipo_cambio.trim() || null,
-      ano_inicial: toNumberOrNull(modelForm.ano_inicial),
-      ano_final: toNumberOrNull(modelForm.ano_final)
-    };
-
-    setIsModelProcessing(true);
-
-    try {
-      if (editingModelId) {
-        setModels((current) => current.map((item) => (item.id === editingModelId ? { ...item, ...normalized } : item)));
-      } else {
-        setModels((current) => [...current, { id: createId("model"), ...normalized }]);
-      }
-
-      resetModelForm();
-    } finally {
-      setIsModelProcessing(false);
-    }
-  };
-
-  const handleEditModel = (model: ModelRecord) => {
-    setEditingModelId(model.id);
-    setModelForm({
-      marca: model.marca,
-      nome: model.nome,
-      edicao: model.edicao ?? "",
-      carroceria: model.carroceria ?? "",
-      combustivel: model.combustivel ?? "",
-      tipo_cambio: model.tipo_cambio ?? "",
-      ano_inicial: model.ano_inicial ? String(model.ano_inicial) : "",
-      ano_final: model.ano_final ? String(model.ano_final) : ""
-    });
-  };
-
-  const handleDeleteModel = async (id: string) => {
-    setModels((current) => current.filter((item) => item.id !== id));
-    if (editingModelId === id) {
-      resetModelForm();
-    }
-  };
-
-  const renderSimpleManager = (config: {
-    key: Exclude<CatalogTabKey, "models">;
-    placeholder: string;
-    emptyMessage: string;
-    items: SimpleItem[];
-    onCreate: (nome: string) => Promise<void>;
-    onUpdate: (id: string, nome: string) => Promise<void>;
-    onDelete: (id: string) => Promise<void>;
-  }) => (
-    <SimpleManager
-      title={catalogTabs.find((tab) => tab.key === config.key)?.label ?? ""}
-      description={catalogTabs.find((tab) => tab.key === config.key)?.description ?? ""}
-      items={config.items}
-      emptyMessage={config.emptyMessage}
-      placeholder={config.placeholder}
-      onCreate={config.onCreate}
-      onUpdate={config.onUpdate}
-      onDelete={config.onDelete}
-    />
-  );
-
-  const activeTabDescription = catalogTabs.find((tab) => tab.key === activeTab)?.description ?? "";
-
-  return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Gerenciar cadastros operacionais"
-        description="Use a barra horizontal para alternar entre as tabelas e manter os dados de referência alinhados."
-      />
-
-      <Card className="border-white/10 bg-slate-900/70">
-        <CardHeader className="gap-2">
-          <CardTitle>Catalogos disponiveis</CardTitle>
-          <CardDescription>{activeTabDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <div className="flex gap-3 pb-2">
-              {catalogTabs.map((tab) => {
-                const isActive = tab.key === activeTab;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(tab.key);
-                      if (tab.key !== "models") {
-                        resetModelForm();
-                      }
-                    }}
-                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-                      isActive
-                        ? "bg-sky-500 text-white shadow-md shadow-sky-500/30"
-                        : "border border-white/10 bg-slate-950/40 text-slate-200 hover:border-sky-400/40"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {activeTab === "stores"
-        ? renderSimpleManager({
-            key: "stores",
-            placeholder: "Nome da loja",
-            emptyMessage: "Nenhuma loja cadastrada até o momento.",
-            items: stores,
-            onCreate: handleCreateStore,
-            onUpdate: handleUpdateStore,
-            onDelete: handleDeleteStore
-          })
-        : null}
-
-      {activeTab === "characteristics"
-        ? renderSimpleManager({
-            key: "characteristics",
-            placeholder: "Nome da caracteristica",
-            emptyMessage: "Nenhuma caracteristica cadastrada.",
-            items: characteristics,
-            onCreate: handleCreateCharacteristic,
-            onUpdate: handleUpdateCharacteristic,
-            onDelete: handleDeleteCharacteristic
-          })
-        : null}
-
-      {activeTab === "platforms"
-        ? renderSimpleManager({
-            key: "platforms",
-            placeholder: "Nome da plataforma",
-            emptyMessage: "Nenhuma plataforma cadastrada.",
-            items: platforms,
-            onCreate: handleCreatePlatform,
-            onUpdate: handleUpdatePlatform,
-            onDelete: handleDeletePlatform
-          })
-        : null}
-
-      {activeTab === "locations"
-        ? renderSimpleManager({
-            key: "locations",
-            placeholder: "Nome do local",
-            emptyMessage: "Nenhum local cadastrado.",
-            items: locations,
-            onCreate: handleCreateLocation,
-            onUpdate: handleUpdateLocation,
-            onDelete: handleDeleteLocation
-          })
-        : null}
-
-      {activeTab === "models" ? (
-        <Card className="border-white/10 bg-slate-900/70">
-          <CardHeader className="gap-2">
-            <CardTitle>Modelos</CardTitle>
-            <CardDescription>{activeTabDescription}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmitModel} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-marca">
-                    Marca
-                  </label>
-                  <Input
-                    id="model-marca"
-                    value={modelForm.marca}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, marca: event.target.value }))}
-                    placeholder="Ex.: Jeep"
-                    disabled={isModelProcessing}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-nome">
-                    Nome do modelo
-                  </label>
-                  <Input
-                    id="model-nome"
-                    value={modelForm.nome}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, nome: event.target.value }))}
-                    placeholder="Ex.: Compass"
-                    disabled={isModelProcessing}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-edicao">
-                    Edicao
-                  </label>
-                  <Input
-                    id="model-edicao"
-                    value={modelForm.edicao}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, edicao: event.target.value }))}
-                    placeholder="Ex.: Longitude 2.0"
-                    disabled={isModelProcessing}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-carroceria">
-                    Carroceria
-                  </label>
-                  <Input
-                    id="model-carroceria"
-                    value={modelForm.carroceria}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, carroceria: event.target.value }))}
-                    placeholder="Ex.: suv"
-                    disabled={isModelProcessing}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-combustivel">
-                    Combustivel
-                  </label>
-                  <Input
-                    id="model-combustivel"
-                    value={modelForm.combustivel}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, combustivel: event.target.value }))}
-                    placeholder="Ex.: flex"
-                    disabled={isModelProcessing}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-cambio">
-                    Tipo de cambio
-                  </label>
-                  <Input
-                    id="model-cambio"
-                    value={modelForm.tipo_cambio}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, tipo_cambio: event.target.value }))}
-                    placeholder="Ex.: automatico"
-                    disabled={isModelProcessing}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-ano-inicial">
-                    Ano inicial
-                  </label>
-                  <Input
-                    id="model-ano-inicial"
-                    value={modelForm.ano_inicial}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, ano_inicial: event.target.value }))}
-                    placeholder="Ex.: 2020"
-                    disabled={isModelProcessing}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-200" htmlFor="model-ano-final">
-                    Ano final
-                  </label>
-                  <Input
-                    id="model-ano-final"
-                    value={modelForm.ano_final}
-                    onChange={(event) => setModelForm((prev) => ({ ...prev, ano_final: event.target.value }))}
-                    placeholder="Ex.: 2024"
-                    disabled={isModelProcessing}
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <Button type="submit" className="gap-2" disabled={isModelProcessing}>
-                  <Save className="h-4 w-4" />
-                  {editingModelId ? "Atualizar" : "Cadastrar"}
-                </Button>
-                {editingModelId ? (
-                  <Button type="button" variant="ghost" onClick={resetModelForm} disabled={isModelProcessing}>
-                    Cancelar edicao
-                  </Button>
-                ) : null}
-              </div>
-            </form>
-
-            <div className="space-y-3">
-              {models.length === 0 ? (
-                <p className="text-sm text-slate-400">Nenhum modelo cadastrado por enquanto.</p>
-              ) : (
-                models.map((model) => (
-                  <div key={model.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-white">{model.marca} {model.nome}</p>
-                        <p className="text-xs text-slate-400">
-                          {model.edicao ?? "Sem edicao"} • {model.carroceria ?? "Sem carroceria"} • {model.combustivel ?? "Sem combustivel"}
-                        </p>
-                      </div>
+                      />
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleEditModel(model)}>
+                        <Button size="sm" className="gap-2" onClick={handleSaveEdit} disabled={isProcessing}>
+                          <Save className="h-4 w-4" />
+                          Salvar
+                        </Button>
+                        <Button variant="ghost" size="sm" className="gap-2" onClick={cancelEdit} disabled={isProcessing}>
+                          <X className="h-4 w-4" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-sm font-medium text-white">{item.nome}</span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => {
+                            setEditingId(item.id);
+                            setEditingValue(item.nome);
+                          }}
+                          disabled={isProcessing}
+                        >
                           <Pencil className="h-4 w-4" />
                           Editar
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="gap-1 text-red-300 hover:text-red-200"
-                          onClick={() => handleDeleteModel(model.id)}
+                          className="gap-2 text-red-300 hover:bg-red-500/10"
+                          onClick={() => handleDelete(item.id)}
+                          disabled={isProcessing}
                         >
                           <Trash2 className="h-4 w-4" />
                           Remover
                         </Button>
                       </div>
-                    </div>
-                    <p className="text-xs text-slate-400">
-                      Vigencia {model.ano_inicial ?? "?"} - {model.ano_final ?? "atual"}. Ajuste conforme conectar ao catálogo oficial.
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
-    </div>
+                    </>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-400">{emptyMessage}</p>
+            )}
+          </div>
+        )}
+
+        <form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleCreate}>
+          <Input
+            value={novoValor}
+            onChange={(event) => setNovoValor(event.target.value)}
+            placeholder={placeholder}
+            disabled={isProcessing || isLoading}
+          />
+          <Button type="submit" className="gap-2" disabled={isProcessing || isLoading}>
+            <Plus className="h-4 w-4" />
+            Adicionar
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

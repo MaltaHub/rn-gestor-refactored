@@ -1,4 +1,4 @@
-import { Megaphone, Package, Settings, Sparkles, TrendingUp, User } from "lucide-react";
+import { BellRing, LayoutGrid, Megaphone, Package, Settings, Sparkles, TrendingUp, User } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
 
@@ -7,8 +7,10 @@ export type ModuleSlug =
   | "anuncios"
   | "vendas"
   | "promocoes"
+  | "vitrine"
   | "perfil"
-  | "configuracoes";
+  | "configuracoes"
+  | "avisos";
 
 export interface ModuleDescriptor {
   slug: ModuleSlug;
@@ -53,6 +55,14 @@ export const coreModules: ModuleDescriptor[] = [
     highlight: "Ajuste estímulos com base em dados reais."
   },
   {
+    slug: "vitrine",
+    name: "Vitrine",
+    summary: "Controle quais veículos aparecem em cada loja e mantenha a vitrine atualizada.",
+    href: "/app/vitrine",
+    icon: LayoutGrid,
+    highlight: "Personalize vitrines respeitando o estoque único."
+  },
+  {
     slug: "perfil",
     name: "Perfil pessoal",
     summary: "Gerencie informações pessoais, preferências e segurança em um só lugar.",
@@ -67,6 +77,14 @@ export const coreModules: ModuleDescriptor[] = [
     href: "/app/configuracoes",
     icon: Settings,
     highlight: "Centralize dados mestres para acelerar integrações."
+  },
+  {
+    slug: "avisos",
+    name: "Avisos",
+    summary: "Monitore pendências operacionais e aponte correções prioritárias.",
+    href: "/app/avisos",
+    icon: BellRing,
+    highlight: "Resolva gargalos antes que impactem vendas."
   }
 ];
 

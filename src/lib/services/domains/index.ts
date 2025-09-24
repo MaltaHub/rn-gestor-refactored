@@ -9,3 +9,5 @@ export * as usuariosService from "./usuarios";
 export * as cadastrosService from "./cadastros";
 export * as avisosService from "./avisos";
 export * as dashboardService from "./dashboard";
+export * as vitrineService from "./vitrine";
+export * as empresasService from "./empresas";

@@ -21,6 +21,11 @@ import type {
   PromocoesFiltro,
   PromocaoResumo,
   PromocaoTabelaEntrada,
+  VitrineDetalhe,
+  VitrineDisponivelResumo,
+  VitrineFiltro,
+  VitrineRelacionamento,
+  VitrineResumo,
   UsuarioPerfil,
   UsuarioPreferencias,
   VehicleDetail,
@@ -58,6 +63,11 @@ export interface ReadOperationMap {
   "anuncios.listarPorPlataforma": ReadOperationSpec<AnunciosFiltro, AnuncioAgrupado[]>;
   "anuncios.listar": ReadOperationSpec<AnunciosFiltro, AnuncioResumo[]>;
   "anuncios.detalhes": ReadOperationSpec<{ vehicleId: string; platformId: string }, AnuncioDetalhe | null>;
+  "vitrine.listar": ReadOperationSpec<VitrineFiltro, VitrineResumo[]>;
+  "vitrine.disponiveis": ReadOperationSpec<VitrineFiltro, VitrineDisponivelResumo[]>;
+  "vitrine.resumo": ReadOperationSpec<{ veiculoId: string }, VitrineResumo | null>;
+  "vitrine.detalhes": ReadOperationSpec<{ veiculoId: string }, VitrineDetalhe | null>;
+  "vitrine.relacionamentos": ReadOperationSpec<{ lojaId?: string }, VitrineRelacionamento[]>;
   "vendas.insights": ReadOperationSpec<VendasFiltro, VendaInsight>;
   "vendas.recentes": ReadOperationSpec<VendasFiltro, VendaResumo[]>;
   "vendas.pipeline": ReadOperationSpec<VendasFiltro, PipelineResumo[]>;
@@ -98,6 +108,8 @@ export interface WriteOperationMap {
   "anuncios.atualizar": WriteOperationSpec<{ veiculoId: string; plataformaId: string; lojaId: string; dados: Partial<AnuncioDetalhe> }, { atualizado: boolean }>;
   "anuncios.remover": WriteOperationSpec<{ veiculoId: string; plataformaId: string; lojaId: string }, { removido: boolean }>;
   "anuncios.syncLote": WriteOperationSpec<{ arquivoId: string; lojaId: string }, { protocolo: string }>;
+  "vitrine.removerVeiculo": WriteOperationSpec<{ veiculoId: string; lojaId: string }, { removido: boolean }>;
+  "vitrine.adicionarVeiculo": WriteOperationSpec<{ veiculoId: string; lojaId: string }, { adicionado: boolean }>;
   "vendas.registrar": WriteOperationSpec<{ dados: Partial<VendaDetalhe>; lojaId: string }, { vendaId: string }>;
   "vendas.atualizar": WriteOperationSpec<{ id: string; dados: Partial<VendaDetalhe>; lojaId: string }, { atualizado: boolean }>;
   "promocoes.aplicarAjuste": WriteOperationSpec<{ veiculoId: string; lojaId: string; precoPromocional: number }, { aplicado: boolean }>;
@@ -134,6 +146,11 @@ export const readOperationMetadata: Record<ReadResource, OperationMetadata> = {
   "anuncios.listarPorPlataforma": { domain: "anuncios", description: "Agrupamento por plataforma", requiresLoja: true },
   "anuncios.listar": { domain: "anuncios", description: "Listagem por plataforma", requiresLoja: true },
   "anuncios.detalhes": { domain: "anuncios", description: "Detalhes do anúncio", requiresLoja: true },
+  "vitrine.listar": { domain: "vitrine", description: "Veículos na vitrine da loja", requiresLoja: true },
+  "vitrine.disponiveis": { domain: "vitrine", description: "Veículos disponíveis para adicionar", requiresLoja: true },
+  "vitrine.resumo": { domain: "vitrine", description: "Resumo do veículo na vitrine", requiresLoja: true },
+  "vitrine.detalhes": { domain: "vitrine", description: "Detalhes completos da vitrine", requiresLoja: true },
+  "vitrine.relacionamentos": { domain: "vitrine", description: "Relacionamentos de compartilhamento entre lojas", requiresLoja: true },
   "vendas.insights": { domain: "vendas", description: "Insights de vendas", requiresLoja: false },
   "vendas.recentes": { domain: "vendas", description: "Últimas vendas", requiresLoja: false },
   "vendas.pipeline": { domain: "vendas", description: "Pipeline de vendas", requiresLoja: false },
@@ -165,6 +182,8 @@ export const writeOperationMetadata: Record<WriteResource, OperationMetadata> = 
   "anuncios.atualizar": { domain: "anuncios", description: "Atualização de anúncio", requiresLoja: true },
   "anuncios.remover": { domain: "anuncios", description: "Remoção de anúncio", requiresLoja: true },
   "anuncios.syncLote": { domain: "anuncios", description: "Sincronização em lote", requiresLoja: true },
+  "vitrine.removerVeiculo": { domain: "vitrine", description: "Remoção de veículo da vitrine", requiresLoja: true },
+  "vitrine.adicionarVeiculo": { domain: "vitrine", description: "Adição de veículo à vitrine", requiresLoja: true },
   "vendas.registrar": { domain: "vendas", description: "Registro de nova venda", requiresLoja: true },
   "vendas.atualizar": { domain: "vendas", description: "Atualização de venda", requiresLoja: true },
   "promocoes.aplicarAjuste": { domain: "promocoes", description: "Aplicação de ajuste promocional", requiresLoja: true },

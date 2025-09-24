@@ -5,14 +5,39 @@ import { StandardLayout } from "@/components/layout/standard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { coreModules, operationalHighlights, quantitativeProofPoints } from "@/data/modules";
+import { marketingService } from "@/lib/services/domains";
 
-const differentiators = [
-  "Arquitetura Next.js App Router com foco em performance edge.",
-  "Componentes tipados, leves e orientados a ações do negócio.",
-  "Design austero, pronto para suportar governança e auditoria."
+const fallbackDifferentials = [
+  {
+    id: "arquitetura",
+    title: "Arquitetura Next.js",
+    description: "Base preparada para operar no edge com foco em performance e governança."
+  },
+  {
+    id: "componentes",
+    title: "Componentização leve",
+    description: "Componentes tipados e objetivos para acelerar integrações e automações."
+  },
+  {
+    id: "governanca",
+    title: "Governança desde o início",
+    description: "Design austero pronto para suportar auditoria, aprovação dupla e rastreabilidade."
+  }
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const [heroContent, diferencialItems] = await Promise.all([
+    marketingService.fetchLandingHero(),
+    marketingService.fetchLandingDifferentials()
+  ]);
+
+  const differentiators = diferencialItems.length > 0 ? diferencialItems : fallbackDifferentials;
+  const heroTitle = heroContent?.title ?? "ERP automotivo para concessionárias multi-loja";
+  const heroSubtitle =
+    heroContent?.subtitle ??
+    "Centralize estoque, anúncios e vendas em um cockpit único, pronto para crescer com a sua operação.";
+  const heroCta = heroContent?.ctaLabel ?? "Explorar cockpit";
+
   return (
     <StandardLayout className="gap-24">
       <section className="flex flex-col gap-16 lg:flex-row lg:items-center" id="hero">
@@ -20,17 +45,12 @@ export default function LandingPage() {
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">
             Cockpit holístico para o negócio automotivo
           </span>
-          <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-            Simplicidade estratégica para acelerar estoque, anúncios e vendas em um único fluxo.
-          </h1>
-          <p className="max-w-2xl text-lg text-slate-300">
-            Uma base Next.js minimalista, comentada e pronta para receber autenticação, integrações e automações sem
-            sacrificar a austeridade da operação.
-          </p>
+          <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">{heroTitle}</h1>
+          <p className="max-w-2xl text-lg text-slate-300">{heroSubtitle}</p>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <Link href="/app">
               <Button size="lg" className="gap-3">
-                Explorar cockpit
+                {heroCta}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -44,9 +64,12 @@ export default function LandingPage() {
           </div>
           <ul className="space-y-3 text-sm text-slate-300">
             {differentiators.map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-sky-300" />
-                {item}
+              <li key={item.id ?? item.title} className="flex items-start gap-3">
+                <CheckCircle className="mt-1 h-4 w-4 text-sky-300" />
+                <div>
+                  <p className="font-semibold text-slate-100">{item.title}</p>
+                  <p className="text-xs text-slate-400">{item.description}</p>
+                </div>
               </li>
             ))}
           </ul>

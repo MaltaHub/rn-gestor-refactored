@@ -376,3 +376,14 @@ export interface VitrineDetalhe extends VitrineResumo {
   promocaoAplicada?: string;
   ultimaAtualizacao: string;
 }
+
+export interface VitrineRelacionamento {
+  lojaId: string;
+  lojaNome: string;
+  compartilhamentos: Array<{
+    lojaId: string;
+    lojaNome: string;
+    ativo: boolean;
+  }>;
+  observacao?: string;
+}
