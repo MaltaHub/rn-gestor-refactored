@@ -51,7 +51,7 @@ interface ReadOperationSpec<Params, Result> {
 export interface ReadOperationMap {
   "marketing.hero": ReadOperationSpec<void, MarketingHeroContent | null>;
   "marketing.diferenciais": ReadOperationSpec<void, MarketingDifferential[]>;
-  "rpc.empresa_do_usuario": ReadOperationSpec<void, EmpresaVinculo | null>;
+  ".empresa_do_usuario": ReadOperationSpec<void, EmpresaVinculo | null>;
   "convites.validarToken": ReadOperationSpec<{ token: string }, ConviteValidacao>;
   "contexto.concessionaria": ReadOperationSpec<void, ConcessionariaContexto>;
   "permissoes.modulos": ReadOperationSpec<void, PermissaoModulo[]>;

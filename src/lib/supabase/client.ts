@@ -1,11 +1,29 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SUPABASE_SCHEMA = process.env.NEXT_PUBLIC_SUPABASE_SCHEMA ?? "public";
-const SUPABASE_EMPRESA_ID = process.env.NEXT_PUBLIC_SUPABASE_EMPRESA_ID;
+const SUPABASE_EMPRESA_ID = process.env.NEXT_PUBLIC_SUPABASE_EMPRESA_ID ?? "123456";
 
-const baseRestUrl = SUPABASE_URL ? `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1` : undefined;
+const normalizedUrl = SUPABASE_URL?.replace(/\/$/, "");
+const baseRestUrl = normalizedUrl ? `${normalizedUrl}/rest/v1` : undefined;
+const baseAuthUrl = normalizedUrl ? `${normalizedUrl}/auth/v1` : undefined;
 
-export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+export const isSupabaseConfigured = Boolean(normalizedUrl && SUPABASE_ANON_KEY);
+
+export function getSupabaseUrl(): string | undefined {
+  return normalizedUrl;
+}
+
+export function getSupabaseAnonKey(): string | undefined {
+  return SUPABASE_ANON_KEY || undefined;
+}
+
+export function getSupabaseRestUrl(): string | undefined {
+  return baseRestUrl;
+}
+
+export function getSupabaseAuthUrl(): string | undefined {
+  return baseAuthUrl;
+}
 
 export function getSupabaseEmpresaId(): string | undefined {
   return SUPABASE_EMPRESA_ID || undefined;
@@ -152,5 +170,16 @@ export async function supabaseDelete(table: string, filters: Record<string, stri
   await supabaseRequest(path, {
     method: "DELETE",
     headers: { Prefer: "return=minimal" }
+  });
+}
+
+export async function supabaseRpc<T>(
+  functionName: string,
+  params?: Record<string, unknown>
+): Promise<T> {
+  const payload = params ? normalizePayload(params) : {};
+  return supabaseRequest<T>(`rpc/${functionName}`, {
+    method: "POST",
+    body: JSON.stringify(payload)
   });
 }

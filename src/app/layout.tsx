@@ -4,6 +4,8 @@ import { ReactNode } from "react";
 import { clsx } from "clsx";
 import { Plus_Jakarta_Sans } from "next/font/google";
 
+import { AuthProvider } from "@/components/auth/auth-provider";
+
 const fontSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -23,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
       <body className={clsx("min-h-screen bg-slate-950 text-slate-100 antialiased", fontSans.variable, "font-sans")}>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

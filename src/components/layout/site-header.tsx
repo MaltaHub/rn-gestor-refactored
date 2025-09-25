@@ -41,16 +41,11 @@ export function SiteHeader() {
               </Button>
             </Link>
           ) : (
-            <>
-              <Link href="/login" className="hidden text-xs font-medium text-slate-300 transition-colors hover:text-sky-100 sm:inline">
+            <Link href="/login">
+              <Button size="sm" className="gap-2">
                 Entrar
-              </Link>
-              <Link href="/app">
-                <Button size="sm" className="gap-2">
-                  Acessar cockpit
-                </Button>
-              </Link>
-            </>
+              </Button>
+            </Link>
           )}
         </div>
       </div>

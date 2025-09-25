@@ -1,9 +1,25 @@
-import { readClient, setGlobalLoja, writeClient } from "../core";
+import { readClient, writeClient } from "../core";
+import { isSupabaseConfigured, supabaseRpc } from "../../supabase/client";
 import type { EmpresaVinculo } from "@/types/domain";
 
-export async function login(email: string, password: string) {
-  return writeClient.execute("auth.login", { email, password });
-}
+readClient.register("rpc.empresa_do_usuario", async () => {
+  if (!isSupabaseConfigured) {
+    // deixa cair no mock caso exista
+    return null;
+  }
+
+  try {
+    const result = await supabaseRpc<EmpresaVinculo | EmpresaVinculo[] | null>("empresa_do_usuario");
+    if (Array.isArray(result)) {
+      return result[0] ?? null;
+    }
+    console.warn("[rpc.empresa_do_usuario] Esperado um único resultado, mas a resposta foi um array.");
+    return result ?? null;
+  } catch (error) {
+    console.error("[rpc.empresa_do_usuario] Falha ao invocar Supabase", error);
+    return null;
+  }
+});
 
 export async function fetchEmpresaDoUsuario(): Promise<EmpresaVinculo | null> {
   return readClient.fetch("rpc.empresa_do_usuario");
@@ -15,17 +31,4 @@ export async function aceitarConvite(token: string) {
 
 export async function validarConvite(token: string) {
   return readClient.fetch("convites.validarToken", { token });
-}
-
-export async function resolveDestinoInicial(): Promise<{ destino: "/app" | "/lobby"; vinculo: EmpresaVinculo | null }>
-{
-  const vinculo = await fetchEmpresaDoUsuario();
-  if (vinculo) {
-    const lojaDefault = vinculo.lojaPadraoId ?? vinculo.lojas[0]?.id ?? null;
-    if (lojaDefault) {
-      setGlobalLoja(lojaDefault);
-    }
-    return { destino: "/app", vinculo };
-  }
-  return { destino: "/lobby", vinculo: null };
 }

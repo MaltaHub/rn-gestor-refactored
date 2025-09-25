@@ -36,8 +36,6 @@ export default async function LandingPage() {
   const heroSubtitle =
     heroContent?.subtitle ??
     "Centralize estoque, anúncios e vendas em um cockpit único, pronto para crescer com a sua operação.";
-  const heroCta = heroContent?.ctaLabel ?? "Explorar cockpit";
-
   return (
     <StandardLayout className="gap-24">
       <section className="flex flex-col gap-16 lg:flex-row lg:items-center" id="hero">
@@ -48,18 +46,11 @@ export default async function LandingPage() {
           <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">{heroTitle}</h1>
           <p className="max-w-2xl text-lg text-slate-300">{heroSubtitle}</p>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <Link href="/app">
+            <Link href="/login">
               <Button size="lg" className="gap-3">
-                {heroCta}
+                Entrar
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 text-sm font-medium text-sky-200 hover:text-sky-100"
-            >
-              Validar fluxo de login
-              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <ul className="space-y-3 text-sm text-slate-300">
@@ -142,13 +133,7 @@ export default async function LandingPage() {
               </CardHeader>
               <CardContent className="gap-4">
                 {highlight ? <p className="text-xs text-slate-400">{highlight}</p> : null}
-                <Link
-                  href={href}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-sky-200 hover:text-sky-100"
-                >
-                  Abrir módulo
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+                <p className="text-xs font-medium text-slate-400">Disponível após entrar</p>
               </CardContent>
             </Card>
           ))}
@@ -186,13 +171,7 @@ export default async function LandingPage() {
               Os pontos de integração aparecem como comentários `action`, mantendo o código limpo para evoluções
               incrementais.
             </p>
-            <Link
-              href="/app/estoque"
-              className="inline-flex items-center gap-2 text-sm font-medium text-sky-200 hover:text-sky-100"
-            >
-              Ver gestão de estoque
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            <p className="text-xs font-medium text-slate-400">Entre para acessar a gestão de estoque</p>
           </CardContent>
         </Card>
       </section>

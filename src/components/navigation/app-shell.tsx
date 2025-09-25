@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import { LayoutDashboard, User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { LojaSwitch, type LojaOption } from "@/components/navigation/loja-switch";
 import { useGlobalLojaId } from "@/hooks/use-loja";
 import { contextoService, usuariosService } from "@/lib/services/domains";
+import { useAuth } from "@/hooks/use-auth";
 import type { ConcessionariaContexto, PermissaoModulo } from "@/types/domain";
 
 interface AppShellProps {
@@ -37,12 +38,14 @@ const baseLink: NavLink = {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const currentPath = pathname ?? "";
+  const router = useRouter();
   const globalLojaId = useGlobalLojaId();
 
   const [contexto, setContexto] = useState<ConcessionariaContexto | null>(null);
   const [permissoes, setPermissoes] = useState<PermissaoModulo[]>([]);
   const [carregandoContexto, setCarregandoContexto] = useState(true);
   const [atualizandoLoja, setAtualizandoLoja] = useState(false);
+  const { logout, isSigningOut } = useAuth();
 
   useEffect(() => {
     let ativo = true;
@@ -129,6 +132,16 @@ export function AppShell({ children }: AppShellProps) {
     }
   };
 
+  const handleLogout = async () => {
+    if (isSigningOut) return;
+    try {
+      await logout();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Falha ao encerrar sessão", error);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-950">
       <aside className="hidden w-72 flex-col border-r border-white/5 bg-slate-950/60 px-6 py-10 lg:flex">
@@ -177,6 +190,8 @@ export function AppShell({ children }: AppShellProps) {
           lojaAtualNome={lojaAtualNome}
           onChangeLoja={lojaOptions.length > 0 ? handleLojaChange : undefined}
           isLoadingLoja={carregandoContexto || atualizandoLoja}
+          onLogout={handleLogout}
+          isSigningOut={isSigningOut}
         />
         <main className="flex-1 px-4 pb-12 pt-8 sm:px-6 lg:px-10">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">{children}</div>
@@ -193,6 +208,8 @@ interface AppTopBarProps {
   lojaAtualNome?: string;
   onChangeLoja?: (lojaId: string) => Promise<void>;
   isLoadingLoja: boolean;
+  onLogout?: () => Promise<void>;
+  isSigningOut?: boolean;
 }
 
 function AppTopBar({
@@ -201,9 +218,16 @@ function AppTopBar({
   lojaAtualId,
   lojaAtualNome,
   onChangeLoja,
-  isLoadingLoja
+  isLoadingLoja,
+  onLogout,
+  isSigningOut = false
 }: AppTopBarProps) {
   const modulo = activeLink ?? baseLink;
+
+  const handleLogoutClick = () => {
+    if (!onLogout) return;
+    void onLogout();
+  };
 
   return (
     <div className="border-b border-white/5 bg-slate-950/70">
@@ -239,6 +263,17 @@ function AppTopBar({
                 Abrir perfil
               </Button>
             </Link>
+            {onLogout ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-[11px] uppercase tracking-[0.2em]"
+                onClick={handleLogoutClick}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? "Saindo..." : "Sair"}
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
