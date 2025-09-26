@@ -1,16 +1,15 @@
-import { dirname } from "path";
+import path from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     ignores: [
       "node_modules/**",
@@ -19,6 +18,25 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
     ],
+  },
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    files: ["**/*.{ts,tsx,js,jsx}"],
+    languageOptions: {
+      parserOptions: {
+        project: [path.resolve(__dirname, "tsconfig.json")],
+        tsconfigRootDir: __dirname,
+      },
+    },
+    settings: {
+      next: {
+        rootDir: [__dirname],
+      },
+    },
+    rules: {
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "prefer-const": "error",
+    },
   },
 ];
 
