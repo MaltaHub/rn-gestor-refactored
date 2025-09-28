@@ -22,28 +22,20 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { session, isLoading, isConfigured } = useSupabaseSession();
+  const { session, isLoading, isConfigured, hasLoadedSession } =
+    useSupabaseSession();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isConfigured) {
-      return;
-    }
-
-    if (isLoading) {
+    if (!isConfigured || isLoading || !hasLoadedSession) {
       return;
     }
 
     if (!session) {
-      const redirectTarget = pathname ?? "/estoque";
-      const sanitizedTarget = redirectTarget.startsWith("/")
-        ? redirectTarget
-        : "/estoque";
-
-      router.replace(`/login?redirect=${encodeURIComponent(sanitizedTarget)}`);
+      router.replace("/login");
     }
-  }, [isConfigured, isLoading, session, router, pathname]);
+  }, [hasLoadedSession, isConfigured, isLoading, session, router]);
 
   if (!isConfigured) {
     return (
@@ -53,6 +45,14 @@ export default function AppLayout({
           `NEXT_PUBLIC_SUPABASE_ANON_KEY` para habilitar o sistema de
           autenticação do Gestor de Estoque.
         </div>
+      </div>
+    );
+  }
+
+  if (!hasLoadedSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-zinc-600">
+        <p className="text-sm">Carregando sessão do usuário...</p>
       </div>
     );
   }

@@ -1,231 +1,160 @@
 'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
 
+import { hasSupabaseConfig } from "./supabase-config";
 import {
-  SUPABASE_ANON_KEY,
-  SUPABASE_URL,
-  hasSupabaseConfig,
-} from "./supabase-config";
+  getSupabaseBrowserClient,
+  tryGetSupabaseBrowserClient,
+} from "./supabase-browser";
 
-const SESSION_STORAGE_KEY = "gestor.supabase.session";
-
-export type SupabaseUser = {
-  id: string;
-  email: string | null;
-  phone?: string | null;
-  app_metadata?: Record<string, unknown>;
-  user_metadata?: Record<string, unknown>;
-  [key: string]: unknown;
-};
-
-export type SupabaseSession = {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
-  tokenType: string;
-  user: SupabaseUser;
-};
+export type SupabaseUser = User;
+export type SupabaseSession = Session;
 
 type SignInResponse =
-  | { session: SupabaseSession; error: null }
+  | { session: SupabaseSession | null; error: null }
   | { session: null; error: string };
 
-function getStorage(): Storage | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const storage = window.localStorage;
-    storage.getItem("__test__");
-    return storage;
-  } catch (error) {
-    console.warn("Local storage indisponível", error);
-    return null;
-  }
-}
-
-export function readStoredSession(): SupabaseSession | null {
-  const storage = getStorage();
-  if (!storage) return null;
-
-  const json = storage.getItem(SESSION_STORAGE_KEY);
-  if (!json) return null;
-
-  try {
-    const parsed = JSON.parse(json) as SupabaseSession;
-    if (!parsed.accessToken || !parsed.refreshToken) {
-      storage.removeItem(SESSION_STORAGE_KEY);
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    storage.removeItem(SESSION_STORAGE_KEY);
-    return null;
-  }
-}
-
-function persistSession(session: SupabaseSession | null) {
-  const storage = getStorage();
-  if (!storage) return;
-
-  if (!session) {
-    storage.removeItem(SESSION_STORAGE_KEY);
-    return;
-  }
-
-  storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-}
-
-async function requestSupabase<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<{ data: T | null; error: string | null }> {
+export async function signInWithPassword(email: string, password: string): Promise<SignInResponse> {
   if (!hasSupabaseConfig) {
-    return { data: null, error: "Supabase não configurado." };
-  }
-
-  const response = await fetch(`${SUPABASE_URL}${path}`, {
-    ...init,
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
-
-  if (!response.ok) {
-    const errorBody = (await response.json().catch(() => ({}))) as {
-      error?: string;
-      message?: string;
+    return {
+      session: null,
+      error: "Supabase não configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.",
     };
-    const message = errorBody.message || errorBody.error || response.statusText;
-    return { data: null, error: message };
   }
 
-  const data = (await response.json().catch(() => null)) as T | null;
-  return { data, error: null };
-}
+  const client = getSupabaseBrowserClient();
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
 
-export async function signInWithPassword(
-  email: string,
-  password: string,
-): Promise<SignInResponse> {
-  if (!hasSupabaseConfig) {
-    return { session: null, error: "Supabase não configurado." };
+  if (error) {
+    return { session: null, error: error.message };
   }
 
-  const { data, error } = await requestSupabase<{
-    access_token: string;
-    token_type: string;
-    expires_in: number;
-    refresh_token: string;
-    user: SupabaseUser;
-  }>(`/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (error || !data) {
-    return { session: null, error: error ?? "Falha ao autenticar." };
-  }
-
-  const session: SupabaseSession = {
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
-    tokenType: data.token_type,
-    expiresAt: Date.now() + data.expires_in * 1000,
-    user: data.user,
-  };
-
-  persistSession(session);
-  return { session, error: null };
+  return { session: data.session ?? null, error: null };
 }
 
 export async function signOut(): Promise<void> {
-  const session = readStoredSession();
-  if (!session) {
-    persistSession(null);
+  if (!hasSupabaseConfig) {
     return;
   }
 
-  await requestSupabase(`/auth/v1/logout`, {
-    method: "POST",
-    headers: {
-      Authorization: `${session.tokenType} ${session.accessToken}`,
-    },
-  });
-
-  persistSession(null);
+  const client = getSupabaseBrowserClient();
+  await client.auth.signOut();
 }
 
 export async function fetchAuthenticatedUser(): Promise<SupabaseUser | null> {
-  const session = readStoredSession();
-  if (!session) return null;
-
-  const { data, error } = await requestSupabase<SupabaseUser>(`/auth/v1/user`, {
-    headers: {
-      Authorization: `${session.tokenType} ${session.accessToken}`,
-    },
-  });
-
-  if (error || !data) {
+  if (!hasSupabaseConfig) {
     return null;
   }
 
-  const updatedSession: SupabaseSession = {
-    ...session,
-    user: data,
-  };
-  persistSession(updatedSession);
-  return data;
+  const client = getSupabaseBrowserClient();
+  const { data, error } = await client.auth.getUser();
+
+  if (error) {
+    console.warn("Não foi possível obter o usuário autenticado", error);
+    return null;
+  }
+
+  return data.user ?? null;
 }
 
 export function useSupabaseSession() {
-  const [session, setSession] = useState<SupabaseSession | null>(() =>
-    readStoredSession(),
-  );
-  const [isLoading, setLoading] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(session?.user ?? null);
+  const client = useMemo(() => tryGetSupabaseBrowserClient(), []);
+  const [session, setSession] = useState<SupabaseSession | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isLoading, setLoading] = useState<boolean>(Boolean(client));
+  const [hasLoadedSession, setHasLoadedSession] = useState<boolean>(false);
 
-  const refreshSession = useCallback(() => {
-    const nextSession = readStoredSession();
+  const applySession = useCallback((nextSession: SupabaseSession | null) => {
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
+    setHasLoadedSession(true);
   }, []);
 
   useEffect(() => {
-    if (!hasSupabaseConfig) return;
+    if (!client) {
+      setLoading(false);
+      setHasLoadedSession(true);
+      return;
+    }
 
     let isMounted = true;
-    const attemptFetchUser = async () => {
+
+    const loadInitialSession = async () => {
       setLoading(true);
-      const fetchedUser = await fetchAuthenticatedUser();
+      const { data, error } = await client.auth.getSession();
+
       if (!isMounted) return;
-      setUser(fetchedUser);
-      setSession(readStoredSession());
+
+      if (error) {
+        console.warn("Não foi possível recuperar a sessão do Supabase", error);
+        applySession(null);
+        setLoading(false);
+        return;
+      }
+
+      applySession(data.session ?? null);
       setLoading(false);
     };
 
-    if (session && !user) {
-      attemptFetchUser();
-    }
+    loadInitialSession();
+
+    const { data: subscription } = client.auth.onAuthStateChange((_event, nextSession) => {
+      if (!isMounted) return;
+      applySession(nextSession);
+    });
 
     return () => {
       isMounted = false;
+      subscription.subscription.unsubscribe();
     };
-  }, [session, user]);
+  }, [applySession, client]);
 
-  useEffect(() => {
-    const handler = () => {
-      refreshSession();
-    };
+  const refreshSession = useCallback(async () => {
+    if (!client) {
+      applySession(null);
+      return;
+    }
 
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, [refreshSession]);
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+      console.warn("Falha ao atualizar sessão", error);
+      applySession(null);
+      return;
+    }
+
+    applySession(data.session ?? null);
+  }, [applySession, client]);
+
+  const clearSession = useCallback(async () => {
+    if (client) {
+      await client.auth.signOut();
+    }
+    applySession(null);
+  }, [applySession, client]);
+
+  const manualSetSession = useCallback(
+    async (next: SupabaseSession | null) => {
+      if (!client) {
+        applySession(next);
+        return;
+      }
+
+      if (!next) {
+        await client.auth.signOut();
+        applySession(null);
+        return;
+      }
+
+      await client.auth.setSession({
+        access_token: next.access_token,
+        refresh_token: next.refresh_token,
+      });
+      applySession(next);
+    },
+    [applySession, client],
+  );
 
   return {
     session,
@@ -233,13 +162,8 @@ export function useSupabaseSession() {
     isLoading,
     isConfigured: hasSupabaseConfig,
     refreshSession,
-    clearSession: () => {
-      persistSession(null);
-      refreshSession();
-    },
-    setSession: (next: SupabaseSession | null) => {
-      persistSession(next);
-      refreshSession();
-    },
+    hasLoadedSession,
+    clearSession,
+    setSession: manualSetSession,
   };
 }

@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { useVeiculos } from "@/hooks/use-veiculos";
 import { signOut, useSupabaseSession } from "@/lib/supabase-auth";
@@ -13,7 +15,9 @@ const featureHighlights = [
 ];
 
 export default function DashboardPage() {
-  const { session, user, clearSession } = useSupabaseSession();
+  const { session, user, clearSession, hasLoadedSession, isConfigured } =
+    useSupabaseSession();
+  const router = useRouter();
   const isAuthenticated = Boolean(session);
 
   const {
@@ -28,9 +32,35 @@ export default function DashboardPage() {
     clearSession();
   };
 
+  useEffect(() => {
+    if (!isConfigured || !hasLoadedSession) {
+      return;
+    }
+
+    if (!session) {
+      router.replace("/login");
+    }
+  }, [hasLoadedSession, isConfigured, session, router]);
+
+  if (!hasLoadedSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white px-6 py-10 text-sm text-zinc-500">
+        Carregando sessão...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white px-6 py-10 text-sm text-zinc-500">
+        Redirecionando para login…
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white px-6 py-10 text-zinc-900">
-      <div className="mx-auto w-full max-w-5xl space-y-10">
+    <div className="min-h-screen bg-white px-6 py-10 text-zinc-900">
+      <div className="mx-auto flex h-full w-full max-w-5xl flex-col justify-center space-y-10">
         {isAuthenticated ? (
           <section className="flex flex-col gap-6">
             <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -94,7 +124,7 @@ export default function DashboardPage() {
             </section>
           </section>
         ) : (
-          <section className="flex flex-col gap-6">
+          <section className="flex flex-col items-center gap-6 text-center">
             <header className="space-y-4">
               <span className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
                 Gestor de Estoque

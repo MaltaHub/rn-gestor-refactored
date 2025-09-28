@@ -1,5 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { getVeiculo, listVeiculos, updateVeiculo } from "@/services/estoque";
+import type { VeiculoUpdateInput } from "@/services/estoque";
 import type { Veiculo } from "@/types/estoque";
 
 type UseVeiculosOptions = {
@@ -10,62 +12,49 @@ type UseVeiculoOptions = {
   enabled?: boolean;
 };
 
-const MOCK_VEICULOS: Veiculo[] = [
-  {
-    id: 1,
-    marca: "Toyota",
-    modelo: "Corolla",
-    ano: 2022,
-    cor: "Prata",
-    placa: "ABC1D23",
-  },
-  {
-    id: 2,
-    marca: "Honda",
-    modelo: "Civic",
-    ano: 2021,
-    cor: "Preto",
-    placa: "EFG4H56",
-  },
-  {
-    id: 3,
-    marca: "Chevrolet",
-    modelo: "Onix",
-    ano: 2020,
-    cor: "Branco",
-    placa: "IJK7L89",
-  },
-];
-
-async function fetchVeiculos(): Promise<Veiculo[]> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return MOCK_VEICULOS;
-}
-
-async function fetchVeiculo(id: number): Promise<Veiculo | undefined> {
-  await new Promise((resolve) => setTimeout(resolve, 150));
-  return MOCK_VEICULOS.find((veiculo) => veiculo.id === id);
-}
-
 export function useVeiculos(options: UseVeiculosOptions = {}) {
   const { enabled = true } = options;
 
-  return useQuery({
+  return useQuery<Veiculo[]>({
     queryKey: ["veiculos"],
-    queryFn: fetchVeiculos,
+    queryFn: listVeiculos,
     staleTime: 1000 * 60 * 5,
     enabled,
   });
 }
 
-export function useVeiculo(id: number, options: UseVeiculoOptions = {}) {
-  const isIdValid = Number.isFinite(id);
+export function useVeiculo(id: string, options: UseVeiculoOptions = {}) {
+  const isIdValid = Boolean(id);
   const enabled = options.enabled ?? isIdValid;
 
-  return useQuery({
+  return useQuery<Veiculo | undefined>({
     queryKey: ["veiculo", id],
-    queryFn: () => fetchVeiculo(id),
+    queryFn: () => getVeiculo(id),
     enabled,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+type UpdateVeiculoVariables = {
+  id: string;
+  data: VeiculoUpdateInput;
+};
+
+export function useUpdateVeiculo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: UpdateVeiculoVariables) => updateVeiculo(id, data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["veiculo", updated.id], updated);
+      queryClient.setQueryData<Veiculo[] | undefined>(["veiculos"], (previous) => {
+        if (!previous) {
+          return previous;
+        }
+
+        return previous.map((item) => (item.id === updated.id ? updated : item));
+      });
+      queryClient.invalidateQueries({ queryKey: ["veiculos"] });
+    },
   });
 }

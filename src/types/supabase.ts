@@ -1,5 +1,3 @@
-// types.ts
-
 export interface Anuncio {
   criado_em?: string; // default: now()
   preco_original?: number | null;
