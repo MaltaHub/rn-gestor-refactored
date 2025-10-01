@@ -50,6 +50,7 @@ const tiposCambio = ["manual", "automatico", "cvt", "outro"];
 
 const createSimpleForm = (): SimpleFormState => ({ nome: "" });
 const createModeloForm = (): ModeloFormState => ({
+  id: null,
   marca: "",
   nome: "",
   combustivel: "gasolina",
@@ -60,10 +61,10 @@ const createModeloForm = (): ModeloFormState => ({
   cabine: "",
   tracao: "",
   carroceria: "hatch",
-  cambio: null,
+  cambio: "",
   cilindros: null,
   criado_em: null,
-  edicao: null,
+  edicao: "",
   valvulas: null,
   ano_inicial: null,
   ano_final: null,
@@ -79,6 +80,14 @@ const parseOptionalInteger = (value: string): number | null => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const parseOptionalNumberField = (
+  value: string | number | null | undefined
+): number | null => {
+  if (value === null || value === undefined) return null;
+  const stringValue = typeof value === "number" ? value.toString() : value;
+  return parseOptionalInteger(stringValue);
+};
+
 const toFeedback = (section: string, type: "success" | "error", message: string) => ({
   section,
   type,
@@ -88,7 +97,7 @@ const toFeedback = (section: string, type: "success" | "error", message: string)
 function handleInputChange<T>(
   setForm: Dispatch<SetStateAction<T>>,
   field: keyof T
-): ChangeEventHandler<HTMLInputElement> {
+): ChangeEventHandler<HTMLInputElement | HTMLSelectElement> {
   return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 }
 
@@ -289,16 +298,23 @@ async function handleDeleteEntity<T extends { id?: string }>(
     setFeedback,
     validate: (f) => (!f.marca.trim() || !f.nome.trim() ? "Informe marca e nome do modelo." : null),
     mapPayload: (f) => ({
+      id: typeof f.id === "string" ? f.id.trim() : undefined,
       marca: f.marca.trim(),
       nome: f.nome.trim(),
       combustivel: f.combustivel?.trim() || null,
       tipo_cambio: f.tipo_cambio?.trim() || null,
       motor: f.motor?.trim() || null,
-      lugares: parseOptionalInteger(f.lugares ? f.lugares.toString() : ""),
-      portas: parseOptionalInteger(f.portas? f.portas.toString() : ""),
+      lugares: parseOptionalNumberField(f.lugares ?? null),
+      portas: parseOptionalNumberField(f.portas ?? null),
       cabine: f.cabine?.trim() || null,
       tracao: f.tracao?.trim() || null,
       carroceria: f.carroceria?.trim() || null,
+      cambio: f.cambio?.trim() || null,
+      edicao: f.edicao?.trim() || null,
+      ano_inicial: parseOptionalNumberField(f.ano_inicial ?? null),
+      ano_final: parseOptionalNumberField(f.ano_final ?? null),
+      cilindros: parseOptionalNumberField(f.cilindros ?? null),
+      valvulas: parseOptionalNumberField(f.valvulas ?? null),
     }),
     setLoading: setLoadingModelo,
   });
@@ -495,13 +511,13 @@ async function handleDeleteEntity<T extends { id?: string }>(
             form={modeloForm}
             onChange={(f) => handleInputChange(setModeloForm, f)}
             onSubmit={handleModeloSubmit}
-            onCancel={() => {
-              resetForm(createModeloForm, setModeloForm);
-              setFeedback(null);
-            }}
-            loading={loadingModelo}
-            isEditing={!!modeloForm}
-          />
+          onCancel={() => {
+            resetForm(createModeloForm, setModeloForm);
+            setFeedback(null);
+          }}
+          loading={loadingModelo}
+          isEditing={!!modeloForm.id}
+        />
           <EntityList<Modelo>
             items={sortedModelos}
             emptyText="Nenhum modelo cadastrado."
@@ -509,6 +525,7 @@ async function handleDeleteEntity<T extends { id?: string }>(
             removeDisabled={(m) => !m.id}
             onEdit={(m) => {
               setModeloForm({
+                id: m.id ?? null,
                 marca: m.marca ?? "",
                 nome: m.nome ?? "",
                 combustivel: m.combustivel ?? "gasolina",
@@ -519,13 +536,13 @@ async function handleDeleteEntity<T extends { id?: string }>(
                 cabine: m.cabine ?? "",
                 tracao: m.tracao ?? "",
                 carroceria: m.carroceria ?? "hatch",
-                cambio: m.cambio,
-                cilindros: m.cilindros,
+                cambio: m.cambio ?? "",
+                cilindros: m.cilindros ?? null,
                 criado_em: m.criado_em,
-                edicao: m.edicao,
-                valvulas: m.valvulas,
-                ano_inicial: m.ano_inicial,
-                ano_final: m.ano_final,
+                edicao: m.edicao ?? "",
+                valvulas: m.valvulas ?? null,
+                ano_inicial: m.ano_inicial ?? null,
+                ano_final: m.ano_final ?? null,
               });
               setFeedback(null);
             }}
@@ -537,16 +554,17 @@ async function handleDeleteEntity<T extends { id?: string }>(
                 setModeloDeletingId,
                 setFeedback,
                 () => {
-                  if (modeloForm) resetForm(createModeloForm, setModeloForm);
+                  if (modeloForm.id === m.id) {
+                    resetForm(createModeloForm, setModeloForm);
+                  }
                   invalidateForArea(Areas.modelo);
                 }
               )
             }
             renderExtra={(m) => (
               <>
-                <p className="text-xs text-zinc-500">Empresa: {m.empresa_id ?? "-"}</p>
                 <p className="text-xs text-zinc-500">
-                  {[m.combustivel, m.tipo_cambio, m.motor].filter(Boolean).join(" • ") || "—"}
+                  {[m.combustivel, m.tipo_cambio, m.motor, m.carroceria, m.edicao].filter(Boolean).join(" • ") || "—"}
                 </p>
               </>
             )}

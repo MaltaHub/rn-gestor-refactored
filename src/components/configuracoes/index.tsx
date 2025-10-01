@@ -148,9 +148,6 @@ export function EntityList<T extends { id?: string; nome?: string; empresa_id?: 
         >
           <div>
             <p className="font-medium text-zinc-800">{item.nome}</p>
-            {"empresa_id" in item && (
-              <p className="text-xs text-zinc-500">Empresa: {item.empresa_id ?? "-"}</p>
-            )}
             {renderExtra?.(item)}
           </div>
           <div className="flex gap-2">
@@ -198,6 +195,41 @@ const combustiveis = [
 
 const tiposCambio = ["manual", "automatico", "cvt", "outro"];
 
+type ModeloTextFieldConfig = {
+  key: keyof ModeloFormState;
+  label: string;
+  inputMode?: "numeric";
+  required?: boolean;
+};
+
+const modeloTextFields: ModeloTextFieldConfig[] = [
+  { key: "marca", label: "Marca", required: true },
+  { key: "nome", label: "Nome do modelo", required: true },
+  { key: "motor", label: "Motor" },
+  { key: "lugares", label: "Lugares", inputMode: "numeric" },
+  { key: "portas", label: "Portas", inputMode: "numeric" },
+  { key: "cabine", label: "Cabine" },
+  { key: "tracao", label: "Tração" },
+  { key: "cambio", label: "Câmbio" },
+  { key: "edicao", label: "Edição" },
+  { key: "ano_inicial", label: "Ano inicial", inputMode: "numeric" },
+  { key: "ano_final", label: "Ano final", inputMode: "numeric" },
+  { key: "cilindros", label: "Cilindros", inputMode: "numeric" },
+  { key: "valvulas", label: "Válvulas", inputMode: "numeric" },
+];
+
+type ModeloSelectFieldConfig = {
+  key: keyof ModeloFormState;
+  label: string;
+  options: ReadonlyArray<string>;
+};
+
+const modeloSelectFields: ModeloSelectFieldConfig[] = [
+  { key: "tipo_cambio", label: "Tipo de câmbio", options: tiposCambio },
+  { key: "combustivel", label: "Combustível", options: combustiveis },
+  { key: "carroceria", label: "Carroceria", options: carrocerias },
+];
+
 /** formulário específico de modelos */
 export function ModeloForm({
   form,
@@ -219,45 +251,41 @@ export function ModeloForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-md border border-zinc-100 bg-zinc-50 p-4">
       <div className="grid gap-4 md:grid-cols-2">
-        {[
-          ["marca", "Marca"],
-          ["nome", "Nome do modelo"],
-          ["combustivel", "Combustível"],
-          ["tipo_cambio", "Tipo de câmbio"],
-          ["motor", "Motor"],
-          ["lugares", "Lugares"],
-          ["portas", "Portas"],
-          ["cabine", "Cabine"],
-          ["tracao", "Tração"],
-        ].map(([field, label]) => (
-          <label key={field} className="flex flex-col gap-1 text-sm">
+        
+        {modeloTextFields.map(({ key, label, inputMode, required }) => (
+          <label key={key} className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-zinc-700">{label}</span>
             <input
               className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-              value={(form as any)[field]}
-              onChange={onChange(field as keyof ModeloFormState)}
-              required={field === "marca" || field === "nome"}
-              inputMode={field === "lugares" || field === "portas" ? "numeric" : undefined}
+              value={(form[key] ?? "") as string | number}
+              onChange={onChange(key)}
+              required={required}
+              inputMode={inputMode}
+              type={inputMode === "numeric" ? "number" : "text"}
             />
           </label>
         ))}
-        <label className="flex flex-col gap-1 text-sm md:col-span-2">
-          <span className="font-medium text-zinc-700">Carroceria</span>
-          <select
-            className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-            value={form.carroceria ?? ""}
-            onChange={onChange("carroceria")}
-          >
-            <option value="" disabled>
-              Selecione uma carroceria
-            </option>
-            {carrocerias.map((carroceria) => (
-              <option key={carroceria} value={carroceria}>
-          {carroceria}
+
+        {modeloSelectFields.map(({ key, label, options }) => (
+          <label key={key} className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">{label}</span>
+            <select
+              className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
+              value={(form[key] ?? "") as string | number}
+              onChange={onChange(key)}
+            >
+              <option value="" disabled>
+                Selecione uma opção
               </option>
-            ))}
-          </select>
-        </label>
+              {options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+
       </div>
       <div className="flex flex-wrap gap-2">
         <button
