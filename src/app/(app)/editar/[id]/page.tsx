@@ -181,7 +181,6 @@ export default function EditarVeiculoPage() {
       );
       const modeloId = formState.modelo_id.trim();
       const localId = formState.local_id.trim();
-      const empresaId = formState.empresa_id.trim();
       const hodometroValue = Number(formState.hodometro.trim());
       if (Number.isNaN(hodometroValue)) {
         throw new Error("Informe um valor numérico válido para o hodômetro.");
@@ -199,7 +198,6 @@ export default function EditarVeiculoPage() {
         observacao: toValueOrNull(formState.observacao),
         modelo_id: modeloId === "" ? null : modeloId,
         local_id: localId === "" ? null : localId,
-        empresa_id: empresaId,
         estagio_documentacao: toValueOrNull(formState.estagio_documentacao),
         adicionar_caracteristicas: adicionar,
         remover_caracteristicas: remover,
