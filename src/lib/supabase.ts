@@ -7,9 +7,9 @@ export const supabase: SupabaseClient = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export async function callRpc (params: RPCInvoker): Promise<RPCResponse> {
-  const { data, error } = await supabase.rpc(params.rpc, { p_payload: params.p_payload });
-  console.log("RPC Call:", { params, data, error });
+export async function callRpc (rpc: string, p_payload: RPCParameters): Promise<RPCResponse> {
+  const { data, error } = await supabase.rpc(rpc, { p_payload: p_payload });
+  console.log("RPC Call:", { p_payload, data, error });
   if (error) throw error;
   return data as RPCResponse;
 }

@@ -1,25 +1,18 @@
 import { supabase } from "@/lib/supabase";
-import { Veiculo } from "@/types/estoque";
 import { useQuery } from "@tanstack/react-query";
+import type { VeiculoResumo } from "@/types/estoque";
 
-async function fetchVeiculos() {
+async function fetchVeiculos() : Promise<VeiculoResumo[] | []> {
   const { data, error } = await supabase
     .from("veiculos")
-    .select(`
-      id,
-      placa,
-      cor,
-      estado_venda,
-      estado_veiculo,
-      preco_venal,
-      registrado_em,
-      modelo: modelos ( id, nome, marca ),
-      local: locais ( id, nome ),
+    .select(`*,
+      modelo: modelos ( * ),
+      local: locais ( * ),
       caracteristicas: caracteristicas_veiculos (
-        caracteristica: caracteristicas ( id, nome )
+        caracteristica: caracteristicas ( * )
       )
     `)
-    .order("registrado_em", { ascending: false });
+    .order("registrado_em", { ascending: false }) as { data: VeiculoResumo[] | null; error: any };
 
   if (error) throw error;
 
@@ -29,21 +22,14 @@ async function fetchVeiculos() {
   }));
 }
 
-async function fetchVeiculo(id: string) {
+async function fetchVeiculo(id: string) : Promise<VeiculoResumo | []> {
   const { data, error } = await supabase
     .from("veiculos")
-    .select(`
-      id,
-      placa,
-      cor,
-      estado_venda,
-      estado_veiculo,
-      preco_venal,
-      registrado_em,
-      modelo: modelos ( id, nome, marca ),
+    .select(`*,
+      modelo: modelos ( * ),
       local: locais ( id, nome ),
       caracteristicas: caracteristicas_veiculos (
-        caracteristica: caracteristicas ( id, nome )
+        caracteristica: caracteristicas ( * )
       )
     `)
     .eq("id", id)
@@ -58,7 +44,7 @@ async function fetchVeiculo(id: string) {
 }
 
 export function useVeiculos(id?: string) {
-  return useQuery({
+  return useQuery<VeiculoResumo | VeiculoResumo[]>({
     queryKey: id ? ["veiculo", id] : ["veiculos"],
     queryFn: id ? () => fetchVeiculo(id) : fetchVeiculos as any,
     enabled: id ? Boolean(id) : true,

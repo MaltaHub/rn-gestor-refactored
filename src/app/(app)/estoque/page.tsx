@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { useVeiculos } from "@/hooks/use-estoque";
-import type { Veiculo } from "@/types/estoque";
+import type { VeiculoResumo } from "@/types/estoque";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -30,7 +30,7 @@ function formatCurrency(value?: number | null) {
 
 export default function EstoquePage() {
   const { data = [], isLoading } = useVeiculos();
-  const veiculos: Veiculo[] = data;
+  const veiculos: VeiculoResumo[] = data as VeiculoResumo[];
 
   return (
     <div className="bg-white px-6 py-10 text-zinc-900">
@@ -69,8 +69,8 @@ export default function EstoquePage() {
                 .filter(Boolean)
                 .join(" ") || "Modelo não informado";
               const anoExibicao = veiculo.ano_modelo ?? veiculo.ano_fabricacao;
-              const lojaNome = veiculo.loja?.loja?.nome ?? "Sem loja atribuída";
-              const precoVitrine = veiculo.loja?.preco ?? veiculo.preco_venal;
+              const lojaNome = "Em desenvolvimento";//veiculo.loja?.loja?.nome ?? "Sem loja atribuída";
+              const precoVitrine = veiculo.preco_venal ?? -1;
               const precoFormatado = formatCurrency(precoVitrine);
 
               return (

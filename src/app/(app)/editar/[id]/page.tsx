@@ -4,25 +4,24 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { useVeiculosUI, VeiculoUI } from "@/adapters/adaptador-estoque";
-import {
-  useCaracteristicas,
-  useLocais,
-  useLojas,
-  useModelos,
-} from "@/hooks/use-configuracoes";
-import { atualizarVeiculo } from "@/services/estoque";
-import type { EstadoVeiculo, EstadoVenda } from "@/types/supabase_enums";
+import { useVeiculosUI } from "@/adapters/adaptador-estoque";
+import type { VeiculoResumo } from "@/types/estoque";
+import { useCaracteristicas, useLocais, useModelos } from "@/hooks/use-configuracoes";
+import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
 
-// 🔹 Constantes
-const ESTADO_VENDA_OPTIONS: EstadoVenda[] = [
+type EstadoVendaOption = VeiculoResumo["estado_venda"];
+type EstadoVeiculoOption = NonNullable<VeiculoResumo["estado_veiculo"]>;
+type CaracteristicaFormValue = { id: string; nome: string };
+
+const ESTADO_VENDA_OPTIONS: EstadoVendaOption[] = [
   "disponivel",
   "reservado",
   "vendido",
   "repassado",
   "restrito",
 ];
-const ESTADO_VEICULO_OPTIONS: EstadoVeiculo[] = [
+
+const ESTADO_VEICULO_OPTIONS: EstadoVeiculoOption[] = [
   "novo",
   "seminovo",
   "usado",
@@ -31,41 +30,65 @@ const ESTADO_VEICULO_OPTIONS: EstadoVeiculo[] = [
   "sujo",
 ];
 
+const formatEnumLabel = (value: string) =>
+  value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 // 🔹 Form state
 interface VehicleFormState {
   placa: string;
   cor: string;
-  estado_venda: EstadoVenda;
-  estado_veiculo: EstadoVeiculo | "";
+  chassi: string;
+  ano_fabricacao: string;
+  ano_modelo: string;
+  hodometro: string;
+  estado_venda: EstadoVendaOption;
+  estado_veiculo: EstadoVeiculoOption | "";
   preco_venal: string;
   observacao: string;
   modelo_id: string;
   local_id: string;
-  caracteristicas_ids: string[];
+  estagio_documentacao: string;
+  caracteristicas: CaracteristicaFormValue[];
 }
 
 // 🔹 Helpers
-const buildFormStateFromVeiculo = (veiculoUI: VeiculoUI): VehicleFormState => ({
-  placa: veiculoUI.placa ?? "",
-  cor: veiculoUI.cor ?? "",
-  estado_venda: (veiculoUI as any).estado_venda ?? "disponivel",
-  estado_veiculo: (veiculoUI as any).estado_veiculo ?? "",
-  preco_venal: (veiculoUI as any).preco_venal?.toString() ?? "",
-  observacao: (veiculoUI as any).observacao ?? "",
-  modelo_id: veiculoUI.modelo?.id ?? "",
-  local_id: veiculoUI.local?.id ?? "",
-  caracteristicas_ids: veiculoUI.caracteristicas?.map((c) => c.id) as any ?? [],
+const buildFormStateFromVeiculo = (veiculo: VeiculoResumo): VehicleFormState => ({
+  placa: veiculo.placa ?? "",
+  cor: veiculo.cor ?? "",
+  chassi: veiculo.chassi ?? "",
+  ano_fabricacao:
+    veiculo.ano_fabricacao !== null && veiculo.ano_fabricacao !== undefined
+      ? veiculo.ano_fabricacao.toString()
+      : "",
+  ano_modelo:
+    veiculo.ano_modelo !== null && veiculo.ano_modelo !== undefined
+      ? veiculo.ano_modelo.toString()
+      : "",
+  hodometro:
+    veiculo.hodometro !== null && veiculo.hodometro !== undefined
+      ? veiculo.hodometro.toString()
+      : "",
+  estado_venda: veiculo.estado_venda,
+  estado_veiculo: veiculo.estado_veiculo ?? "",
+  preco_venal: veiculo.preco_venal != null ? veiculo.preco_venal.toString() : "",
+  observacao: veiculo.observacao ?? "",
+  modelo_id: veiculo.modelo_id ?? veiculo.modelo?.id ?? "",
+  local_id: veiculo.local_id ?? veiculo.local?.id ?? "",
+  estagio_documentacao: veiculo.estagio_documentacao ?? "",
+  caracteristicas:
+    veiculo.caracteristicas?.map((caracteristica) => ({
+      id: caracteristica.id,
+      nome: caracteristica.nome,
+    })) ?? [],
 });
 
-function isVeiculoUI(value: unknown): value is VeiculoUI {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "id" in value &&
-    "placa" in value &&
-    "status" in value &&
-    "caracteristicas" in value
-  );
+function isVeiculoResumo(value: unknown): value is VeiculoResumo {
+  if (typeof value !== "object" || value === null) return false;
+  const veiculo = value as Partial<VeiculoResumo>;
+  return typeof veiculo.id === "string" && typeof veiculo.placa === "string";
 }
 
 export default function EditarVeiculoPage() {
@@ -73,11 +96,11 @@ export default function EditarVeiculoPage() {
   const veiculoId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? "";
 
   // 🔹 Todos os hooks sempre no topo!
-  const { data: veiculoUI, isLoading: isVeiculoLoading } = useVeiculosUI(veiculoId);
+  const { data: veiculoData, isLoading: isVeiculoLoading } = useVeiculosUI(veiculoId);
   const { data: modelos = [] } = useModelos();
   const { data: locais = [] } = useLocais();
-  const { data: lojas = [] } = useLojas();
-  const { data: caracteristicas = [] } = useCaracteristicas() as { data: { id: string; nome: string }[] };
+  const { data: caracteristicasDisponiveis = [] } =
+    useCaracteristicas() as { data: CaracteristicaFormValue[] };
 
   const [formState, setFormState] = useState<VehicleFormState | null>(null);
   const [feedback, setFeedback] = useState<{
@@ -86,17 +109,19 @@ export default function EditarVeiculoPage() {
   } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const veiculo = isVeiculoResumo(veiculoData) ? veiculoData : null;
+
   // inicializa o formulário
   useEffect(() => {
-    if (veiculoUI && !formState && isVeiculoUI(veiculoUI)) {
-      setFormState(buildFormStateFromVeiculo(veiculoUI));
+    if (veiculo && !formState) {
+      setFormState(buildFormStateFromVeiculo(veiculo));
     }
-  }, [veiculoUI, formState]);
+  }, [veiculo, formState]);
 
   // 🔹 agora só condições de renderização, hooks já foram todos chamados
   if (!veiculoId) return <p className="p-6 text-red-600">Veículo inválido</p>;
   if (isVeiculoLoading || !formState) return <p className="p-6 text-zinc-600">Carregando...</p>;
-  if (!veiculoUI || !isVeiculoUI(veiculoUI)) {
+  if (!veiculo) {
     return <p className="p-6 text-zinc-600">Veículo não encontrado</p>;
   }
 
@@ -111,14 +136,14 @@ export default function EditarVeiculoPage() {
       );
     };
 
-  const handleToggleCaracteristica = (id: string) => {
+  const handleToggleCaracteristica = (caracteristica: CaracteristicaFormValue) => {
     setFormState((prev) =>
       prev
         ? {
             ...prev,
-            caracteristicas_ids: prev.caracteristicas_ids.includes(id)
-              ? prev.caracteristicas_ids.filter((x) => x !== id)
-              : [...prev.caracteristicas_ids, id],
+            caracteristicas: prev.caracteristicas.some((c) => c.id === caracteristica.id)
+              ? prev.caracteristicas.filter((c) => c.id !== caracteristica.id)
+              : [...prev.caracteristicas, caracteristica],
           }
         : prev,
     );
@@ -130,11 +155,57 @@ export default function EditarVeiculoPage() {
 
     try {
       setIsSaving(true);
-      await atualizarVeiculo(veiculoUI.id, {
-        ...formState,
-        preco_venal: formState.preco_venal ? Number(formState.preco_venal) : null,
-        estado_veiculo: formState.estado_veiculo || null, // 👈 fix tipagem
-      });
+      const toNumberOrNull = (value: string) => {
+        const trimmed = value.trim();
+        if (trimmed === "") return null;
+        const parsed = Number(trimmed);
+        return Number.isNaN(parsed) ? null : parsed;
+      };
+      const toValueOrNull = (value: string) => {
+        const trimmed = value.trim();
+        return trimmed === "" ? null : value;
+      };
+      const estadoVeiculo =
+        formState.estado_veiculo === "" ? null : formState.estado_veiculo;
+      const caracteristicasSelecionadas = formState.caracteristicas.map((item) => ({
+        id: item.id,
+        nome: item.nome,
+      }));
+      const caracteristicasOriginais = (veiculo.caracteristicas ?? []).map((item) => ({
+        id: item.id,
+        nome: item.nome,
+      }));
+      const { adicionar, remover } = calcularDiffCaracteristicas(
+        caracteristicasOriginais,
+        caracteristicasSelecionadas,
+      );
+      const modeloId = formState.modelo_id.trim();
+      const localId = formState.local_id.trim();
+      const empresaId = formState.empresa_id.trim();
+      const hodometroValue = Number(formState.hodometro.trim());
+      if (Number.isNaN(hodometroValue)) {
+        throw new Error("Informe um valor numérico válido para o hodômetro.");
+      }
+      const payload: Parameters<typeof atualizarVeiculo>[1] = {
+        placa: formState.placa,
+        cor: formState.cor,
+        chassi: toValueOrNull(formState.chassi),
+        ano_fabricacao: toNumberOrNull(formState.ano_fabricacao),
+        ano_modelo: toNumberOrNull(formState.ano_modelo),
+        hodometro: hodometroValue,
+        estado_venda: formState.estado_venda,
+        estado_veiculo: estadoVeiculo,
+        preco_venal: toNumberOrNull(formState.preco_venal),
+        observacao: toValueOrNull(formState.observacao),
+        modelo_id: modeloId === "" ? null : modeloId,
+        local_id: localId === "" ? null : localId,
+        empresa_id: empresaId,
+        estagio_documentacao: toValueOrNull(formState.estagio_documentacao),
+        adicionar_caracteristicas: adicionar,
+        remover_caracteristicas: remover,
+      };
+
+      await atualizarVeiculo(veiculo.id, payload);
       setFeedback({
         type: "success",
         message: "Dados atualizados com sucesso!",
@@ -154,7 +225,7 @@ export default function EditarVeiculoPage() {
       <div className="mx-auto w-full max-w-5xl space-y-8">
         <header className="border-b border-zinc-200 pb-6">
           <h1 className="text-2xl font-semibold text-zinc-900">Editar veículo</h1>
-          <p className="text-sm text-zinc-500">Placa {veiculoUI.placa}</p>
+          <p className="text-sm text-zinc-500">Placa {veiculo.placa}</p>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -177,10 +248,18 @@ export default function EditarVeiculoPage() {
               <label className="flex flex-col gap-1 text-sm">
                 <span>Placa</span>
                 <input
-                  value={formState.placa}
+                  value={formState.placa.toLocaleUpperCase()}
                   onChange={handleChange("placa")}
                   className="rounded-md border px-3 py-2 text-sm"
                   required
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Chassi</span>
+                <input
+                  value={formState.chassi}
+                  onChange={handleChange("chassi")}
+                  className="rounded-md border px-3 py-2 text-sm"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -192,21 +271,161 @@ export default function EditarVeiculoPage() {
                 />
               </label>
             </div>
+            <label className="mt-4 flex flex-col gap-1 text-sm">
+              <span>Observações</span>
+              <textarea
+                value={formState.observacao}
+                onChange={handleChange("observacao")}
+                className="rounded-md border px-3 py-2 text-sm"
+                rows={4}
+              />
+            </label>
+          </section>
+
+          {/* Especificações */}
+          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-medium">Especificações</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Ano de fabricação</span>
+                <input
+                  type="number"
+                  value={formState.ano_fabricacao}
+                  onChange={handleChange("ano_fabricacao")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                  min={1900}
+                  max={9999}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Ano do modelo</span>
+                <input
+                  type="number"
+                  value={formState.ano_modelo}
+                  onChange={handleChange("ano_modelo")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                  min={1900}
+                  max={9999}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Hodômetro</span>
+                <input
+                  type="number"
+                  value={formState.hodometro}
+                  onChange={handleChange("hodometro")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                  min={0}
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Preço venal</span>
+                <input
+                  type="number"
+                  value={formState.preco_venal}
+                  onChange={handleChange("preco_venal")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                  min={0}
+                  step="0.01"
+                />
+              </label>
+            </div>
+          </section>
+
+          {/* Status e localização */}
+          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-medium">Status e localização</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Estado de venda</span>
+                <select
+                  value={formState.estado_venda}
+                  onChange={handleChange("estado_venda")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                  required
+                >
+                  {ESTADO_VENDA_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {formatEnumLabel(option)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Estado do veículo</span>
+                <select
+                  value={formState.estado_veiculo}
+                  onChange={handleChange("estado_veiculo")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                >
+                  <option value="">Sem definição</option>
+                  {ESTADO_VEICULO_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {formatEnumLabel(option)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Estágio da documentação</span>
+                <input
+                  value={formState.estagio_documentacao}
+                  onChange={handleChange("estagio_documentacao")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Modelo</span>
+                <select
+                  value={formState.modelo_id}
+                  onChange={handleChange("modelo_id")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione um modelo</option>
+                  {modelos.map((modelo) => (
+                    <option key={modelo.id} value={modelo.id}>
+                      {modelo.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Local</span>
+                <select
+                  value={formState.local_id}
+                  onChange={handleChange("local_id")}
+                  className="rounded-md border px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione um local</option>
+                  {locais.map((local) => (
+                    <option key={local.id} value={local.id}>
+                      {local.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </section>
 
           {/* Características */}
           <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-medium">Características</h2>
             <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {caracteristicas.map((c) => (
-                <li key={c.id}>
+              {caracteristicasDisponiveis.map((caracteristica) => (
+                <li key={caracteristica.id}>
                   <label className="flex items-center gap-3 text-sm">
                     <input
                       type="checkbox"
-                      checked={formState.caracteristicas_ids.includes(c.id)}
-                      onChange={() => handleToggleCaracteristica(c.id)}
+                      checked={formState.caracteristicas.some(
+                        (selecionada) => selecionada.id === caracteristica.id,
+                      )}
+                      onChange={() => handleToggleCaracteristica({
+                        id: caracteristica.id,
+                        nome: caracteristica.nome,
+                      })}
                     />
-                    {c.nome}
+                    {caracteristica.nome}
                   </label>
                 </li>
               ))}
@@ -222,7 +441,7 @@ export default function EditarVeiculoPage() {
               {isSaving ? "Salvando..." : "Salvar alterações"}
             </button>
             <Link
-              href={`/estoque/${veiculoUI.id}`}
+              href={`/estoque/${veiculo.id}`}
               className="rounded-md border px-6 py-2 text-sm"
             >
               Cancelar

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { useVeiculos } from "@/hooks/use-estoque";
-import type { Veiculo } from "@/types/estoque";
+import type { VeiculoResumo } from "@/types/estoque";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -80,7 +80,7 @@ export default function EstoqueDetalhePage() {
   const {
     data: veiculo,
     isLoading,
-  } = useVeiculos(veiculoId as string) as { data: Veiculo | undefined; isLoading: boolean };
+  } = useVeiculos(veiculoId as string) as { data: VeiculoResumo | undefined; isLoading: boolean };
 
   if (!veiculoId) {
     return (
@@ -146,36 +146,36 @@ export default function EstoqueDetalhePage() {
     registrado_em,
     editado_em,
     modelo,
-    loja,
-    local,
-    documentacao,
+    //loja,
+    //local,
+    //documentacao,
     caracteristicas,
-    midia,
-    anuncios,
-  }: Veiculo = veiculo;
+    //midia,
+    //anuncios,
+  }: VeiculoResumo = veiculo;
 
   const marca = modelo?.marca ?? "Marca não informada";
   const modeloNome = modelo?.nome ?? "Modelo não informado";
-  const lojaNome = loja?.loja?.nome ?? "Não atribuído";
-  const localNome = local?.nome ?? "Não informado";
-  const dataEntrada = loja?.data_entrada ?? documentacao?.data_entrada;
-  const totalFotos = midia?.controle?.qtd_fotos ?? midia?.fotos?.length ?? 0;
-  const anunciosAtivos = anuncios?.filter((item) => item.status === "ativo");
-  const statusDocumentacao = documentacao?.status_geral ?? estagio_documentacao;
+  //const lojaNome = loja?.loja?.nome ?? "Não atribuído";
+  //const localNome = local?.nome ?? "Não informado";
+  //const dataEntrada = loja?.data_entrada ?? documentacao?.data_entrada;
+  //const totalFotos = midia?.controle?.qtd_fotos ?? midia?.fotos?.length ?? 0;
+  //const anunciosAtivos = anuncios?.filter((item) => item.status === "ativo");
+  //const statusDocumentacao = documentacao?.status_geral ?? estagio_documentacao;
 
   const documentacaoChecklist = [
-    { label: "Multas", value: documentacao?.tem_multas },
-    { label: "Manual", value: documentacao?.tem_manual },
-    { label: "Chave reserva", value: documentacao?.tem_chave_reserva },
-    { label: "Nota fiscal de compra", value: documentacao?.tem_nf_compra },
-    { label: "CRV", value: documentacao?.tem_crv },
-    { label: "CRLV", value: documentacao?.tem_crlv },
-    { label: "Dívidas ativas", value: documentacao?.tem_dividas_ativas },
-    { label: "Restrições", value: documentacao?.tem_restricoes },
-    { label: "Transferência iniciada", value: documentacao?.transferencia_iniciada },
-    { label: "Transferência concluída", value: documentacao?.transferencia_concluida },
-    { label: "Vistoria realizada", value: documentacao?.vistoria_realizada },
-    { label: "Vistoria aprovada", value: documentacao?.aprovada_vistoria },
+    { label: "Multas", value: "Nada Consta!"},//documentacao?.tem_multas },
+    { label: "Manual", value: "Sim!"},//documentacao?.tem_manual },
+    { label: "Chave reserva", value: "Sim!"},//documentacao?.tem_chave_reserva },
+    { label: "Nota fiscal de compra", value: "Sim!"},//documentacao?.tem_nf_compra },
+    { label: "CRV", value: "Sim!"},//documentacao?.tem_crv },
+    { label: "CRLV", value: "Sim!"},//documentacao?.tem_crlv },
+    { label: "Dívidas ativas", value: "Nada Consta!"},//documentacao?.tem_dividas_ativas },
+    { label: "Restrições", value: "Nada Consta!"},//documentacao?.tem_restricoes },
+    { label: "Transferência iniciada", value: "Nada Consta!"},//documentacao?.transferencia_iniciada },
+    { label: "Transferência concluída", value: "Sim!"},//documentacao?.transferencia_concluida },
+    { label: "Vistoria realizada", value: "Sim!"},//documentacao?.vistoria_realizada },
+    { label: "Vistoria aprovada", value: "Sim!"}//documentacao?.aprovada_vistoria },
   ];
 
   const resumoSituacao = [
@@ -183,7 +183,7 @@ export default function EstoqueDetalhePage() {
     { label: "Estado do veículo", value: formatEnum(estado_veiculo) },
     {
       label: "Situação da documentação",
-      value: formatEnum(statusDocumentacao),
+      value: formatEnum(estagio_documentacao),
     },
     { label: "Registrado em", value: formatDate(registrado_em) },
     { label: "Última atualização", value: formatDate(editado_em) },
@@ -202,20 +202,17 @@ export default function EstoqueDetalhePage() {
   ];
 
   const localizacaoValores = [
-    { label: "Loja responsável", value: lojaNome },
-    { label: "Local físico", value: localNome },
-    { label: "Data de entrada", value: formatDate(dataEntrada) },
-    { label: "Preço vitrine", value: formatCurrency(loja?.preco ?? null) },
-    { label: "Preço venal", value: formatCurrency(preco_venal ?? null) },
+    { label: "Data de entrada", value: formatDate(registrado_em) },
+    { label: "Preço vitrine", value: formatCurrency(preco_venal ?? null) },
     {
       label: "Fotos cadastradas",
-      value: totalFotos ? `${totalFotos} arquivo${totalFotos === 1 ? "" : "s"}` : "Sem fotos",
+      value: "Em desenvolvimento" //totalFotos ? `${totalFotos} arquivo${totalFotos === 1 ? "" : "s"}` : "Sem fotos",
     },
     {
       label: "Anúncios ativos",
-      value: anunciosAtivos?.length
+      value: "Em desenvolvimento" /*anunciosAtivos?.length
         ? `${anunciosAtivos.length} anúncio${anunciosAtivos.length === 1 ? "" : "s"}`
-        : "Nenhum anúncio ativo",
+        : "Nenhum anúncio ativo",*/
     },
   ];
 
@@ -314,7 +311,7 @@ export default function EstoqueDetalhePage() {
                     {label}
                   </dt>
                   <dd className="text-sm font-medium text-zinc-700">
-                    {formatBoolean(value)}
+                    {formatBoolean(!!value)}
                   </dd>
                 </div>
               ))}
@@ -325,7 +322,7 @@ export default function EstoqueDetalhePage() {
                   Observações gerais
                 </dt>
                 <dd className="mt-1 whitespace-pre-wrap text-zinc-700">
-                  {formatText(documentacao?.observacoes_gerais)}
+                  {formatText(observacao)}
                 </dd>
               </div>
               <div>
@@ -333,7 +330,7 @@ export default function EstoqueDetalhePage() {
                   Observações multas
                 </dt>
                 <dd className="mt-1 whitespace-pre-wrap text-zinc-700">
-                  {formatText(documentacao?.observacoes_multas)}
+                  {formatText("Nada Consta!")} {/*documentacao?.observacoes_multas*/}
                 </dd>
               </div>
               <div>
@@ -341,7 +338,7 @@ export default function EstoqueDetalhePage() {
                   Observações restrições
                 </dt>
                 <dd className="mt-1 whitespace-pre-wrap text-zinc-700">
-                  {formatText(documentacao?.observacoes_restricoes)}
+                  {formatText("Nada Consta!")} {/*documentacao?.observacoes_restricoes*/}
                 </dd>
               </div>
             </dl>

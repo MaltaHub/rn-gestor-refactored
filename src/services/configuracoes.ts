@@ -10,10 +10,7 @@ export async function salvarConfiguracao(area: ConfiguracaoArea, dados: any): Pr
   const operacao = `${tipo}/${dados?.id ? "atualizar" : "criar"}`;
   console.log("Salvando configuração:", { operacao, dados });
 
-  const response = callRpc({
-    rpc: RPC_CONFIGURACOES,
-    p_payload: { operacao: operacao, dados: dados, id: dados?.id }
-  });
+  const response = callRpc(RPC_CONFIGURACOES, { operacao: operacao, dados: dados, id: dados?.id });
 
   if ((await response).status === "success") {
     return { success: true };
@@ -25,10 +22,7 @@ export async function salvarConfiguracao(area: ConfiguracaoArea, dados: any): Pr
 export async function remove(area: ConfiguracaoArea, id: string) {
   const tipo = area
   const operacao = `${tipo}/excluir`;
-  const response = callRpc({
-    rpc: RPC_CONFIGURACOES,
-    p_payload: { operacao: operacao, id: id, dados: { area } }
-  });
+  const response = callRpc(RPC_CONFIGURACOES, { operacao: operacao, id: id});
 
   if ((await response).status === "success") {
     return { success: true };
