@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { signInWithPassword, useSupabaseSession } from "@/lib/supabase-auth";
-import { hasSupabaseConfig } from "@/lib/supabase-config";
+import { signIn } from "@/services/auth"; // novo serviço
+import { useAuth } from "@/hooks/use-auth"; // hook reativo
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { session, setSession } = useSupabaseSession();
+  const { isAuthenticated, loading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,53 +19,39 @@ export default function LoginPage() {
 
   const redirectParam = searchParams.get("redirect") ?? "/estoque";
   const redirectPath = useMemo(() => {
-    if (!redirectParam.startsWith("/")) {
-      return "/estoque";
-    }
-
-    return redirectParam;
+    return redirectParam.startsWith("/") ? redirectParam : "/estoque";
   }, [redirectParam]);
 
   useEffect(() => {
-    if (session) {
+    if (!loading && isAuthenticated) {
       router.replace(redirectPath);
     }
-  }, [session, router, redirectPath]);
+  }, [loading, isAuthenticated, router, redirectPath]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!hasSupabaseConfig) {
-      setErrorMessage(
-        "Supabase não está configurado. Defina as variáveis de ambiente necessárias.",
-      );
-      return;
-    }
-
     setSubmitting(true);
     setErrorMessage(null);
-    const { session, error } = await signInWithPassword(email, password);
 
-    if (error || !session) {
-      setErrorMessage(error ?? "Não foi possível autenticar.");
+    try {
+      await signIn(email, password);
+      router.replace(redirectPath);
+    } catch (err: any) {
+      setErrorMessage(err.message ?? "Não foi possível autenticar.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    setSession(session);
-    router.replace(redirectPath);
-    setSubmitting(false);
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 py-10 text-zinc-900">
-      <div className="w-full max-w-md rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 px-6 py-10 text-zinc-900">
+      <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 shadow-lg">
         <h1 className="text-2xl font-semibold text-zinc-900">Acessar conta</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Autentique-se com suas credenciais cadastradas no Supabase para
-          continuar gerenciando o estoque.
+          Entre com suas credenciais para continuar gerenciando o estoque.
         </p>
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-1">
             <label className="text-sm font-medium text-zinc-700" htmlFor="email">
               E-mail
@@ -76,7 +62,7 @@ export default function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900 transition placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
               placeholder="seu@email.com"
               required
             />
@@ -95,7 +81,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-900 transition placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
               placeholder="••••••••"
               required
             />
@@ -103,31 +89,35 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting || !hasSupabaseConfig}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
           >
             {isSubmitting ? "Entrando..." : "Entrar"}
           </button>
         </form>
 
         {errorMessage && (
-          <div className="mt-4 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
             {errorMessage}
           </div>
         )}
 
-        {!hasSupabaseConfig && (
-          <div className="mt-4 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Defina as variáveis `NEXT_PUBLIC_SUPABASE_URL` e
-            `NEXT_PUBLIC_SUPABASE_ANON_KEY` para habilitar o login.
-          </div>
-        )}
-
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          <Link className="font-medium text-blue-600 hover:underline" href="/">
-            Voltar ao dashboard
-          </Link>
-        </p>
+        <div className="mt-6 text-center text-sm text-zinc-500">
+          <p>
+            Não tem conta?{" "}
+            <Link
+              className="font-medium text-blue-600 hover:underline"
+              href="#"
+            >
+              Cadastre-se
+            </Link>
+          </p>
+          <p className="mt-2">
+            <Link className="font-medium text-blue-600 hover:underline" href="/">
+              Voltar ao dashboard
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -25,6 +25,6 @@
       "@supabase/ssr": ["src/stubs/supabase-ssr"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/lib/supabase.ts"],
   "exclude": ["node_modules"]
 }

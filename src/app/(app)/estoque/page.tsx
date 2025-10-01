@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { useVeiculos } from "@/hooks/use-veiculos";
+import { useVeiculos } from "@/hooks/use-estoque";
 import type { Veiculo } from "@/types/estoque";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {

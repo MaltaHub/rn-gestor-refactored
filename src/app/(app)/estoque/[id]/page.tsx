@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { useVeiculo } from "@/hooks/use-veiculos";
+import { useVeiculos } from "@/hooks/use-estoque";
 import type { Veiculo } from "@/types/estoque";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -80,7 +80,7 @@ export default function EstoqueDetalhePage() {
   const {
     data: veiculo,
     isLoading,
-  } = useVeiculo(veiculoId, { enabled: Boolean(veiculoId) });
+  } = useVeiculos(veiculoId as string) as { data: Veiculo | undefined; isLoading: boolean };
 
   if (!veiculoId) {
     return (

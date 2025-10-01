@@ -1,288 +1,1570 @@
-export interface Anuncio {
-  criado_em?: string; // default: now()
-  preco_original?: number | null;
-  status?: string; // default: 'ativo'
-  identificador_fisico?: string | null;
-  tipo_identificador_fisico?: string | null;
-  link_anuncio?: string | null;
-  data_publicacao?: string | null;
-  data_vencimento?: string | null;
-  visualizacoes?: number; // default: 0
-  favoritos?: number; // default: 0
-  mensagens?: number; // default: 0
-  atualizado_em?: string; // default: now()
-  descricao?: string | null;
-  descricao_original?: string | null;
-  preco?: number | null;
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-  loja_id?: string | null;
-  entidade_id: string;
-  tipo_anuncio: string;
-  plataforma_id: string;
-  autor_id?: string | null;
-  titulo: string;
-  titulo_original?: string | null;
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
+  public: {
+    Tables: {
+      anuncios: {
+        Row: {
+          atualizado_em: string | null
+          autor_id: string | null
+          criado_em: string | null
+          data_publicacao: string | null
+          data_vencimento: string | null
+          descricao: string | null
+          descricao_original: string | null
+          empresa_id: string
+          entidade_id: string
+          favoritos: number | null
+          id: string
+          identificador_fisico: string | null
+          link_anuncio: string | null
+          loja_id: string | null
+          mensagens: number | null
+          plataforma_id: string
+          preco: number | null
+          preco_original: number | null
+          status: string | null
+          tipo_anuncio: string
+          tipo_identificador_fisico: string | null
+          titulo: string
+          titulo_original: string | null
+          visualizacoes: number | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          autor_id?: string | null
+          criado_em?: string | null
+          data_publicacao?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          descricao_original?: string | null
+          empresa_id: string
+          entidade_id: string
+          favoritos?: number | null
+          id?: string
+          identificador_fisico?: string | null
+          link_anuncio?: string | null
+          loja_id?: string | null
+          mensagens?: number | null
+          plataforma_id: string
+          preco?: number | null
+          preco_original?: number | null
+          status?: string | null
+          tipo_anuncio: string
+          tipo_identificador_fisico?: string | null
+          titulo: string
+          titulo_original?: string | null
+          visualizacoes?: number | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          autor_id?: string | null
+          criado_em?: string | null
+          data_publicacao?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          descricao_original?: string | null
+          empresa_id?: string
+          entidade_id?: string
+          favoritos?: number | null
+          id?: string
+          identificador_fisico?: string | null
+          link_anuncio?: string | null
+          loja_id?: string | null
+          mensagens?: number | null
+          plataforma_id?: string
+          preco?: number | null
+          preco_original?: number | null
+          status?: string | null
+          tipo_anuncio?: string
+          tipo_identificador_fisico?: string | null
+          titulo?: string
+          titulo_original?: string | null
+          visualizacoes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anuncios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anuncios_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anuncios_plataforma_id_fkey"
+            columns: ["plataforma_id"]
+            isOneToOne: false
+            referencedRelation: "plataformas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caracteristicas: {
+        Row: {
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caracteristicas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caracteristicas_repetidos: {
+        Row: {
+          caracteristica_id: string
+          empresa_id: string
+          id: string
+          repetido_id: string
+        }
+        Insert: {
+          caracteristica_id: string
+          empresa_id: string
+          id?: string
+          repetido_id: string
+        }
+        Update: {
+          caracteristica_id?: string
+          empresa_id?: string
+          id?: string
+          repetido_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caracteristicas_repetidos_caracteristica_id_fkey"
+            columns: ["caracteristica_id"]
+            isOneToOne: false
+            referencedRelation: "caracteristicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caracteristicas_repetidos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caracteristicas_repetidos_repetido_id_fkey"
+            columns: ["repetido_id"]
+            isOneToOne: false
+            referencedRelation: "repetidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caracteristicas_veiculos: {
+        Row: {
+          caracteristica_id: string
+          empresa_id: string
+          id: string
+          veiculo_id: string
+        }
+        Insert: {
+          caracteristica_id: string
+          empresa_id: string
+          id?: string
+          veiculo_id: string
+        }
+        Update: {
+          caracteristica_id?: string
+          empresa_id?: string
+          id?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caracteristicas_veiculos_caracteristica_id_fkey"
+            columns: ["caracteristica_id"]
+            isOneToOne: false
+            referencedRelation: "caracteristicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caracteristicas_veiculos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caracteristicas_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      convites_empresa: {
+        Row: {
+          consumido_em: string | null
+          convidado_por_usuario_id: string
+          criado_em: string | null
+          empresa_id: string
+          expira_em: string
+          id: string
+          status: string | null
+          token: string
+          usuario_convidado_id: string
+        }
+        Insert: {
+          consumido_em?: string | null
+          convidado_por_usuario_id: string
+          criado_em?: string | null
+          empresa_id: string
+          expira_em: string
+          id?: string
+          status?: string | null
+          token?: string
+          usuario_convidado_id: string
+        }
+        Update: {
+          consumido_em?: string | null
+          convidado_por_usuario_id?: string
+          criado_em?: string | null
+          empresa_id?: string
+          expira_em?: string
+          id?: string
+          status?: string | null
+          token?: string
+          usuario_convidado_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convites_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentacao_veiculos: {
+        Row: {
+          aprovada_vistoria: boolean | null
+          atualizado_em: string | null
+          criado_em: string | null
+          data_conclusao: string | null
+          data_entrada: string | null
+          data_transferencia: string | null
+          data_vistoria: string | null
+          empresa_id: string
+          id: string
+          loja_id: string | null
+          observacoes_gerais: string | null
+          observacoes_multas: string | null
+          observacoes_restricoes: string | null
+          responsavel_id: string | null
+          status_geral: Database["public"]["Enums"]["status_documentacao"]
+          tem_chave_reserva: boolean | null
+          tem_crlv: boolean | null
+          tem_crv: boolean | null
+          tem_dividas_ativas: boolean | null
+          tem_embargos: boolean | null
+          tem_manual: boolean | null
+          tem_multas: boolean | null
+          tem_nf_compra: boolean | null
+          tem_precatorios: boolean | null
+          tem_restricoes: boolean | null
+          transferencia_concluida: boolean | null
+          transferencia_iniciada: boolean | null
+          valor_dividas_ativas: number | null
+          valor_multas: number | null
+          veiculo_id: string
+          vistoria_realizada: boolean | null
+        }
+        Insert: {
+          aprovada_vistoria?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          data_conclusao?: string | null
+          data_entrada?: string | null
+          data_transferencia?: string | null
+          data_vistoria?: string | null
+          empresa_id: string
+          id?: string
+          loja_id?: string | null
+          observacoes_gerais?: string | null
+          observacoes_multas?: string | null
+          observacoes_restricoes?: string | null
+          responsavel_id?: string | null
+          status_geral?: Database["public"]["Enums"]["status_documentacao"]
+          tem_chave_reserva?: boolean | null
+          tem_crlv?: boolean | null
+          tem_crv?: boolean | null
+          tem_dividas_ativas?: boolean | null
+          tem_embargos?: boolean | null
+          tem_manual?: boolean | null
+          tem_multas?: boolean | null
+          tem_nf_compra?: boolean | null
+          tem_precatorios?: boolean | null
+          tem_restricoes?: boolean | null
+          transferencia_concluida?: boolean | null
+          transferencia_iniciada?: boolean | null
+          valor_dividas_ativas?: number | null
+          valor_multas?: number | null
+          veiculo_id: string
+          vistoria_realizada?: boolean | null
+        }
+        Update: {
+          aprovada_vistoria?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          data_conclusao?: string | null
+          data_entrada?: string | null
+          data_transferencia?: string | null
+          data_vistoria?: string | null
+          empresa_id?: string
+          id?: string
+          loja_id?: string | null
+          observacoes_gerais?: string | null
+          observacoes_multas?: string | null
+          observacoes_restricoes?: string | null
+          responsavel_id?: string | null
+          status_geral?: Database["public"]["Enums"]["status_documentacao"]
+          tem_chave_reserva?: boolean | null
+          tem_crlv?: boolean | null
+          tem_crv?: boolean | null
+          tem_dividas_ativas?: boolean | null
+          tem_embargos?: boolean | null
+          tem_manual?: boolean | null
+          tem_multas?: boolean | null
+          tem_nf_compra?: boolean | null
+          tem_precatorios?: boolean | null
+          tem_restricoes?: boolean | null
+          transferencia_concluida?: boolean | null
+          transferencia_iniciada?: boolean | null
+          valor_dividas_ativas?: number | null
+          valor_multas?: number | null
+          veiculo_id?: string
+          vistoria_realizada?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentacao_veiculos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentacao_veiculos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentacao_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresas: {
+        Row: {
+          ativo: boolean | null
+          atualizado_em: string | null
+          criado_em: string | null
+          dominio: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          dominio?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          dominio?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      fotos_metadados: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          e_capa: boolean
+          empresa_id: string
+          id: string
+          loja_id: string
+          ordem: number
+          path: string
+          veiculo_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          e_capa?: boolean
+          empresa_id: string
+          id?: string
+          loja_id: string
+          ordem: number
+          path: string
+          veiculo_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          e_capa?: boolean
+          empresa_id?: string
+          id?: string
+          loja_id?: string
+          ordem?: number
+          path?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fotos_veiculo_por_loja_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fotos_veiculo_por_loja_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fotos_veiculo_por_loja_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locais: {
+        Row: {
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lojas: {
+        Row: {
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lojas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      membros_empresa: {
+        Row: {
+          ativo: boolean | null
+          criado_em: string | null
+          empresa_id: string
+          id: string
+          papel: Database["public"]["Enums"]["papel_usuario_empresa"] | null
+          usuario_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          criado_em?: string | null
+          empresa_id: string
+          id?: string
+          papel?: Database["public"]["Enums"]["papel_usuario_empresa"] | null
+          usuario_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          criado_em?: string | null
+          empresa_id?: string
+          id?: string
+          papel?: Database["public"]["Enums"]["papel_usuario_empresa"] | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membros_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modelos: {
+        Row: {
+          ano_final: number | null
+          ano_inicial: number | null
+          atualizado_em: string | null
+          cabine: string | null
+          cambio: string | null
+          carroceria: Database["public"]["Enums"]["tipo_carroceria"] | null
+          cilindros: number | null
+          combustivel: Database["public"]["Enums"]["tipo_combustivel"] | null
+          criado_em: string | null
+          edicao: string | null
+          empresa_id: string
+          id: string
+          lugares: number | null
+          marca: string
+          motor: string | null
+          nome: string
+          portas: number | null
+          tipo_cambio: Database["public"]["Enums"]["tipo_cambio"] | null
+          tracao: string | null
+          valvulas: number | null
+        }
+        Insert: {
+          ano_final?: number | null
+          ano_inicial?: number | null
+          atualizado_em?: string | null
+          cabine?: string | null
+          cambio?: string | null
+          carroceria?: Database["public"]["Enums"]["tipo_carroceria"] | null
+          cilindros?: number | null
+          combustivel?: Database["public"]["Enums"]["tipo_combustivel"] | null
+          criado_em?: string | null
+          edicao?: string | null
+          empresa_id: string
+          id?: string
+          lugares?: number | null
+          marca: string
+          motor?: string | null
+          nome: string
+          portas?: number | null
+          tipo_cambio?: Database["public"]["Enums"]["tipo_cambio"] | null
+          tracao?: string | null
+          valvulas?: number | null
+        }
+        Update: {
+          ano_final?: number | null
+          ano_inicial?: number | null
+          atualizado_em?: string | null
+          cabine?: string | null
+          cambio?: string | null
+          carroceria?: Database["public"]["Enums"]["tipo_carroceria"] | null
+          cilindros?: number | null
+          combustivel?: Database["public"]["Enums"]["tipo_combustivel"] | null
+          criado_em?: string | null
+          edicao?: string | null
+          empresa_id?: string
+          id?: string
+          lugares?: number | null
+          marca?: string
+          motor?: string | null
+          nome?: string
+          portas?: number | null
+          tipo_cambio?: Database["public"]["Enums"]["tipo_cambio"] | null
+          tracao?: string | null
+          valvulas?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modelos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permissoes_papel: {
+        Row: {
+          atualizado_em: string | null
+          atualizado_por: string | null
+          condicoes_extras: Json | null
+          criado_em: string | null
+          criado_por: string | null
+          empresa_id: string
+          id: string
+          operacao: string
+          papel: Database["public"]["Enums"]["papel_usuario_empresa"]
+          permitido: boolean
+        }
+        Insert: {
+          atualizado_em?: string | null
+          atualizado_por?: string | null
+          condicoes_extras?: Json | null
+          criado_em?: string | null
+          criado_por?: string | null
+          empresa_id: string
+          id?: string
+          operacao: string
+          papel: Database["public"]["Enums"]["papel_usuario_empresa"]
+          permitido?: boolean
+        }
+        Update: {
+          atualizado_em?: string | null
+          atualizado_por?: string | null
+          condicoes_extras?: Json | null
+          criado_em?: string | null
+          criado_por?: string | null
+          empresa_id?: string
+          id?: string
+          operacao?: string
+          papel?: Database["public"]["Enums"]["papel_usuario_empresa"]
+          permitido?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permissoes_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plataformas: {
+        Row: {
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plataformas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promocoes: {
+        Row: {
+          anuncio_id: string | null
+          ativo: boolean | null
+          atualizado_em: string | null
+          autor_id: string
+          criado_em: string | null
+          data_fim: string | null
+          data_inicio: string
+          empresa_id: string
+          id: string
+          preco_promocional: number
+          tipo_promocao: string
+          veiculo_loja_id: string | null
+        }
+        Insert: {
+          anuncio_id?: string | null
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          autor_id: string
+          criado_em?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          empresa_id: string
+          id?: string
+          preco_promocional: number
+          tipo_promocao: string
+          veiculo_loja_id?: string | null
+        }
+        Update: {
+          anuncio_id?: string | null
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          autor_id?: string
+          criado_em?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          empresa_id?: string
+          id?: string
+          preco_promocional?: number
+          tipo_promocao?: string
+          veiculo_loja_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promocoes_anuncio_id_fkey"
+            columns: ["anuncio_id"]
+            isOneToOne: false
+            referencedRelation: "anuncios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promocoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promocoes_veiculo_loja_id_fkey"
+            columns: ["veiculo_loja_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos_loja"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repetidos: {
+        Row: {
+          alterado_em: string | null
+          alterado_por: string | null
+          ano_fabricacao_padrao: number
+          ano_modelo_padrao: number
+          cor_padrao: string
+          empresa_id: string
+          id: string
+          max_hodometro: number
+          min_hodometro: number
+          modelo_id: string
+          registrado_em: string | null
+          registrado_por: string | null
+        }
+        Insert: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          ano_fabricacao_padrao: number
+          ano_modelo_padrao: number
+          cor_padrao: string
+          empresa_id: string
+          id?: string
+          max_hodometro: number
+          min_hodometro: number
+          modelo_id: string
+          registrado_em?: string | null
+          registrado_por?: string | null
+        }
+        Update: {
+          alterado_em?: string | null
+          alterado_por?: string | null
+          ano_fabricacao_padrao?: number
+          ano_modelo_padrao?: number
+          cor_padrao?: string
+          empresa_id?: string
+          id?: string
+          max_hodometro?: number
+          min_hodometro?: number
+          modelo_id?: string
+          registrado_em?: string | null
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repetidos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repetidos_modelo_id_fkey"
+            columns: ["modelo_id"]
+            isOneToOne: false
+            referencedRelation: "modelos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tem_fotos: {
+        Row: {
+          empresa_id: string
+          loja_id: string
+          qtd_fotos: number
+          ultima_atualizacao: string
+          veiculo_id: string
+        }
+        Insert: {
+          empresa_id: string
+          loja_id: string
+          qtd_fotos?: number
+          ultima_atualizacao?: string
+          veiculo_id: string
+        }
+        Update: {
+          empresa_id?: string
+          loja_id?: string
+          qtd_fotos?: number
+          ultima_atualizacao?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tem_fotos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tem_fotos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tem_fotos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veiculos: {
+        Row: {
+          ano_fabricacao: number | null
+          ano_modelo: number | null
+          chassi: string | null
+          cor: string
+          editado_em: string
+          editado_por: string
+          empresa_id: string
+          estado_veiculo: Database["public"]["Enums"]["estado_veiculo"] | null
+          estado_venda: Database["public"]["Enums"]["estado_venda"]
+          estagio_documentacao: string | null
+          hodometro: number
+          id: string
+          local_id: string | null
+          modelo_id: string | null
+          observacao: string | null
+          placa: string
+          preco_venal: number | null
+          registrado_em: string
+          registrado_por: string
+        }
+        Insert: {
+          ano_fabricacao?: number | null
+          ano_modelo?: number | null
+          chassi?: string | null
+          cor: string
+          editado_em?: string
+          editado_por?: string
+          empresa_id: string
+          estado_veiculo?: Database["public"]["Enums"]["estado_veiculo"] | null
+          estado_venda: Database["public"]["Enums"]["estado_venda"]
+          estagio_documentacao?: string | null
+          hodometro: number
+          id?: string
+          local_id?: string | null
+          modelo_id?: string | null
+          observacao?: string | null
+          placa: string
+          preco_venal?: number | null
+          registrado_em?: string
+          registrado_por?: string
+        }
+        Update: {
+          ano_fabricacao?: number | null
+          ano_modelo?: number | null
+          chassi?: string | null
+          cor?: string
+          editado_em?: string
+          editado_por?: string
+          empresa_id?: string
+          estado_veiculo?: Database["public"]["Enums"]["estado_veiculo"] | null
+          estado_venda?: Database["public"]["Enums"]["estado_venda"]
+          estagio_documentacao?: string | null
+          hodometro?: number
+          id?: string
+          local_id?: string | null
+          modelo_id?: string | null
+          observacao?: string | null
+          placa?: string
+          preco_venal?: number | null
+          registrado_em?: string
+          registrado_por?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veiculos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veiculos_local_id_fkey"
+            columns: ["local_id"]
+            isOneToOne: false
+            referencedRelation: "locais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veiculos_modelo_id_fkey"
+            columns: ["modelo_id"]
+            isOneToOne: false
+            referencedRelation: "modelos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veiculos_loja: {
+        Row: {
+          data_entrada: string
+          empresa_id: string
+          id: string
+          loja_id: string
+          preco: number | null
+          veiculo_id: string
+        }
+        Insert: {
+          data_entrada?: string
+          empresa_id: string
+          id?: string
+          loja_id: string
+          preco?: number | null
+          veiculo_id: string
+        }
+        Update: {
+          data_entrada?: string
+          empresa_id?: string
+          id?: string
+          loja_id?: string
+          preco?: number | null
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veiculos_loja_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veiculos_loja_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veiculos_loja_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veiculos_repetidos: {
+        Row: {
+          criado_em: string | null
+          empresa_id: string
+          id: string
+          repetido_id: string
+          similaridade_score: number | null
+          veiculo_id: string
+        }
+        Insert: {
+          criado_em?: string | null
+          empresa_id: string
+          id?: string
+          repetido_id: string
+          similaridade_score?: number | null
+          veiculo_id: string
+        }
+        Update: {
+          criado_em?: string | null
+          empresa_id?: string
+          id?: string
+          repetido_id?: string
+          similaridade_score?: number | null
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veiculos_repetidos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veiculos_repetidos_repetido_id_fkey"
+            columns: ["repetido_id"]
+            isOneToOne: false
+            referencedRelation: "repetidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veiculos_repetidos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendas: {
+        Row: {
+          atualizado_em: string | null
+          atualizado_por: string | null
+          cliente_cpf_cnpj: string
+          cliente_email: string | null
+          cliente_endereco: string | null
+          cliente_nome: string
+          cliente_telefone: string | null
+          comissao_loja: number | null
+          comissao_vendedor: number | null
+          criado_em: string | null
+          criado_por: string
+          data_entrega: string | null
+          data_previsao_entrega: string | null
+          data_venda: string
+          empresa_id: string
+          forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
+          id: string
+          instituicao_financeira: string | null
+          loja_id: string
+          numero_parcelas: number | null
+          observacoes: string | null
+          preco_entrada: number | null
+          preco_venda: number
+          seguradora: string | null
+          status_venda: Database["public"]["Enums"]["status_venda"]
+          tem_seguro: boolean | null
+          valor_financiado: number | null
+          valor_parcela: number | null
+          valor_seguro: number | null
+          veiculo_id: string
+          vendedor_id: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          atualizado_por?: string | null
+          cliente_cpf_cnpj: string
+          cliente_email?: string | null
+          cliente_endereco?: string | null
+          cliente_nome: string
+          cliente_telefone?: string | null
+          comissao_loja?: number | null
+          comissao_vendedor?: number | null
+          criado_em?: string | null
+          criado_por: string
+          data_entrega?: string | null
+          data_previsao_entrega?: string | null
+          data_venda?: string
+          empresa_id: string
+          forma_pagamento: Database["public"]["Enums"]["forma_pagamento"]
+          id?: string
+          instituicao_financeira?: string | null
+          loja_id: string
+          numero_parcelas?: number | null
+          observacoes?: string | null
+          preco_entrada?: number | null
+          preco_venda: number
+          seguradora?: string | null
+          status_venda?: Database["public"]["Enums"]["status_venda"]
+          tem_seguro?: boolean | null
+          valor_financiado?: number | null
+          valor_parcela?: number | null
+          valor_seguro?: number | null
+          veiculo_id: string
+          vendedor_id: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          atualizado_por?: string | null
+          cliente_cpf_cnpj?: string
+          cliente_email?: string | null
+          cliente_endereco?: string | null
+          cliente_nome?: string
+          cliente_telefone?: string | null
+          comissao_loja?: number | null
+          comissao_vendedor?: number | null
+          criado_em?: string | null
+          criado_por?: string
+          data_entrega?: string | null
+          data_previsao_entrega?: string | null
+          data_venda?: string
+          empresa_id?: string
+          forma_pagamento?: Database["public"]["Enums"]["forma_pagamento"]
+          id?: string
+          instituicao_financeira?: string | null
+          loja_id?: string
+          numero_parcelas?: number | null
+          observacoes?: string | null
+          preco_entrada?: number | null
+          preco_venda?: number
+          seguradora?: string | null
+          status_venda?: Database["public"]["Enums"]["status_venda"]
+          tem_seguro?: boolean | null
+          valor_financiado?: number | null
+          valor_parcela?: number | null
+          valor_seguro?: number | null
+          veiculo_id?: string
+          vendedor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      convidar_membro: {
+        Args: {
+          p_convidado_por: string
+          p_empresa_id: string
+          p_papel: Database["public"]["Enums"]["papel_usuario_empresa"]
+          p_usuario_convidado_id: string
+        }
+        Returns: Json
+      }
+      criar_empresa: {
+        Args: { p_dominio?: string; p_nome: string }
+        Returns: Json
+      }
+      empresa_do_usuario: {
+        Args: Record<PropertyKey, never> | { p_empresa_id: string }
+        Returns: boolean
+      }
+      executor: {
+        Args: { p_operacao: string; p_payload: Json }
+        Returns: Json
+      }
+      gerenciar_anuncios: {
+        Args: {
+          p_anuncio_id?: string
+          p_dados: Json
+          p_empresa_id: string
+          p_operacao: string
+        }
+        Returns: Json
+      }
+      gerenciar_documentacao: {
+        Args: {
+          p_dados: Json
+          p_empresa_id: string
+          p_operacao: string
+          p_veiculo_id?: string
+        }
+        Returns: Json
+      }
+      gerenciar_empresa: {
+        Args: { p_dados: Json; p_empresa_id?: string; p_operacao: string }
+        Returns: Json
+      }
+      gerenciar_membros: {
+        Args: {
+          p_dados_membro: Json
+          p_empresa_id: string
+          p_operacao: string
+          p_usuario_alvo?: string
+        }
+        Returns: Json
+      }
+      gerenciar_promocoes: {
+        Args: {
+          p_dados: Json
+          p_empresa_id: string
+          p_operacao: string
+          p_promocao_id?: string
+        }
+        Returns: Json
+      }
+      gerenciar_repetidos: {
+        Args: {
+          p_dados: Json
+          p_empresa_id: string
+          p_operacao: string
+          p_repetido_id?: string
+        }
+        Returns: Json
+      }
+      rpc_atualizar_status_venda: {
+        Args: {
+          p_data_entrega: string
+          p_observacoes: string
+          p_status: Database["public"]["Enums"]["status_venda"]
+          p_usuario_id: string
+          p_venda_id: string
+        }
+        Returns: Json
+      }
+      rpc_configuracoes: {
+        Args: { p_payload?: Json }
+        Returns: Json
+      }
+      rpc_fotos: {
+        Args: { p_payload?: Json }
+        Returns: Json
+      }
+      rpc_gerenciar_fotos_veiculo_loja: {
+        Args: {
+          p_fotos: Json
+          p_loja_id: string
+          p_operacao: string
+          p_usuario_id: string
+          p_veiculo_id: string
+        }
+        Returns: Json
+      }
+      rpc_registrar_venda: {
+        Args: { p_empresa_id: string; p_usuario_id: string; p_venda: Json }
+        Returns: Json
+      }
+      rpc_veiculos: {
+        Args: { p_payload?: Json }
+        Returns: Json
+      }
+      rpc_vendas: {
+        Args: { p_payload?: Json }
+        Returns: Json
+      }
+    }
+    Enums: {
+      estado_veiculo:
+        | "novo"
+        | "seminovo"
+        | "usado"
+        | "sucata"
+        | "limpo"
+        | "sujo"
+      estado_venda:
+        | "disponivel"
+        | "reservado"
+        | "vendido"
+        | "repassado"
+        | "restrito"
+      forma_pagamento:
+        | "dinheiro"
+        | "pix"
+        | "transferencia"
+        | "cartao_credito"
+        | "cartao_debito"
+        | "financiamento"
+        | "consorcio"
+        | "misto"
+      papel_usuario_empresa:
+        | "proprietario"
+        | "administrador"
+        | "gerente"
+        | "consultor"
+        | "usuario"
+      status_documentacao:
+        | "pendente"
+        | "em_andamento"
+        | "aguardando_cliente"
+        | "aguardando_terceiros"
+        | "concluida"
+        | "com_pendencias"
+        | "bloqueada"
+      status_venda:
+        | "negociacao"
+        | "aprovada"
+        | "finalizada"
+        | "cancelada"
+        | "devolvida"
+      tipo_cambio: "manual" | "automatico" | "cvt" | "outro"
+      tipo_carroceria:
+        | "sedan"
+        | "hatch"
+        | "camioneta"
+        | "suv"
+        | "suv compacto"
+        | "suv medio"
+        | "van"
+        | "buggy"
+      tipo_combustivel:
+        | "gasolina"
+        | "alcool"
+        | "flex"
+        | "diesel"
+        | "eletrico"
+        | "hibrido"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
 
-export interface Caracteristica {
-  id?: string; // default: gen_random_uuid()
-  nome: string;
-  empresa_id: string;
-}
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-export interface CaracteristicaRepetido {
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  repetido_id: string;
-  caracteristica_id: string;
-}
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-export interface CaracteristicaVeiculo {
-  empresa_id: string;
-  caracteristica_id: string;
-  id?: string; // default: gen_random_uuid()
-  veiculo_id: string;
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
-export interface ConviteEmpresa {
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-  convidado_por_usuario_id: string;
-  usuario_convidado_id: string;
-  token?: string; // default: gen_random_uuid()::text
-  status?: string; // default: 'pendente'
-  criado_em?: string; // default: now()
-  expira_em: string;
-  consumido_em?: string | null;
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
-export interface DocumentacaoVeiculo {
-  tem_multas?: boolean; // default: false
-  tem_manual?: boolean; // default: false
-  tem_chave_reserva?: boolean; // default: false
-  tem_nf_compra?: boolean; // default: false
-  tem_crv?: boolean; // default: false
-  tem_crlv?: boolean; // default: false
-  status_geral?: string; // default: 'pendente'
-  loja_id?: string | null;
-  veiculo_id: string;
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  valor_multas?: number; // default: 0
-  tem_dividas_ativas?: boolean; // default: false
-  valor_dividas_ativas?: number; // default: 0
-  tem_precatorios?: boolean; // default: false
-  tem_embargos?: boolean; // default: false
-  tem_restricoes?: boolean; // default: false
-  transferencia_iniciada?: boolean; // default: false
-  transferencia_concluida?: boolean; // default: false
-  data_transferencia?: string | null;
-  vistoria_realizada?: boolean; // default: false
-  data_vistoria?: string | null;
-  aprovada_vistoria?: boolean; // default: false
-  observacoes_gerais?: string | null;
-  observacoes_multas?: string | null;
-  observacoes_restricoes?: string | null;
-  responsavel_id?: string | null;
-  data_entrada?: string; // default: now()
-  data_conclusao?: string | null;
-  criado_em?: string; // default: now()
-  atualizado_em?: string; // default: now()
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
-export interface Empresa {
-  nome: string;
-  dominio?: string | null;
-  id?: string; // default: gen_random_uuid()
-  atualizado_em?: string; // default: now()
-  criado_em?: string; // default: now()
-  ativo?: boolean; // default: true
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
-export interface FotoMetadata {
-  path: string;
-  loja_id: string;
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  veiculo_id: string;
-  ordem: number;
-  atualizado_em?: string; // default: now()
-  criado_em?: string; // default: now()
-  e_capa?: boolean; // default: false
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
-export interface Local {
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-  nome: string;
-}
-
-export interface Loja {
-  nome: string;
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-}
-
-export interface MembroEmpresa {
-  id?: string; // default: gen_random_uuid()
-  criado_em?: string; // default: now()
-  ativo?: boolean; // default: true
-  papel?: string; // default: 'usuario'
-  usuario_id: string;
-  empresa_id: string;
-}
-
-export interface Modelo {
-  criado_em?: string; // default: now()
-  cambio?: string | null;
-  cilindros?: number | null;
-  valvulas?: number | null;
-  lugares?: number | null;
-  portas?: number | null;
-  cabine?: string | null;
-  tracao?: string | null;
-  ano_inicial?: number | null;
-  ano_final?: number | null;
-  atualizado_em?: string; // default: now()
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-  marca: string;
-  nome: string;
-  edicao?: string | null;
-  carroceria?: string | null;
-  combustivel?: string | null;
-  tipo_cambio?: string | null;
-  motor?: string | null;
-}
-
-export interface PermissaoPapel {
-  operacao: string;
-  papel: string;
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  permitido?: boolean; // default: true
-  condicoes_extras?: object | null;
-  criado_em?: string; // default: now()
-  atualizado_em?: string; // default: now()
-  criado_por?: string | null;
-  atualizado_por?: string | null;
-}
-
-export interface Plataforma {
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  nome: string;
-}
-
-export interface Promocao {
-  anuncio_id?: string | null;
-  veiculo_loja_id?: string | null;
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  atualizado_em?: string; // default: now()
-  criado_em?: string; // default: now()
-  ativo?: boolean; // default: true
-  autor_id: string;
-  data_fim?: string | null;
-  data_inicio: string;
-  preco_promocional: number;
-  tipo_promocao: string;
-}
-
-export interface Repetido {
-  alterado_por?: string | null;
-  ano_fabricacao_padrao: number;
-  ano_modelo_padrao: number;
-  cor_padrao: string;
-  min_hodometro: number;
-  max_hodometro: number;
-  registrado_em?: string; // default: now()
-  registrado_por?: string | null;
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-  modelo_id: string;
-  alterado_em?: string; // default: now()
-}
-
-export interface TemFotos {
-  qtd_fotos?: number; // default: 0
-  empresa_id: string;
-  veiculo_id: string;
-  loja_id: string;
-  ultima_atualizacao?: string; // default: now()
-}
-
-export interface Veiculo {
-  chassi?: string | null;
-  ano_modelo?: number | null;
-  ano_fabricacao?: number | null;
-  hodometro: number;
-  cor: string;
-  placa: string;
-  local_id?: string | null;
-  modelo_id?: string | null;
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  observacao?: string | null;
-  registrado_em?: string; // default: now()
-  estado_veiculo?: string | null;
-  estado_venda: string;
-  preco_venal?: number | null;
-  estagio_documentacao?: string | null;
-  editado_por?: string; // default: auth.uid()
-  registrado_por?: string; // default: auth.uid()
-  editado_em?: string; // default: now()
-}
-
-export interface VeiculoLoja {
-  data_entrada?: string; // default: now()
-  preco?: number | null;
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-  veiculo_id: string;
-  loja_id: string;
-}
-
-export interface VeiculoRepetido {
-  veiculo_id: string;
-  repetido_id: string;
-  similaridade_score?: number | null;
-  criado_em?: string; // default: now()
-  id?: string; // default: gen_random_uuid()
-  empresa_id: string;
-}
-
-export interface Venda {
-  seguradora?: string | null;
-  valor_seguro?: number | null;
-  data_venda?: string; // default: now()
-  data_entrega?: string | null;
-  data_previsao_entrega?: string | null;
-  status_venda?: string; // default: 'negociacao'
-  observacoes?: string | null;
-  comissao_vendedor?: number | null;
-  comissao_loja?: number | null;
-  criado_em?: string; // default: now()
-  atualizado_em?: string; // default: now()
-  criado_por: string;
-  atualizado_por?: string | null;
-  veiculo_id: string;
-  loja_id: string;
-  empresa_id: string;
-  id?: string; // default: gen_random_uuid()
-  cliente_nome: string;
-  cliente_cpf_cnpj: string;
-  cliente_telefone?: string | null;
-  cliente_email?: string | null;
-  cliente_endereco?: string | null;
-  vendedor_id: string;
-  preco_venda: number;
-  valor_financiado?: number; // default: 0
-  preco_entrada?: number; // default: 0
-  forma_pagamento: string;
-  instituicao_financeira?: string | null;
-  numero_parcelas?: number | null;
-  valor_parcela?: number | null;
-  tem_seguro?: boolean; // default: false
-}
+export const Constants = {
+  public: {
+    Enums: {
+      estado_veiculo: ["novo", "seminovo", "usado", "sucata", "limpo", "sujo"],
+      estado_venda: [
+        "disponivel",
+        "reservado",
+        "vendido",
+        "repassado",
+        "restrito",
+      ],
+      forma_pagamento: [
+        "dinheiro",
+        "pix",
+        "transferencia",
+        "cartao_credito",
+        "cartao_debito",
+        "financiamento",
+        "consorcio",
+        "misto",
+      ],
+      papel_usuario_empresa: [
+        "proprietario",
+        "administrador",
+        "gerente",
+        "consultor",
+        "usuario",
+      ],
+      status_documentacao: [
+        "pendente",
+        "em_andamento",
+        "aguardando_cliente",
+        "aguardando_terceiros",
+        "concluida",
+        "com_pendencias",
+        "bloqueada",
+      ],
+      status_venda: [
+        "negociacao",
+        "aprovada",
+        "finalizada",
+        "cancelada",
+        "devolvida",
+      ],
+      tipo_cambio: ["manual", "automatico", "cvt", "outro"],
+      tipo_carroceria: [
+        "sedan",
+        "hatch",
+        "camioneta",
+        "suv",
+        "suv compacto",
+        "suv medio",
+        "van",
+        "buggy",
+      ],
+      tipo_combustivel: [
+        "gasolina",
+        "alcool",
+        "flex",
+        "diesel",
+        "eletrico",
+        "hibrido",
+      ],
+    },
+  },
+} as const

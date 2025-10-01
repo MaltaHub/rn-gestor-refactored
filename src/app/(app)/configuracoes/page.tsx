@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  type ChangeEvent,
   type ChangeEventHandler,
   type Dispatch,
   type FormEvent,
@@ -9,69 +8,73 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
+import type { Caracteristica, Local, Loja, Modelo, Plataforma } from "@/types";
+import { salvarConfiguracao, remove } from "@/services/configuracoes";
 import {
-  useConfiguracoesSnapshot,
-  useDeleteCaracteristica,
-  useDeleteLocal,
-  useDeleteLoja,
-  useDeleteModelo,
-  useDeletePlataforma,
-  useSaveCaracteristica,
-  useSaveLocal,
-  useSaveLoja,
-  useSaveModelo,
-  useSavePlataforma,
+  useLojas,
+  usePlataformas,
+  useCaracteristicas,
+  useModelos,
+  useLocais,
 } from "@/hooks/use-configuracoes";
-import type {
-  Caracteristica,
-  Local,
-  Loja,
-  Modelo,
-  Plataforma,
-} from "@/types/supabase";
 
-interface SimpleFormState {
-  id?: string;
-  nome: string;
-}
+/* =========================
+ * Tipos e fábricas de estado
+ * ========================= */
+import type { SimpleFormState, ModeloFormState } from "@/types/configuracoes";
+import { SectionCard, FeedbackBadge, SimpleForm, EntityList, ModeloForm } from "@/components/configuracoes";
 
-interface ModeloFormState {
-  id?: string;
-  marca: string;
-  nome: string;
-  combustivel: string;
-  tipo_cambio: string;
-  motor: string;
-  lugares: string;
-  portas: string;
-  cabine: string;
-  tracao: string;
-  carroceria: string;
-}
+const carrocerias = [
+  "sedan",
+  "hatch",
+  "camioneta",
+  "suv",
+  "suv compacto",
+  "suv medio",
+  "van",
+  "buggy",
+];
 
-const createSimpleForm = (): SimpleFormState => ({
-  nome: "",
-});
+const combustiveis = [
+  "gasolina",
+  "alcool",
+  "flex",
+  "diesel",
+  "eletrico",
+  "hibrido",
+];
 
+const tiposCambio = ["manual", "automatico", "cvt", "outro"];
+
+const createSimpleForm = (): SimpleFormState => ({ nome: "" });
 const createModeloForm = (): ModeloFormState => ({
   marca: "",
   nome: "",
-  combustivel: "",
-  tipo_cambio: "",
-  motor: "",
-  lugares: "",
-  portas: "",
+  combustivel: "gasolina",
+  tipo_cambio: "manual",
+  motor: "1.0",
+  lugares: 5,
+  portas: 4,
   cabine: "",
   tracao: "",
-  carroceria: "",
+  carroceria: "hatch",
+  cambio: null,
+  cilindros: null,
+  criado_em: null,
+  edicao: null,
+  valvulas: null,
+  ano_inicial: null,
+  ano_final: null,
 });
 
+/* =============
+ * Utilitários
+ * ============= */
 const parseOptionalInteger = (value: string): number | null => {
   const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
+  if (!trimmed) return null;
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
 };
@@ -82,1119 +85,473 @@ const toFeedback = (section: string, type: "success" | "error", message: string)
   message,
 });
 
-export default function ConfiguracoesPage() {
-  const { data: configuracoes, isLoading, isError } = useConfiguracoesSnapshot();
+function handleInputChange<T>(
+  setForm: Dispatch<SetStateAction<T>>,
+  field: keyof T
+): ChangeEventHandler<HTMLInputElement> {
+  return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+}
 
-  const saveLoja = useSaveLoja();
-  const deleteLoja = useDeleteLoja();
-  const savePlataforma = useSavePlataforma();
-  const deletePlataforma = useDeletePlataforma();
-  const saveCaracteristica = useSaveCaracteristica();
-  const deleteCaracteristica = useDeleteCaracteristica();
-  const saveLocal = useSaveLocal();
-  const deleteLocal = useDeleteLocal();
-  const saveModelo = useSaveModelo();
-  const deleteModelo = useDeleteModelo();
+function resetForm<T>(factory: () => T, setter: Dispatch<SetStateAction<T>>) {
+  setter(factory());
+}
+
+/* =========================
+ * Página
+ * ========================= */
+export default function ConfiguracoesPage() {
+  const queryClient = useQueryClient();
+
+  enum Areas {
+    loja = "loja",
+    plataforma = "plataforma",
+    caracteristica = "caracteristica",
+    local = "local",
+    modelo = "modelo",
+  }
+
+  /** invalida tanto o padrão específico quanto um possível alias por coleção */
+function invalidateForArea(area: Areas) {
+  
+  // se seus hooks usam ["configuracoes", area]
+  queryClient.invalidateQueries({ queryKey: ["configuracoes", area] });
+}
+
+/** submissão genérica para formulários simples e complexos */
+function createSubmitHandler<T>({
+  area,
+  form,
+  setForm,
+  formFactory,
+  setFeedback,
+  validate, // opcional
+  mapPayload, // opcional (p/ transformar antes de enviar)
+  setLoading,
+}: {
+  area: Areas;
+  form: T;
+  setForm: Dispatch<SetStateAction<T>>;
+  formFactory: () => T;
+  setFeedback: (f: { section: string; type: "success" | "error"; message: string } | null) => void;
+  validate?: (f: T) => string | null;
+  mapPayload?: (f: T) => any;
+  setLoading: (v: boolean) => void;
+}) {
+  return async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const errorMsg = validate?.(form) ?? null;
+    if (errorMsg) {
+      setFeedback(toFeedback(`${area}s`, "error", errorMsg));
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const payload = mapPayload ? mapPayload(form) : form;
+      await salvarConfiguracao(area, payload);
+      invalidateForArea(area);
+
+      const updated = (form as any)?.id;
+      setFeedback(
+        toFeedback(
+          area,
+          "success",
+          updated ? "Atualizado com sucesso." : "Cadastrado com sucesso."
+        )
+      );
+      resetForm(formFactory, setForm);
+    } catch (err) {
+      setFeedback(
+        toFeedback(
+          `${area}s`,
+          "error",
+          err instanceof Error ? err.message : `Erro ao salvar ${area}.`
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+}
+
+/** exclusão genérica */
+async function handleDeleteEntity<T extends { id?: string }>(
+  area: "loja" | "plataforma" | "caracteristica" | "local" | "modelo",
+  entity: T,
+  confirmText: string,
+  setDeletingId: (id: string | null) => void,
+  setFeedback: (f: { section: string; type: "success" | "error"; message: string } | null) => void,
+  afterDelete?: () => void
+) {
+  if (!entity.id) return;
+  if (!window.confirm(confirmText)) return;
+
+  setDeletingId(entity.id);
+  try {
+    await remove(area, entity.id);
+    setFeedback(toFeedback(area, "success", "Removido com sucesso."));
+    afterDelete?.();
+  } catch (err) {
+    setFeedback(
+      toFeedback(
+        `${area}s`,
+        "error",
+        err instanceof Error ? err.message : `Erro ao remover ${area}.`
+      )
+    );
+  } finally {
+    setDeletingId(null);
+  }
+}
+
+  const { data: lojas } = useLojas();
+  const { data: plataformas } = usePlataformas();
+  const { data: caracteristicas } = useCaracteristicas();
+  const { data: locais } = useLocais();
+  const { data: modelos } = useModelos();
 
   const [lojaForm, setLojaForm] = useState<SimpleFormState>(createSimpleForm());
   const [plataformaForm, setPlataformaForm] = useState<SimpleFormState>(createSimpleForm());
-  const [caracteristicaForm, setCaracteristicaForm] =
-    useState<SimpleFormState>(createSimpleForm());
+  const [caracteristicaForm, setCaracteristicaForm] = useState<SimpleFormState>(createSimpleForm());
   const [localForm, setLocalForm] = useState<SimpleFormState>(createSimpleForm());
   const [modeloForm, setModeloForm] = useState<ModeloFormState>(createModeloForm());
 
-  const [feedback, setFeedback] = useState<
-    { section: string; type: "success" | "error"; message: string } | null
-  >(null);
+  const [feedback, setFeedback] = useState<{ section: string; type: "success" | "error"; message: string } | null>(null);
+
   const [lojaDeletingId, setLojaDeletingId] = useState<string | null>(null);
-  const [plataformaDeletingId, setPlataformaDeletingId] = useState<string | null>(
-    null,
-  );
-  const [caracteristicaDeletingId, setCaracteristicaDeletingId] = useState<
-    string | null
-  >(null);
+  const [plataformaDeletingId, setPlataformaDeletingId] = useState<string | null>(null);
+  const [caracteristicaDeletingId, setCaracteristicaDeletingId] = useState<string | null>(null);
   const [localDeletingId, setLocalDeletingId] = useState<string | null>(null);
   const [modeloDeletingId, setModeloDeletingId] = useState<string | null>(null);
 
-  const sortedLojas = useMemo(
-    () =>
-      [...(configuracoes?.lojas ?? [])].sort((a, b) =>
-        a.nome.localeCompare(b.nome, "pt-BR"),
-      ),
-    [configuracoes?.lojas],
-  );
+  const [loadingLoja, setLoadingLoja] = useState(false);
+  const [loadingPlataforma, setLoadingPlataforma] = useState(false);
+  const [loadingCaracteristica, setLoadingCaracteristica] = useState(false);
+  const [loadingLocal, setLoadingLocal] = useState(false);
+  const [loadingModelo, setLoadingModelo] = useState(false);
 
-  const sortedPlataformas = useMemo(
-    () =>
-      [...(configuracoes?.plataformas ?? [])].sort((a, b) =>
-        a.nome.localeCompare(b.nome, "pt-BR"),
-      ),
-    [configuracoes?.plataformas],
-  );
-
-  const sortedCaracteristicas = useMemo(
-    () =>
-      [...(configuracoes?.caracteristicas ?? [])].sort((a, b) =>
-        a.nome.localeCompare(b.nome, "pt-BR"),
-      ),
-    [configuracoes?.caracteristicas],
-  );
-
-  const sortedLocais = useMemo(
-    () =>
-      [...(configuracoes?.locais ?? [])].sort((a, b) =>
-        a.nome.localeCompare(b.nome, "pt-BR"),
-      ),
-    [configuracoes?.locais],
-  );
-
+  const sortedLojas = useMemo(() => (lojas ? [...lojas].sort((a, b) => a.nome.localeCompare(b.nome)) : []), [lojas]);
+  const sortedPlataformas = useMemo(() => (plataformas ? [...plataformas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [plataformas]);
+  const sortedCaracteristicas = useMemo(() => (caracteristicas ? [...caracteristicas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [caracteristicas]);
+  const sortedLocais = useMemo(() => (locais ? [...locais].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [locais]);
   const sortedModelos = useMemo(
-    () =>
-      [...(configuracoes?.modelos ?? [])].sort((a, b) =>
-        `${a.marca} ${a.nome}`.localeCompare(`${b.marca} ${b.nome}`, "pt-BR"),
-      ),
-    [configuracoes?.modelos],
+    () => (modelos ? [...modelos].sort((a, b) => `${a.marca} ${a.nome}`.localeCompare(`${b.marca} ${b.nome}`, "pt-BR")) : []),
+    [modelos]
   );
 
-  const isSnapshotReady = Boolean(configuracoes) || (!isLoading && !isError);
+  // handlers genéricos (um por área)
+  const handleLojaSubmit = createSubmitHandler<SimpleFormState>({
+    area: Areas.loja,
+    form: lojaForm,
+    setForm: setLojaForm,
+    formFactory: createSimpleForm,
+    setFeedback,
+    validate: (f) => (f.nome.trim() ? null : "Informe o nome da loja."),
+    setLoading: setLoadingLoja,
+  });
 
-  const handleSimpleInputChange = (
-    setter: Dispatch<SetStateAction<SimpleFormState>>,
-    field: keyof SimpleFormState,
-  ) =>
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const { value } = event.target;
-      setter((previous) => ({ ...previous, [field]: value }));
-    };
+  const handlePlataformaSubmit = createSubmitHandler<SimpleFormState>({
+    area: Areas.plataforma,
+    form: plataformaForm,
+    setForm: setPlataformaForm,
+    formFactory: createSimpleForm,
+    setFeedback,
+    validate: (f) => (f.nome.trim() ? null : "Informe o nome da plataforma."),
+    setLoading: setLoadingPlataforma,
+  });
 
-  const handleModeloInputChange = (
-    field: keyof ModeloFormState,
-  ): ChangeEventHandler<HTMLInputElement> =>
-    (event) => {
-      const { value } = event.target;
-      setModeloForm((previous) => ({ ...previous, [field]: value }));
-    };
+  const handleCaracteristicaSubmit = createSubmitHandler<SimpleFormState>({
+    area: Areas.caracteristica,
+    form: caracteristicaForm,
+    setForm: setCaracteristicaForm,
+    formFactory: createSimpleForm,
+    setFeedback,
+    validate: (f) => (f.nome.trim() ? null : "Informe o nome da característica."),
+    setLoading: setLoadingCaracteristica,
+  });
 
-  const handleLojaSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!lojaForm.nome.trim()) {
-      setFeedback(toFeedback("lojas", "error", "Informe o nome da loja."));
-      return;
-    }
+  const handleLocalSubmit = createSubmitHandler<SimpleFormState>({
+    area: Areas.local,
+    form: localForm,
+    setForm: setLocalForm,
+    formFactory: createSimpleForm,
+    setFeedback,
+    validate: (f) => (f.nome.trim() ? null : "Informe o nome do local."),
+    setLoading: setLoadingLocal,
+  });
 
-    try {
-      await saveLoja.mutateAsync({
-        id: lojaForm.id || undefined,
-        nome: lojaForm.nome.trim(),
-      });
-      setFeedback(
-        toFeedback(
-          "lojas",
-          "success",
-          lojaForm.id ? "Loja atualizada com sucesso." : "Loja cadastrada.",
-        ),
-      );
-      setLojaForm(createSimpleForm());
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "lojas",
-          "error",
-          error instanceof Error ? error.message : "Erro ao salvar a loja.",
-        ),
-      );
-    }
-  };
-
-  const handlePlataformaSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-    if (!plataformaForm.nome.trim()) {
-      setFeedback(
-        toFeedback("plataformas", "error", "Informe o nome da plataforma."),
-      );
-      return;
-    }
-
-    try {
-      await savePlataforma.mutateAsync({
-        id: plataformaForm.id || undefined,
-        nome: plataformaForm.nome.trim(),
-      });
-      setFeedback(
-        toFeedback(
-          "plataformas",
-          "success",
-          plataformaForm.id
-            ? "Plataforma atualizada com sucesso."
-            : "Plataforma cadastrada.",
-        ),
-      );
-      setPlataformaForm(createSimpleForm());
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "plataformas",
-          "error",
-          error instanceof Error
-            ? error.message
-            : "Erro ao salvar a plataforma.",
-        ),
-      );
-    }
-  };
-
-  const handleCaracteristicaSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-    if (!caracteristicaForm.nome.trim()) {
-      setFeedback(
-        toFeedback(
-          "caracteristicas",
-          "error",
-          "Informe o nome da característica.",
-        ),
-      );
-      return;
-    }
-
-    try {
-      await saveCaracteristica.mutateAsync({
-        id: caracteristicaForm.id || undefined,
-        nome: caracteristicaForm.nome.trim(),
-      });
-      setFeedback(
-        toFeedback(
-          "caracteristicas",
-          "success",
-          caracteristicaForm.id
-            ? "Característica atualizada."
-            : "Característica cadastrada.",
-        ),
-      );
-      setCaracteristicaForm(createSimpleForm());
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "caracteristicas",
-          "error",
-          error instanceof Error
-            ? error.message
-            : "Erro ao salvar a característica.",
-        ),
-      );
-    }
-  };
-
-  const handleLocalSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!localForm.nome.trim()) {
-      setFeedback(toFeedback("locais", "error", "Informe o nome do local."));
-      return;
-    }
-
-    try {
-      await saveLocal.mutateAsync({
-        id: localForm.id || undefined,
-        nome: localForm.nome.trim(),
-      });
-      setFeedback(
-        toFeedback(
-          "locais",
-          "success",
-          localForm.id ? "Local atualizado." : "Local cadastrado.",
-        ),
-      );
-      setLocalForm(createSimpleForm());
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "locais",
-          "error",
-          error instanceof Error ? error.message : "Erro ao salvar o local.",
-        ),
-      );
-    }
-  };
-
-  const handleModeloSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!modeloForm.nome.trim() || !modeloForm.marca.trim()) {
-      setFeedback(
-        toFeedback(
-          "modelos",
-          "error",
-          "Informe marca e nome do modelo.",
-        ),
-      );
-      return;
-    }
-
-    try {
-      await saveModelo.mutateAsync({
-        id: modeloForm.id || undefined,
-        marca: modeloForm.marca.trim(),
-        nome: modeloForm.nome.trim(),
-        combustivel: modeloForm.combustivel.trim() || null,
-        tipo_cambio: modeloForm.tipo_cambio.trim() || null,
-        motor: modeloForm.motor.trim() || null,
-        lugares: parseOptionalInteger(modeloForm.lugares),
-        portas: parseOptionalInteger(modeloForm.portas),
-        cabine: modeloForm.cabine.trim() || null,
-        tracao: modeloForm.tracao.trim() || null,
-        carroceria: modeloForm.carroceria.trim() || null,
-      });
-      setFeedback(
-        toFeedback(
-          "modelos",
-          "success",
-          modeloForm.id ? "Modelo atualizado." : "Modelo cadastrado.",
-        ),
-      );
-      setModeloForm(createModeloForm());
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "modelos",
-          "error",
-          error instanceof Error ? error.message : "Erro ao salvar o modelo.",
-        ),
-      );
-    }
-  };
-
-  const handleDeleteLoja = async (loja: Loja) => {
-    if (!loja.id) return;
-    if (!window.confirm(`Remover a loja "${loja.nome}"?`)) return;
-
-    setLojaDeletingId(loja.id);
-    try {
-      await deleteLoja.mutateAsync(loja.id);
-      setFeedback(toFeedback("lojas", "success", "Loja removida."));
-      if (lojaForm.id === loja.id) {
-        setLojaForm(createSimpleForm());
-      }
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "lojas",
-          "error",
-          error instanceof Error ? error.message : "Erro ao remover a loja.",
-        ),
-      );
-    } finally {
-      setLojaDeletingId(null);
-    }
-  };
-
-  const handleDeletePlataforma = async (plataforma: Plataforma) => {
-    if (!plataforma.id) return;
-    if (!window.confirm(`Remover a plataforma "${plataforma.nome}"?`)) return;
-
-    setPlataformaDeletingId(plataforma.id);
-    try {
-      await deletePlataforma.mutateAsync(plataforma.id);
-      setFeedback(
-        toFeedback("plataformas", "success", "Plataforma removida."),
-      );
-      if (plataformaForm.id === plataforma.id) {
-        setPlataformaForm(createSimpleForm());
-      }
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "plataformas",
-          "error",
-          error instanceof Error
-            ? error.message
-            : "Erro ao remover a plataforma.",
-        ),
-      );
-    } finally {
-      setPlataformaDeletingId(null);
-    }
-  };
-
-  const handleDeleteCaracteristica = async (caracteristica: Caracteristica) => {
-    if (!caracteristica.id) return;
-    if (!window.confirm(`Remover a característica "${caracteristica.nome}"?`)) {
-      return;
-    }
-
-    setCaracteristicaDeletingId(caracteristica.id);
-    try {
-      await deleteCaracteristica.mutateAsync(caracteristica.id);
-      setFeedback(
-        toFeedback(
-          "caracteristicas",
-          "success",
-          "Característica removida.",
-        ),
-      );
-      if (caracteristicaForm.id === caracteristica.id) {
-        setCaracteristicaForm(createSimpleForm());
-      }
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "caracteristicas",
-          "error",
-          error instanceof Error
-            ? error.message
-            : "Erro ao remover a característica.",
-        ),
-      );
-    } finally {
-      setCaracteristicaDeletingId(null);
-    }
-  };
-
-  const handleDeleteLocal = async (local: Local) => {
-    if (!local.id) return;
-    if (!window.confirm(`Remover o local "${local.nome}"?`)) return;
-
-    setLocalDeletingId(local.id);
-    try {
-      await deleteLocal.mutateAsync(local.id);
-      setFeedback(toFeedback("locais", "success", "Local removido."));
-      if (localForm.id === local.id) {
-        setLocalForm(createSimpleForm());
-      }
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "locais",
-          "error",
-          error instanceof Error ? error.message : "Erro ao remover o local.",
-        ),
-      );
-    } finally {
-      setLocalDeletingId(null);
-    }
-  };
-
-  const handleDeleteModelo = async (modelo: Modelo) => {
-    if (!modelo.id) return;
-    if (!window.confirm(`Remover o modelo "${modelo.marca} ${modelo.nome}"?`)) {
-      return;
-    }
-
-    setModeloDeletingId(modelo.id);
-    try {
-      await deleteModelo.mutateAsync(modelo.id);
-      setFeedback(toFeedback("modelos", "success", "Modelo removido."));
-      if (modeloForm.id === modelo.id) {
-        setModeloForm(createModeloForm());
-      }
-    } catch (error) {
-      setFeedback(
-        toFeedback(
-          "modelos",
-          "error",
-          error instanceof Error ? error.message : "Erro ao remover o modelo.",
-        ),
-      );
-    } finally {
-      setModeloDeletingId(null);
-    }
-  };
-
-  if (isLoading && !isSnapshotReady) {
-    return (
-      <div className="bg-white px-6 py-10 text-zinc-900">
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-3 text-center">
-          <p className="text-base font-medium text-zinc-600">
-            Carregando configurações do catálogo...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError && !configuracoes) {
-    return (
-      <div className="bg-white px-6 py-10 text-zinc-900">
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-3 text-center">
-          <p className="text-base font-medium text-red-600">
-            Não foi possível carregar as configurações. Tente novamente.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const handleModeloSubmit = createSubmitHandler<ModeloFormState>({
+    area: Areas.modelo,
+    form: modeloForm,
+    setForm: setModeloForm,
+    formFactory: createModeloForm,
+    setFeedback,
+    validate: (f) => (!f.marca.trim() || !f.nome.trim() ? "Informe marca e nome do modelo." : null),
+    mapPayload: (f) => ({
+      marca: f.marca.trim(),
+      nome: f.nome.trim(),
+      combustivel: f.combustivel?.trim() || null,
+      tipo_cambio: f.tipo_cambio?.trim() || null,
+      motor: f.motor?.trim() || null,
+      lugares: parseOptionalInteger(f.lugares ? f.lugares.toString() : ""),
+      portas: parseOptionalInteger(f.portas? f.portas.toString() : ""),
+      cabine: f.cabine?.trim() || null,
+      tracao: f.tracao?.trim() || null,
+      carroceria: f.carroceria?.trim() || null,
+    }),
+    setLoading: setLoadingModelo,
+  });
 
   return (
     <div className="bg-white px-6 py-10 text-zinc-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
         <header className="flex flex-col gap-3">
-          <h1 className="text-3xl font-semibold text-zinc-900">
-            Configurações do catálogo
-          </h1>
+          <h1 className="text-3xl font-semibold text-zinc-900">Configurações do catálogo</h1>
           <p className="max-w-3xl text-sm text-zinc-600">
-            Gerencie as tabelas auxiliares que alimentam o cadastro de veículos.
-            As alterações refletirão nos formulários de edição imediatamente.
+            Gerencie as tabelas auxiliares que alimentam o cadastro de veículos. As alterações refletirão nos formulários de edição imediatamente.
           </p>
         </header>
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-medium text-zinc-800">Lojas</h2>
-              <p className="text-sm text-zinc-500">
-                Defina as unidades responsáveis por receber veículos em estoque.
-              </p>
-            </div>
-            {feedback?.section === "lojas" && (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  feedback.type === "success"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-700"
-                }`}
-              >
-                {feedback.message}
-              </span>
-            )}
-          </div>
+        {/* LOJAS */}
+        <SectionCard
+          title="Lojas"
+          subtitle="Defina as unidades responsáveis por receber veículos em estoque."
+          badge={<FeedbackBadge feedback={feedback} section="lojas" />}
+        >
+          <SimpleForm
+            label="Nome da loja"
+            value={lojaForm.nome}
+            onChange={handleInputChange(setLojaForm, "nome")}
+            onSubmit={handleLojaSubmit}
+            onCancel={() => {
+              resetForm(createSimpleForm, setLojaForm);
+              setFeedback(null);
+            }}
+            loading={loadingLoja}
+            isEditing={!!lojaForm.id}
+          />
+          <EntityList<Loja>
+            items={sortedLojas}
+            emptyText="Nenhuma loja cadastrada ainda."
+            removingId={lojaDeletingId}
+            removeDisabled={(l) => !l.id}
+            onEdit={(l) => {
+              setLojaForm({ id: l.id ?? undefined, nome: l.nome });
+              setFeedback(null);
+            }}
+            onRemove={(l) =>
+              handleDeleteEntity(
+                "loja",
+                l,
+                `Remover a loja "${l.nome}"?`,
+                setLojaDeletingId,
+                setFeedback,
+                () => {
+                  if (lojaForm.id === l.id) resetForm(createSimpleForm, setLojaForm);
+                  invalidateForArea(Areas.loja);
+                }
+              )
+            }
+          />
+        </SectionCard>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
-            <form
-              onSubmit={handleLojaSubmit}
-              className="flex flex-col gap-4 rounded-md border border-zinc-100 bg-zinc-50 p-4"
-            >
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-zinc-700">Nome da loja</span>
-                <input
-                  className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                  value={lojaForm.nome}
-                  onChange={handleSimpleInputChange(setLojaForm, "nome")}
-                  required
-                />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-blue-300 disabled:bg-blue-300"
-                  disabled={saveLoja.isPending}
-                >
-                  {saveLoja.isPending
-                    ? "Salvando..."
-                    : lojaForm.id
-                    ? "Atualizar loja"
-                    : "Adicionar loja"}
-                </button>
-                {lojaForm.id && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                    onClick={() => {
-                      setLojaForm(createSimpleForm());
-                      setFeedback(null);
-                    }}
-                  >
-                    Cancelar edição
-                  </button>
-                )}
-              </div>
-            </form>
+        {/* PLATAFORMAS */}
+        <SectionCard
+          title="Plataformas"
+          subtitle="Controle os canais de divulgação usados pelos seus anúncios."
+          badge={<FeedbackBadge feedback={feedback} section="plataformas" />}
+        >
+          <SimpleForm
+            label="Nome da plataforma"
+            value={plataformaForm.nome}
+            onChange={handleInputChange(setPlataformaForm, "nome")}
+            onSubmit={handlePlataformaSubmit}
+            onCancel={() => {
+              resetForm(createSimpleForm, setPlataformaForm);
+              setFeedback(null);
+            }}
+            loading={loadingPlataforma}
+            isEditing={!!plataformaForm.id}
+          />
+          <EntityList<Plataforma>
+            items={sortedPlataformas}
+            emptyText="Nenhuma plataforma cadastrada."
+            removingId={plataformaDeletingId}
+            removeDisabled={(p) => !p.id}
+            onEdit={(p) => {
+              setPlataformaForm({ id: p.id ?? undefined, nome: p.nome });
+              setFeedback(null);
+            }}
+            onRemove={(p) =>
+              handleDeleteEntity(
+                "plataforma",
+                p,
+                `Remover a plataforma "${p.nome}"?`,
+                setPlataformaDeletingId,
+                setFeedback,
+                () => {
+                  if (plataformaForm.id === p.id) resetForm(createSimpleForm, setPlataformaForm);
+                  invalidateForArea(Areas.plataforma);
+                }
+              )
+            }
+          />
+        </SectionCard>
 
-            <div className="space-y-3 text-sm">
-              {sortedLojas.length === 0 ? (
-                <p className="rounded-md border border-dashed border-zinc-200 px-4 py-6 text-center text-zinc-500">
-                  Nenhuma loja cadastrada ainda.
+        {/* CARACTERÍSTICAS */}
+        <SectionCard
+          title="Características"
+          subtitle="Liste os atributos que podem ser vinculados aos veículos."
+          badge={<FeedbackBadge feedback={feedback} section="caracteristicas" />}
+        >
+          <SimpleForm
+            label="Nome da característica"
+            value={caracteristicaForm.nome}
+            onChange={handleInputChange(setCaracteristicaForm, "nome")}
+            onSubmit={handleCaracteristicaSubmit}
+            onCancel={() => {
+              resetForm(createSimpleForm, setCaracteristicaForm);
+              setFeedback(null);
+            }}
+            loading={loadingCaracteristica}
+            isEditing={!!caracteristicaForm.id}
+          />
+          <EntityList<Caracteristica>
+            items={sortedCaracteristicas}
+            emptyText="Nenhuma característica cadastrada."
+            removingId={caracteristicaDeletingId}
+            removeDisabled={(c) => !c.id}
+            onEdit={(c) => {
+              setCaracteristicaForm({ id: c.id ?? undefined, nome: c.nome });
+              setFeedback(null);
+            }}
+            onRemove={(c) =>
+              handleDeleteEntity(
+                "caracteristica",
+                c,
+                `Remover a característica "${c.nome}"?`,
+                setCaracteristicaDeletingId,
+                setFeedback,
+                () => {
+                  if (caracteristicaForm.id === c.id) resetForm(createSimpleForm, setCaracteristicaForm);
+                  invalidateForArea(Areas.caracteristica);
+                }
+              )
+            }
+          />
+        </SectionCard>
+
+        {/* LOCAIS */}
+        <SectionCard
+          title="Locais"
+          subtitle="Mapeie os pontos físicos onde os veículos podem ficar disponíveis."
+          badge={<FeedbackBadge feedback={feedback} section="locais" />}
+        >
+          <SimpleForm
+            label="Nome do local"
+            value={localForm.nome}
+            onChange={handleInputChange(setLocalForm, "nome")}
+            onSubmit={handleLocalSubmit}
+            onCancel={() => {
+              resetForm(createSimpleForm, setLocalForm);
+              setFeedback(null);
+            }}
+            loading={loadingLocal}
+            isEditing={!!localForm.id}
+          />
+          <EntityList<Local>
+            items={sortedLocais}
+            emptyText="Nenhum local cadastrado."
+            removingId={localDeletingId}
+            removeDisabled={(l) => !l.id}
+            onEdit={(l) => {
+              setLocalForm({ id: l.id ?? undefined, nome: l.nome });
+              setFeedback(null);
+            }}
+            onRemove={(l) =>
+              handleDeleteEntity(
+                "local",
+                l,
+                `Remover o local "${l.nome}"?`,
+                setLocalDeletingId,
+                setFeedback,
+                () => {
+                  if (localForm.id === l.id) resetForm(createSimpleForm, setLocalForm);
+                  invalidateForArea(Areas.local);
+                }
+              )
+            }
+          />
+        </SectionCard>
+
+        {/* MODELOS */}
+        <SectionCard
+          title="Modelos"
+          subtitle="Cadastre as combinações de marca e modelo para vincular aos veículos."
+          badge={<FeedbackBadge feedback={feedback} section="modelos" />}
+        >
+          <ModeloForm
+            form={modeloForm}
+            onChange={(f) => handleInputChange(setModeloForm, f)}
+            onSubmit={handleModeloSubmit}
+            onCancel={() => {
+              resetForm(createModeloForm, setModeloForm);
+              setFeedback(null);
+            }}
+            loading={loadingModelo}
+            isEditing={!!modeloForm}
+          />
+          <EntityList<Modelo>
+            items={sortedModelos}
+            emptyText="Nenhum modelo cadastrado."
+            removingId={modeloDeletingId}
+            removeDisabled={(m) => !m.id}
+            onEdit={(m) => {
+              setModeloForm({
+                marca: m.marca ?? "",
+                nome: m.nome ?? "",
+                combustivel: m.combustivel ?? "gasolina",
+                tipo_cambio: m.tipo_cambio ?? "manual",
+                motor: m.motor ?? "",
+                lugares: m.lugares ? m.lugares : 5,
+                portas: m.portas ? m.portas : 4,
+                cabine: m.cabine ?? "",
+                tracao: m.tracao ?? "",
+                carroceria: m.carroceria ?? "hatch",
+                cambio: m.cambio,
+                cilindros: m.cilindros,
+                criado_em: m.criado_em,
+                edicao: m.edicao,
+                valvulas: m.valvulas,
+                ano_inicial: m.ano_inicial,
+                ano_final: m.ano_final,
+              });
+              setFeedback(null);
+            }}
+            onRemove={(m) =>
+              handleDeleteEntity(
+                "modelo",
+                m,
+                `Remover o modelo "${m.marca} ${m.nome}"?`,
+                setModeloDeletingId,
+                setFeedback,
+                () => {
+                  if (modeloForm) resetForm(createModeloForm, setModeloForm);
+                  invalidateForArea(Areas.modelo);
+                }
+              )
+            }
+            renderExtra={(m) => (
+              <>
+                <p className="text-xs text-zinc-500">Empresa: {m.empresa_id ?? "-"}</p>
+                <p className="text-xs text-zinc-500">
+                  {[m.combustivel, m.tipo_cambio, m.motor].filter(Boolean).join(" • ") || "—"}
                 </p>
-              ) : (
-                <ul className="space-y-3">
-                  {sortedLojas.map((loja, index) => (
-                    <li
-                      key={loja.id ?? `loja-${index}-${loja.nome}`}
-                      className="flex flex-col justify-between gap-3 rounded-md border border-zinc-200 p-4 sm:flex-row sm:items-center"
-                    >
-                      <div>
-                        <p className="font-medium text-zinc-800">{loja.nome}</p>
-                        <p className="text-xs text-zinc-500">
-                          Empresa: {loja.empresa_id ?? "-"}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900"
-                          onClick={() => {
-                            setLojaForm({
-                              id: loja.id ?? undefined,
-                              nome: loja.nome,
-                            });
-                            setFeedback(null);
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed"
-                          disabled={!loja.id || lojaDeletingId === loja.id || deleteLoja.isPending}
-                          onClick={() => handleDeleteLoja(loja)}
-                        >
-                          {lojaDeletingId === loja.id ? "Removendo..." : "Remover"}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-medium text-zinc-800">Plataformas</h2>
-              <p className="text-sm text-zinc-500">
-                Controle os canais de divulgação usados pelos seus anúncios.
-              </p>
-            </div>
-            {feedback?.section === "plataformas" && (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  feedback.type === "success"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-700"
-                }`}
-              >
-                {feedback.message}
-              </span>
+              </>
             )}
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
-            <form
-              onSubmit={handlePlataformaSubmit}
-              className="flex flex-col gap-4 rounded-md border border-zinc-100 bg-zinc-50 p-4"
-            >
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-zinc-700">Nome da plataforma</span>
-                <input
-                  className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                  value={plataformaForm.nome}
-                  onChange={handleSimpleInputChange(setPlataformaForm, "nome")}
-                  required
-                />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-blue-300 disabled:bg-blue-300"
-                  disabled={savePlataforma.isPending}
-                >
-                  {savePlataforma.isPending
-                    ? "Salvando..."
-                    : plataformaForm.id
-                    ? "Atualizar plataforma"
-                    : "Adicionar plataforma"}
-                </button>
-                {plataformaForm.id && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                    onClick={() => {
-                      setPlataformaForm(createSimpleForm());
-                      setFeedback(null);
-                    }}
-                  >
-                    Cancelar edição
-                  </button>
-                )}
-              </div>
-            </form>
-
-            <div className="space-y-3 text-sm">
-              {sortedPlataformas.length === 0 ? (
-                <p className="rounded-md border border-dashed border-zinc-200 px-4 py-6 text-center text-zinc-500">
-                  Nenhuma plataforma cadastrada.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {sortedPlataformas.map((plataforma, index) => (
-                    <li
-                      key={plataforma.id ?? `plataforma-${index}-${plataforma.nome}`}
-                      className="flex flex-col justify-between gap-3 rounded-md border border-zinc-200 p-4 sm:flex-row sm:items-center"
-                    >
-                      <div>
-                        <p className="font-medium text-zinc-800">{plataforma.nome}</p>
-                        <p className="text-xs text-zinc-500">
-                          Empresa: {plataforma.empresa_id ?? "-"}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900"
-                          onClick={() => {
-                            setPlataformaForm({
-                              id: plataforma.id ?? undefined,
-                              nome: plataforma.nome,
-                            });
-                            setFeedback(null);
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed"
-                          disabled={!plataforma.id || plataformaDeletingId === plataforma.id || deletePlataforma.isPending}
-                          onClick={() => handleDeletePlataforma(plataforma)}
-                        >
-                          {plataformaDeletingId === plataforma.id
-                            ? "Removendo..."
-                            : "Remover"}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-medium text-zinc-800">Características</h2>
-              <p className="text-sm text-zinc-500">
-                Liste os atributos que podem ser vinculados aos veículos.
-              </p>
-            </div>
-            {feedback?.section === "caracteristicas" && (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  feedback.type === "success"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-700"
-                }`}
-              >
-                {feedback.message}
-              </span>
-            )}
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
-            <form
-              onSubmit={handleCaracteristicaSubmit}
-              className="flex flex-col gap-4 rounded-md border border-zinc-100 bg-zinc-50 p-4"
-            >
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-zinc-700">Nome da característica</span>
-                <input
-                  className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                  value={caracteristicaForm.nome}
-                  onChange={handleSimpleInputChange(setCaracteristicaForm, "nome")}
-                  required
-                />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-blue-300 disabled:bg-blue-300"
-                  disabled={saveCaracteristica.isPending}
-                >
-                  {saveCaracteristica.isPending
-                    ? "Salvando..."
-                    : caracteristicaForm.id
-                    ? "Atualizar característica"
-                    : "Adicionar característica"}
-                </button>
-                {caracteristicaForm.id && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                    onClick={() => {
-                      setCaracteristicaForm(createSimpleForm());
-                      setFeedback(null);
-                    }}
-                  >
-                    Cancelar edição
-                  </button>
-                )}
-              </div>
-            </form>
-
-            <div className="space-y-3 text-sm">
-              {sortedCaracteristicas.length === 0 ? (
-                <p className="rounded-md border border-dashed border-zinc-200 px-4 py-6 text-center text-zinc-500">
-                  Nenhuma característica cadastrada.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {sortedCaracteristicas.map((caracteristica, index) => (
-                    <li
-                      key={caracteristica.id ?? `caracteristica-${index}-${caracteristica.nome}`}
-                      className="flex flex-col justify-between gap-3 rounded-md border border-zinc-200 p-4 sm:flex-row sm:items-center"
-                    >
-                      <div>
-                        <p className="font-medium text-zinc-800">
-                          {caracteristica.nome}
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          Empresa: {caracteristica.empresa_id ?? "-"}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900"
-                          onClick={() => {
-                            setCaracteristicaForm({
-                              id: caracteristica.id ?? undefined,
-                              nome: caracteristica.nome,
-                            });
-                            setFeedback(null);
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed"
-                          disabled={!caracteristica.id || caracteristicaDeletingId === caracteristica.id || deleteCaracteristica.isPending}
-                          onClick={() => handleDeleteCaracteristica(caracteristica)}
-                        >
-                          {caracteristicaDeletingId === caracteristica.id
-                            ? "Removendo..."
-                            : "Remover"}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-medium text-zinc-800">Locais</h2>
-              <p className="text-sm text-zinc-500">
-                Mapeie os pontos físicos onde os veículos podem ficar disponíveis.
-              </p>
-            </div>
-            {feedback?.section === "locais" && (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  feedback.type === "success"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-700"
-                }`}
-              >
-                {feedback.message}
-              </span>
-            )}
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
-            <form
-              onSubmit={handleLocalSubmit}
-              className="flex flex-col gap-4 rounded-md border border-zinc-100 bg-zinc-50 p-4"
-            >
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-zinc-700">Nome do local</span>
-                <input
-                  className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                  value={localForm.nome}
-                  onChange={handleSimpleInputChange(setLocalForm, "nome")}
-                  required
-                />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-blue-300 disabled:bg-blue-300"
-                  disabled={saveLocal.isPending}
-                >
-                  {saveLocal.isPending
-                    ? "Salvando..."
-                    : localForm.id
-                    ? "Atualizar local"
-                    : "Adicionar local"}
-                </button>
-                {localForm.id && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                    onClick={() => {
-                      setLocalForm(createSimpleForm());
-                      setFeedback(null);
-                    }}
-                  >
-                    Cancelar edição
-                  </button>
-                )}
-              </div>
-            </form>
-
-            <div className="space-y-3 text-sm">
-              {sortedLocais.length === 0 ? (
-                <p className="rounded-md border border-dashed border-zinc-200 px-4 py-6 text-center text-zinc-500">
-                  Nenhum local cadastrado.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {sortedLocais.map((local, index) => (
-                    <li
-                      key={local.id ?? `local-${index}-${local.nome}`}
-                      className="flex flex-col justify-between gap-3 rounded-md border border-zinc-200 p-4 sm:flex-row sm:items-center"
-                    >
-                      <div>
-                        <p className="font-medium text-zinc-800">{local.nome}</p>
-                        <p className="text-xs text-zinc-500">
-                          Empresa: {local.empresa_id ?? "-"}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900"
-                          onClick={() => {
-                            setLocalForm({
-                              id: local.id ?? undefined,
-                              nome: local.nome,
-                            });
-                            setFeedback(null);
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed"
-                          disabled={!local.id || localDeletingId === local.id || deleteLocal.isPending}
-                          onClick={() => handleDeleteLocal(local)}
-                        >
-                          {localDeletingId === local.id ? "Removendo..." : "Remover"}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-medium text-zinc-800">Modelos</h2>
-              <p className="text-sm text-zinc-500">
-                Cadastre as combinações de marca e modelo para vincular aos veículos.
-              </p>
-            </div>
-            {feedback?.section === "modelos" && (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  feedback.type === "success"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-700"
-                }`}
-              >
-                {feedback.message}
-              </span>
-            )}
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
-            <form
-              onSubmit={handleModeloSubmit}
-              className="flex flex-col gap-4 rounded-md border border-zinc-100 bg-zinc-50 p-4"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Marca</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.marca}
-                    onChange={handleModeloInputChange("marca")}
-                    required
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Nome do modelo</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.nome}
-                    onChange={handleModeloInputChange("nome")}
-                    required
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Combustível</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.combustivel}
-                    onChange={handleModeloInputChange("combustivel")}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Tipo de câmbio</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.tipo_cambio}
-                    onChange={handleModeloInputChange("tipo_cambio")}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Motor</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.motor}
-                    onChange={handleModeloInputChange("motor")}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Lugares</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.lugares}
-                    onChange={handleModeloInputChange("lugares")}
-                    inputMode="numeric"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Portas</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.portas}
-                    onChange={handleModeloInputChange("portas")}
-                    inputMode="numeric"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Cabine</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.cabine}
-                    onChange={handleModeloInputChange("cabine")}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700">Tração</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.tracao}
-                    onChange={handleModeloInputChange("tracao")}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="font-medium text-zinc-700">Carroceria</span>
-                  <input
-                    className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
-                    value={modeloForm.carroceria}
-                    onChange={handleModeloInputChange("carroceria")}
-                  />
-                </label>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-blue-300 disabled:bg-blue-300"
-                  disabled={saveModelo.isPending}
-                >
-                  {saveModelo.isPending
-                    ? "Salvando..."
-                    : modeloForm.id
-                    ? "Atualizar modelo"
-                    : "Adicionar modelo"}
-                </button>
-                {modeloForm.id && (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                    onClick={() => {
-                      setModeloForm(createModeloForm());
-                      setFeedback(null);
-                    }}
-                  >
-                    Cancelar edição
-                  </button>
-                )}
-              </div>
-            </form>
-
-            <div className="space-y-3 text-sm">
-              {sortedModelos.length === 0 ? (
-                <p className="rounded-md border border-dashed border-zinc-200 px-4 py-6 text-center text-zinc-500">
-                  Nenhum modelo cadastrado.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {sortedModelos.map((modelo, index) => (
-                    <li
-                      key={modelo.id ?? `modelo-${index}-${modelo.marca}-${modelo.nome}`}
-                      className="flex flex-col justify-between gap-3 rounded-md border border-zinc-200 p-4 sm:flex-row sm:items-center"
-                    >
-                      <div>
-                        <p className="font-medium text-zinc-800">
-                          {modelo.marca} • {modelo.nome}
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          Empresa: {modelo.empresa_id ?? "-"}
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          {[
-                            modelo.combustivel,
-                            modelo.tipo_cambio,
-                            modelo.motor,
-                          ]
-                            .filter(Boolean)
-                            .join(" • ") || "—"}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900"
-                          onClick={() => {
-                            setModeloForm({
-                              id: modelo.id ?? undefined,
-                              marca: modelo.marca ?? "",
-                              nome: modelo.nome ?? "",
-                              combustivel: modelo.combustivel ?? "",
-                              tipo_cambio: modelo.tipo_cambio ?? "",
-                              motor: modelo.motor ?? "",
-                              lugares: modelo.lugares?.toString() ?? "",
-                              portas: modelo.portas?.toString() ?? "",
-                              cabine: modelo.cabine ?? "",
-                              tracao: modelo.tracao ?? "",
-                              carroceria: modelo.carroceria ?? "",
-                            });
-                            setFeedback(null);
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:text-red-700 disabled:cursor-not-allowed"
-                          disabled={!modelo.id || modeloDeletingId === modelo.id || deleteModelo.isPending}
-                          onClick={() => handleDeleteModelo(modelo)}
-                        >
-                          {modeloDeletingId === modelo.id ? "Removendo..." : "Remover"}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </section>
+          />
+        </SectionCard>
       </div>
     </div>
   );
