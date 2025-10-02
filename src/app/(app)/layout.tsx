@@ -6,7 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth"; // novo hook de sessão
 
 const navigation = [
+  { label: "Início", href: "/" },
   { label: "Estoque", href: "/estoque" },
+  { label: "Vitrine", href: "/vitrine" },
+  { label: "Cadastrar veículo", href: "/criar" },
   { label: "Configurações", href: "/configuracoes" },
 ];
 
@@ -21,7 +24,7 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 

@@ -120,69 +120,70 @@ export default function ConfiguracoesPage() {
   }
 
   /** invalida tanto o padrão específico quanto um possível alias por coleção */
-function invalidateForArea(area: Areas) {
-  
-  // se seus hooks usam ["configuracoes", area]
-  queryClient.invalidateQueries({ queryKey: ["configuracoes", area] });
-}
+  function invalidateForArea(area: Areas) {
+    // se seus hooks usam ["configuracoes", area]
+    queryClient.invalidateQueries({ queryKey: ["configuracoes", area] });
+  }
 
-/** submissão genérica para formulários simples e complexos */
-function createSubmitHandler<T>({
-  area,
-  form,
-  setForm,
-  formFactory,
-  setFeedback,
-  validate, // opcional
-  mapPayload, // opcional (p/ transformar antes de enviar)
-  setLoading,
-}: {
-  area: Areas;
-  form: T;
-  setForm: Dispatch<SetStateAction<T>>;
-  formFactory: () => T;
-  setFeedback: (f: { section: string; type: "success" | "error"; message: string } | null) => void;
-  validate?: (f: T) => string | null;
-  mapPayload?: (f: T) => any;
-  setLoading: (v: boolean) => void;
-}) {
-  return async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  type Identifiable = { id?: string | null };
 
-    const errorMsg = validate?.(form) ?? null;
-    if (errorMsg) {
-      setFeedback(toFeedback(`${area}s`, "error", errorMsg));
-      return;
-    }
+  /** submissão genérica para formulários simples e complexos */
+  function createSubmitHandler<TForm extends Identifiable, TPayload extends Identifiable = TForm>({
+    area,
+    form,
+    setForm,
+    formFactory,
+    setFeedback,
+    validate, // opcional
+    mapPayload, // opcional (p/ transformar antes de enviar)
+    setLoading,
+  }: {
+    area: Areas;
+    form: TForm;
+    setForm: Dispatch<SetStateAction<TForm>>;
+    formFactory: () => TForm;
+    setFeedback: (f: { section: string; type: "success" | "error"; message: string } | null) => void;
+    validate?: (f: TForm) => string | null;
+    mapPayload?: (f: TForm) => TPayload;
+    setLoading: (v: boolean) => void;
+  }) {
+    return async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
 
-    try {
-      setLoading(true);
-      const payload = mapPayload ? mapPayload(form) : form;
-      await salvarConfiguracao(area, payload);
-      invalidateForArea(area);
+      const errorMsg = validate?.(form) ?? null;
+      if (errorMsg) {
+        setFeedback(toFeedback(`${area}s`, "error", errorMsg));
+        return;
+      }
 
-      const updated = (form as any)?.id;
-      setFeedback(
-        toFeedback(
-          area,
-          "success",
-          updated ? "Atualizado com sucesso." : "Cadastrado com sucesso."
-        )
-      );
-      resetForm(formFactory, setForm);
-    } catch (err) {
-      setFeedback(
-        toFeedback(
-          `${area}s`,
-          "error",
-          err instanceof Error ? err.message : `Erro ao salvar ${area}.`
-        )
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-}
+      try {
+        setLoading(true);
+        const payload = mapPayload ? mapPayload(form) : (({ ...form } as unknown) as TPayload);
+        await salvarConfiguracao(area, payload);
+        invalidateForArea(area);
+
+        const isUpdate = Boolean(payload.id);
+        setFeedback(
+          toFeedback(
+            area,
+            "success",
+            isUpdate ? "Atualizado com sucesso." : "Cadastrado com sucesso."
+          )
+        );
+        resetForm(formFactory, setForm);
+      } catch (err) {
+        setFeedback(
+          toFeedback(
+            `${area}s`,
+            "error",
+            err instanceof Error ? err.message : `Erro ao salvar ${area}.`
+          )
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+  }
 
 /** exclusão genérica */
 async function handleDeleteEntity<T extends { id?: string }>(

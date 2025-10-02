@@ -2,31 +2,31 @@ import { callRpc } from "@/lib/supabase";
 
 type ConfiguracaoArea = "loja" | "plataforma" | "caracteristica" | "modelo" | "local";
 
+type ConfiguracaoPayload = Record<string, unknown>;
+
 const RPC_CONFIGURACOES = "rpc_configuracoes";
 
-export async function salvarConfiguracao(area: ConfiguracaoArea, dados: any): Promise<{ success: boolean }> {
+const extractId = (dados: ConfiguracaoPayload): string | undefined => {
+  if (!("id" in dados)) return undefined;
+  const value = (dados as { id?: unknown }).id;
+  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+};
 
-  const tipo = area
-  const operacao = `${tipo}/${dados?.id ? "atualizar" : "criar"}`;
-  console.log("Salvando configuração:", { operacao, dados });
+export async function salvarConfiguracao(area: ConfiguracaoArea, dados: ConfiguracaoPayload): Promise<{ success: boolean }> {
+  const operacao = `${area}/${extractId(dados) ? "atualizar" : "criar"}`;
 
-  const response = callRpc(RPC_CONFIGURACOES, { operacao: operacao, dados: dados, id: dados?.id });
+  const response = await callRpc(RPC_CONFIGURACOES, {
+    operacao,
+    dados,
+    id: extractId(dados),
+  });
 
-  if ((await response).status === "success") {
-    return { success: true };
-  }
-
-  return { success: false };
+  return { success: response.status === "success" };
 }
 
 export async function remove(area: ConfiguracaoArea, id: string) {
-  const tipo = area
-  const operacao = `${tipo}/excluir`;
-  const response = callRpc(RPC_CONFIGURACOES, { operacao: operacao, id: id});
+  const operacao = `${area}/excluir`;
+  const response = await callRpc(RPC_CONFIGURACOES, { operacao, id });
 
-  if ((await response).status === "success") {
-    return { success: true };
-  }
-
-  return { success: false };
+  return { success: response.status === "success" };
 }

@@ -1,21 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 
-import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos } from "@/hooks/use-configuracoes";
-import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
+import { criarVeiculo } from "@/services/estoque";
+import type { VeiculoResumo } from "@/types/estoque";
 import { useQueryClient } from "@tanstack/react-query";
-import { PhotoGallery } from "@/components/PhotoGallery";
-import { LojaSelector } from "@/components/LojaSelector";
-import { supabase } from "@/lib/supabase";
 
-type EstadoVendaOption = VeiculoUI["estado_venda"];
-type EstadoVeiculoOption = NonNullable<VeiculoUI["estado_veiculo"]>;
+type EstadoVendaOption = VeiculoResumo["estado_venda"];
+type EstadoVeiculoOption = NonNullable<VeiculoResumo["estado_veiculo"]>;
 type CaracteristicaFormValue = { id: string; nome: string };
+
+type VehicleFormState = {
+  placa: string;
+  cor: string;
+  chassi: string;
+  ano_fabricacao: string;
+  ano_modelo: string;
+  hodometro: string;
+  estado_venda: EstadoVendaOption;
+  estado_veiculo: EstadoVeiculoOption | "";
+  preco_venal: string;
+  observacao: string;
+  modelo_id: string;
+  local_id: string;
+  estagio_documentacao: string;
+  caracteristicas: CaracteristicaFormValue[];
+};
 
 const ESTADO_VENDA_OPTIONS: EstadoVendaOption[] = [
   "disponivel",
@@ -34,133 +48,70 @@ const ESTADO_VEICULO_OPTIONS: EstadoVeiculoOption[] = [
   "sujo",
 ];
 
+const DEFAULT_ESTADO_VENDA: EstadoVendaOption = "disponivel";
+
+const INITIAL_FORM_STATE: VehicleFormState = {
+  placa: "",
+  cor: "",
+  chassi: "",
+  ano_fabricacao: "",
+  ano_modelo: "",
+  hodometro: "",
+  estado_venda: DEFAULT_ESTADO_VENDA,
+  estado_veiculo: "",
+  preco_venal: "",
+  observacao: "",
+  modelo_id: "",
+  local_id: "",
+  estagio_documentacao: "",
+  caracteristicas: [],
+};
+
 const formatEnumLabel = (value: string) =>
   value
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-// 🔹 Form state
-interface VehicleFormState {
-  placa: string;
-  cor: string;
-  chassi: string;
-  ano_fabricacao: string;
-  ano_modelo: string;
-  hodometro: string;
-  estado_venda: EstadoVendaOption;
-  estado_veiculo: EstadoVeiculoOption | "";
-  preco_venal: string;
-  observacao: string;
-  modelo_id: string;
-  local_id: string;
-  estagio_documentacao: string;
-  caracteristicas: CaracteristicaFormValue[];
-}
-
-// 🔹 Helpers
-const buildFormStateFromVeiculo = (veiculo: VeiculoUI): VehicleFormState => ({
-  placa: veiculo.placa ?? "",
-  cor: veiculo.cor ?? "",
-  chassi: veiculo.chassi ?? "",
-  ano_fabricacao:
-    veiculo.ano_fabricacao !== null && veiculo.ano_fabricacao !== undefined
-      ? veiculo.ano_fabricacao.toString()
-      : "",
-  ano_modelo:
-    veiculo.ano_modelo !== null && veiculo.ano_modelo !== undefined
-      ? veiculo.ano_modelo.toString()
-      : "",
-  hodometro:
-    veiculo.hodometro !== null && veiculo.hodometro !== undefined
-      ? veiculo.hodometro.toString()
-      : "",
-  estado_venda: veiculo.estado_venda,
-  estado_veiculo: veiculo.estado_veiculo ?? "",
-  preco_venal: veiculo.preco_venal != null ? veiculo.preco_venal.toString() : "",
-  observacao: veiculo.observacao ?? "",
-  modelo_id: veiculo.modelo_id ?? veiculo.modelo?.id ?? "",
-  local_id: veiculo.local_id ?? veiculo.local?.id ?? "",
-  estagio_documentacao: veiculo.estagio_documentacao ?? "",
-  caracteristicas:
-    veiculo.caracteristicas?.map((caracteristica) => ({
-      id: caracteristica.id,
-      nome: caracteristica.nome,
-    })) ?? [],
-});
-
-function isVeiculoUI(value: unknown): value is VeiculoUI {
-  if (typeof value !== "object" || value === null) return false;
-  const veiculo = value as Partial<VeiculoUI>;
-  return typeof veiculo.id === "string" && typeof veiculo.placa === "string";
-}
-
-export default function EditarVeiculoPage() {
-  const params = useParams<{ id: string }>();
-  const veiculoId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? "";
-
-  // 🔹 Todos os hooks sempre no topo!
-  const { data: veiculoData, isLoading: isVeiculoLoading } = useVeiculosUI(veiculoId);
+export default function CriarVeiculoPage() {
   const { data: modelos = [] } = useModelos();
   const { data: locais = [] } = useLocais();
   const { data: caracteristicasDisponiveis = [] } =
     useCaracteristicas() as { data: CaracteristicaFormValue[] };
   const queryClient = useQueryClient();
 
-
-  const [formState, setFormState] = useState<VehicleFormState | null>(null);
+  const [formState, setFormState] = useState<VehicleFormState>({ ...INITIAL_FORM_STATE });
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
-
-  // inicializa o formulário
-  useEffect(() => {
-    if (veiculo && !formState) {
-      setFormState(buildFormStateFromVeiculo(veiculo));
-    }
-  }, [veiculo, formState]);
-
-  // 🔹 agora só condições de renderização, hooks já foram todos chamados
-  if (!veiculoId) return <p className="p-6 text-red-600">Veículo inválido</p>;
-  if (isVeiculoLoading || !formState) return <p className="p-6 text-zinc-600">Carregando...</p>;
-  if (!veiculo) {
-    return <p className="p-6 text-zinc-600">Veículo não encontrado</p>;
-  }
-
-  // Handlers
   const handleChange =
-    (field: keyof VehicleFormState): React.ChangeEventHandler<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    > =>
-    (event) => {
-      setFormState((prev) =>
-        prev ? { ...prev, [field]: event.target.value } : prev,
-      );
+    (field: keyof VehicleFormState) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      setFormState((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
   const handleToggleCaracteristica = (caracteristica: CaracteristicaFormValue) => {
-    setFormState((prev) =>
-      prev
-        ? {
-            ...prev,
-            caracteristicas: prev.caracteristicas.some((c) => c.id === caracteristica.id)
-              ? prev.caracteristicas.filter((c) => c.id !== caracteristica.id)
-              : [...prev.caracteristicas, caracteristica],
-          }
-        : prev,
-    );
+    setFormState((prev) => {
+      const alreadySelected = prev.caracteristicas.some((c) => c.id === caracteristica.id);
+      return {
+        ...prev,
+        caracteristicas: alreadySelected
+          ? prev.caracteristicas.filter((c) => c.id !== caracteristica.id)
+          : [...prev.caracteristicas, caracteristica],
+      };
+    });
   };
 
-  const handleSubmit: React.FormEventHandler = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!formState) return;
+
+    setIsSaving(true);
+    setFeedback(null);
 
     try {
-      setIsSaving(true);
       const toNumberOrNull = (value: string) => {
         const trimmed = value.trim();
         if (trimmed === "") return null;
@@ -171,27 +122,21 @@ export default function EditarVeiculoPage() {
         const trimmed = value.trim();
         return trimmed === "" ? null : value;
       };
-      const estadoVeiculo =
-        formState.estado_veiculo === "" ? null : formState.estado_veiculo;
-      const caracteristicasSelecionadas = formState.caracteristicas.map((item) => ({
-        id: item.id,
-        nome: item.nome,
-      }));
-      const caracteristicasOriginais = (veiculo.caracteristicas ?? []).map((item) => ({
-        id: item.id,
-        nome: item.nome,
-      }));
-      const { adicionar, remover } = calcularDiffCaracteristicas(
-        caracteristicasOriginais,
-        caracteristicasSelecionadas,
-      );
-      const modeloId = formState.modelo_id.trim();
-      const localId = formState.local_id.trim();
+
       const hodometroValue = Number(formState.hodometro.trim());
       if (Number.isNaN(hodometroValue)) {
         throw new Error("Informe um valor numérico válido para o hodômetro.");
       }
-      const payload: Parameters<typeof atualizarVeiculo>[1] = {
+
+      const estadoVeiculo = formState.estado_veiculo === "" ? null : formState.estado_veiculo;
+      const caracteristicasSelecionadas = formState.caracteristicas.map((item) => ({
+        id: item.id,
+        nome: item.nome,
+      }));
+      const modeloId = formState.modelo_id.trim();
+      const localId = formState.local_id.trim();
+
+      const payload: Parameters<typeof criarVeiculo>[0] = {
         placa: formState.placa,
         cor: formState.cor,
         chassi: toValueOrNull(formState.chassi),
@@ -205,20 +150,22 @@ export default function EditarVeiculoPage() {
         modelo_id: modeloId === "" ? null : modeloId,
         local_id: localId === "" ? null : localId,
         estagio_documentacao: toValueOrNull(formState.estagio_documentacao),
-        adicionar_caracteristicas: adicionar,
-        remover_caracteristicas: remover,
+        caracteristicas: caracteristicasSelecionadas,
       };
 
-      await atualizarVeiculo(veiculo.id, payload);
+      await criarVeiculo(payload);
       invalidateVeiculos(queryClient);
+
       setFeedback({
         type: "success",
-        message: "Dados atualizados com sucesso!",
+        message: "Veículo criado com sucesso!",
       });
-    } catch (err) {
+      setFormState({ ...INITIAL_FORM_STATE });
+    } catch (error) {
       setFeedback({
         type: "error",
-        message: err instanceof Error ? err.message : "Erro ao atualizar veículo.",
+        message:
+          error instanceof Error ? error.message : "Erro ao criar veículo. Tente novamente.",
       });
     } finally {
       setIsSaving(false);
@@ -229,8 +176,8 @@ export default function EditarVeiculoPage() {
     <div className="bg-white px-6 py-10">
       <div className="mx-auto w-full max-w-5xl space-y-8">
         <header className="border-b border-zinc-200 pb-6">
-          <h1 className="text-2xl font-semibold text-zinc-900">Editar veículo</h1>
-          <p className="text-sm text-zinc-500">Placa {veiculo.placa}</p>
+          <h1 className="text-2xl font-semibold text-zinc-900">Cadastrar veículo</h1>
+          <p className="text-sm text-zinc-500">Preencha os dados para adicionar um novo veículo.</p>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -246,7 +193,6 @@ export default function EditarVeiculoPage() {
             </div>
           )}
 
-          {/* Dados principais */}
           <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-medium">Dados principais</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -273,6 +219,7 @@ export default function EditarVeiculoPage() {
                   value={formState.cor}
                   onChange={handleChange("cor")}
                   className="rounded-md border px-3 py-2 text-sm"
+                  required
                 />
               </label>
             </div>
@@ -287,7 +234,6 @@ export default function EditarVeiculoPage() {
             </label>
           </section>
 
-          {/* Especificações */}
           <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-medium">Especificações</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -338,7 +284,6 @@ export default function EditarVeiculoPage() {
             </div>
           </section>
 
-          {/* Status e localização */}
           <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-medium">Status e localização</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -413,7 +358,6 @@ export default function EditarVeiculoPage() {
             </div>
           </section>
 
-          {/* Características */}
           <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-medium">Características</h2>
             <ul className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -425,10 +369,12 @@ export default function EditarVeiculoPage() {
                       checked={formState.caracteristicas.some(
                         (selecionada) => selecionada.id === caracteristica.id,
                       )}
-                      onChange={() => handleToggleCaracteristica({
-                        id: caracteristica.id,
-                        nome: caracteristica.nome,
-                      })}
+                      onChange={() =>
+                        handleToggleCaracteristica({
+                          id: caracteristica.id,
+                          nome: caracteristica.nome,
+                        })
+                      }
                     />
                     {caracteristica.nome}
                   </label>
@@ -443,24 +389,13 @@ export default function EditarVeiculoPage() {
               disabled={isSaving}
               className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {isSaving ? "Salvando..." : "Salvar alterações"}
+              {isSaving ? "Salvando..." : "Criar veículo"}
             </button>
-            <Link
-              href={`/estoque/${veiculo.id}`}
-              className="rounded-md border px-6 py-2 text-sm"
-            >
+            <Link href="/estoque" className="rounded-md border px-6 py-2 text-sm">
               Cancelar
             </Link>
           </div>
         </form>
-        <div className="mt-4">
-            <LojaSelector />
-          </div>
-        <PhotoGallery 
-        veiculoId={veiculo.id}
-        supabase={supabase} // Ajuste conforme necessário
-        empresaId={veiculo.empresa_id}
-        />
       </div>
     </div>
   );

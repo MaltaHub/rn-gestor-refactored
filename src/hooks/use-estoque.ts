@@ -1,35 +1,54 @@
 import { supabase } from "@/lib/supabase";
-import { useQuery } from "@tanstack/react-query";
+import { QueryClient, useQuery } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { Caracteristica } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";
 
-async function fetchVeiculos() : Promise<VeiculoResumo[] | []> {
+type CaracteristicaPivot = {
+  caracteristica: Caracteristica | null;
+} | null;
+
+type VeiculoQueryResult = Omit<VeiculoResumo, "caracteristicas"> & {
+  caracteristicas?: CaracteristicaPivot[] | null;
+};
+
+const mapCaracteristicas = (
+  lista: CaracteristicaPivot[] | null | undefined,
+): Caracteristica[] =>
+  (lista ?? [])
+    .map((item) => item?.caracteristica ?? null)
+    .filter((caracteristica): caracteristica is Caracteristica => Boolean(caracteristica));
+
+async function fetchVeiculos(): Promise<VeiculoResumo[]> {
   const { data, error } = await supabase
     .from("veiculos")
     .select(`*,
-      modelo: modelos ( * ),
-      local: locais ( * ),
+      modelo: modelos (*),
+      local: locais (*),
       caracteristicas: caracteristicas_veiculos (
-        caracteristica: caracteristicas ( * )
+        caracteristica: caracteristicas (*)
       )
     `)
-    .order("registrado_em", { ascending: false }) as { data: VeiculoResumo[] | null; error: any };
+    .order("registrado_em", { ascending: false });
 
   if (error) throw error;
 
-  return (data ?? []).map((v: any) => ({
-    ...v,
-    caracteristicas: v.caracteristicas?.map((c: any) => c.caracteristica) ?? [],
+  const registros = (data ?? []) as VeiculoQueryResult[];
+
+  return registros.map((veiculo) => ({
+    ...veiculo,
+    caracteristicas: mapCaracteristicas(veiculo.caracteristicas),
   }));
 }
 
-async function fetchVeiculo(id: string) : Promise<VeiculoResumo | []> {
+async function fetchVeiculo(id: string): Promise<VeiculoResumo> {
   const { data, error } = await supabase
     .from("veiculos")
     .select(`*,
-      modelo: modelos ( * ),
+      modelo: modelos (*),
       local: locais ( id, nome ),
       caracteristicas: caracteristicas_veiculos (
-        caracteristica: caracteristicas ( * )
+        caracteristica: caracteristicas (*)
       )
     `)
     .eq("id", id)
@@ -37,17 +56,38 @@ async function fetchVeiculo(id: string) : Promise<VeiculoResumo | []> {
 
   if (error) throw error;
 
+  const registro = (data ?? null) as VeiculoQueryResult | null;
+
+  if (!registro) {
+    throw new Error("Veículo não encontrado");
+  }
+
   return {
-    ...data,
-    caracteristicas: data?.caracteristicas?.map((c: any) => c.caracteristica) ?? [],
+    ...registro,
+    caracteristicas: mapCaracteristicas(registro.caracteristicas),
   };
 }
 
+/** Invalida a Query 'veiculos' */
+export function invalidateVeiculos(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ["veiculos"] });
+}
+
+export function useVeiculos(id: string): UseQueryResult<VeiculoResumo>;
+export function useVeiculos(): UseQueryResult<VeiculoResumo[]>;
 export function useVeiculos(id?: string) {
-  return useQuery<VeiculoResumo | VeiculoResumo[]>({
-    queryKey: id ? ["veiculo", id] : ["veiculos"],
-    queryFn: id ? () => fetchVeiculo(id) : fetchVeiculos as any,
-    enabled: id ? Boolean(id) : true,
+  if (id) {
+    return useQuery<VeiculoResumo>({
+      queryKey: ["veiculos", id],
+      queryFn: () => fetchVeiculo(id),
+      enabled: Boolean(id),
+      staleTime: 1000 * 60 * 5,
+    });
+  }
+
+  return useQuery<VeiculoResumo[]>({
+    queryKey: ["veiculos"],
+    queryFn: fetchVeiculos,
     staleTime: 1000 * 60 * 5,
   });
 }

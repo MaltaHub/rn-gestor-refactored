@@ -1,17 +1,11 @@
-
-export type RPCResponse = {
+export type RPCResponse<TData = unknown> = {
   status: "success" | "error";
   message?: string;
-  data?: any;
+  data?: TData;
 };
 
-export type RPCParameters = {
+export type RPCParameters<TPayload = Record<string, unknown>> = {
   operacao: string;
   id?: string;
-  dados?: any;
-};
-
-export type RPCInvoker = {
-  rpc: string;
-  p_payload: RPCParameters;
+  dados?: TPayload;
 };
