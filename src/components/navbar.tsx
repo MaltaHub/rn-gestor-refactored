@@ -16,6 +16,18 @@ export function Navbar() {
     { href: "/configuracoes", label: "Configurações" },
   ];
 
+  const linksMobileProprietario = [
+    { href: "/", label: "Dashboard" },
+    { href: "/admin", label: "Admin" },
+    { href: "/estoque", label: "Estoque" },
+    { href: "/configuracoes", label: "Configurações" },
+  ];
+
+  const linksMobile = [
+    { href: "/", label: "Dashboard" }
+  ];
+
+
   return (
     <header className="relative w-full border-b border-zinc-200 bg-white shadow-sm">
       <Link
@@ -34,14 +46,6 @@ export function Navbar() {
             className="object-contain"
           />
         </span>
-      </Link>
-
-      <Link
-        href="/"
-        className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center text-lg font-semibold text-blue-600 sm:hidden"
-        aria-label="Página inicial"
-      >
-        RN Gestor
       </Link>
 
       <div className="mx-auto flex max-w-6xl items-center justify-end px-4 py-3 pl-32 sm:px-6 sm:pl-60 lg:px-8">
@@ -71,11 +75,18 @@ export function Navbar() {
         <nav className="flex flex-col gap-2 border-t border-zinc-200 bg-white px-4 py-3 text-zinc-800 sm:hidden">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
           {!isLoading && empresa?.papel === "proprietario" &&
-            linksProprietario.map(link => (
+            linksMobileProprietario.map(link => (
               <Link key={link.href} href={link.href} className="hover:text-blue-600">
                 {link.label}
               </Link>
             ))}
+
+            {!isLoading && empresa?.papel !== "proprietario" && linksMobile.map(link => (
+              <Link key={link.href} href={link.href} className="hover:text-blue-600">
+                {link.label}
+              </Link>
+            ))
+            }
 
         </nav>
       )}
