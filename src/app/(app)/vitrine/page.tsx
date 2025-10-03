@@ -55,6 +55,7 @@ const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
     {veiculos.map((item) => (
       <li key={item.id}>
         <article className="flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md">
+          <Link href={`/vitrine/${item.id}`}/>
           <div className="relative flex aspect-video items-center justify-center bg-zinc-100">
             {item.capaUrl ? (
               <>
@@ -100,14 +101,6 @@ const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
                 <dd>{item.veiculo?.hodometroFormatado ?? "—"}</dd>
               </div>
             </dl>
-            <div className="mt-auto flex gap-2 text-sm">
-              <Link
-                href={`/vitrine/${item.id}`}
-                className="inline-flex flex-1 items-center justify-center rounded-md bg-blue-600 px-3 py-2 font-medium text-white transition hover:bg-blue-700"
-              >
-                Ver vitrine
-              </Link>
-            </div>
           </div>
         </article>
       </li>

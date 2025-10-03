@@ -17,7 +17,7 @@ export function Navbar() {
 
 
   return (
-    <header className="relative w-full border-b border-zinc-200 bg-white shadow-sm">
+    <header className="relative w-full border-b theme-border theme-surface shadow-sm">
       <Link
         href="/"
         className="absolute left-4 top-1/2 hidden h-27 w-27 -translate-y-1/2 items-center sm:flex"
@@ -58,7 +58,7 @@ export function Navbar() {
 
       <div className="mx-auto flex max-w-6xl items-center justify-end px-4 py-3 pl-32 sm:px-6 sm:pl-60 lg:px-8">
         {/* Menu desktop */}
-        <nav className="hidden gap-6 text-sm font-medium text-zinc-600 sm:flex">
+        <nav className="hidden gap-6 text-sm font-medium sm:flex">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
           {!isLoading && empresa?.papel === "proprietario" &&
             linksProprietario.map(link => (
@@ -71,7 +71,7 @@ export function Navbar() {
         {/* Botão mobile (fica à direita também) */}
         <button
           aria-label="Abrir menu"
-          className="ml-4 rounded-md p-2 text-zinc-600 hover:bg-zinc-100 sm:hidden"
+          className="ml-4 rounded-md p-2 hover:bg-zinc-100 sm:hidden"
           onClick={() => setOpen(!open)}
         >
           {open ? "✕" : "☰"}
@@ -80,7 +80,7 @@ export function Navbar() {
 
       {/* Menu mobile colapsável */}
       {open && (
-        <nav className="flex flex-col gap-2 border-t border-zinc-200 bg-white px-4 py-3 text-zinc-800 sm:hidden">
+        <nav className="flex flex-col gap-2 border-t theme-border theme-surface px-4 py-3 sm:hidden">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
           {!isLoading && empresa?.papel === "proprietario" &&
             linksProprietario.map(link => (

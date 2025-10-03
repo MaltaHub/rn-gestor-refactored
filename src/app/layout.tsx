@@ -15,8 +15,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const themeInitializer = `
+(() => {
+  const applyTheme = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const isDark = hour >= 18 || hour < 6;
+    const root = document.documentElement;
+    root.dataset.theme = isDark ? "dark" : "light";
+    root.classList.toggle("dark", isDark);
+  };
+
+  applyTheme();
+  setInterval(applyTheme, 15 * 60 * 1000);
+})();
+`;
+
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#050505" },
+    { color: "#ffffff" },
+  ],
 };
 
 export const metadata: Metadata = {
@@ -45,15 +64,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-50 text-zinc-900`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased theme-surface`}>
+        <script dangerouslySetInnerHTML={{ __html: themeInitializer }} />
         <ReactQueryProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
-            <main className="flex-grow bg-white text-zinc-900">{/* Conteúdo principal */}
+            <main className="flex-grow theme-surface">{/* Conteúdo principal */}
               {children}
             </main>
-            <footer className="mx-auto w-full border-t border-zinc-200 bg-zinc-50 py-6">
-              <div className="mx-auto max-w-6xl px-4 text-center text-sm text-zinc-500">
+            <footer className="mx-auto w-full border-t theme-border theme-surface py-6">
+              <div className="mx-auto max-w-6xl px-4 text-center text-sm">
                 © {new Date().getFullYear()} Gestor de Veículos
               </div>
             </footer>
