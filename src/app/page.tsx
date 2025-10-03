@@ -36,7 +36,8 @@ export default function DashboardPage() {
     data: veiculos = [] as VeiculoResumo[],
     isLoading: isVeiculosLoading,
   } = useVeiculos();
-  const totalVeiculos = isVeiculosLoading ? "--" : veiculos.length;
+  const veiculosCount = Array.isArray(veiculos) ? veiculos.length : veiculos ? 1 : 0;
+  const totalVeiculos = isVeiculosLoading ? "--" : veiculosCount;
 
   const {
     data: empresa,

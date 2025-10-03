@@ -161,20 +161,25 @@ export default function VitrineDetalhePage() {
   }, [fotos]);
 
   const fotoAtual = useMemo(() => fotos[fotoAtiva] ?? null, [fotos, fotoAtiva]);
+  const sortCaracteristicas = (lista: string[]) =>
+    [...lista].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+
   const todasCaracteristicas = useMemo(() => {
     const itens = (veiculo?.caracteristicas ?? []) as Caracteristica[];
     const nomes = itens
       .map((item: Caracteristica | null) => item?.nome ?? null)
       .filter((nome: string | null): nome is string => Boolean(nome && nome.trim() !== ""));
 
-    if (nomes.length === 0) return veiculo?.caracteristicasPrincipais ?? [];
+    if (nomes.length === 0) return sortCaracteristicas(veiculo?.caracteristicasPrincipais ?? []);
 
-    return Array.from(new Set(nomes));
+    const unicos = Array.from(new Set(nomes.map((nome) => nome.trim())));
+    return sortCaracteristicas(unicos);
   }, [veiculo?.caracteristicas, veiculo?.caracteristicasPrincipais]);
 
   const caracteristicasVisiveis = useMemo(() => {
     if (mostrarTodasCaracteristicas) return todasCaracteristicas;
-    return veiculo?.caracteristicasPrincipais ?? [];
+    const principais = veiculo?.caracteristicasPrincipais ?? [];
+    return sortCaracteristicas(principais);
   }, [mostrarTodasCaracteristicas, todasCaracteristicas, veiculo?.caracteristicasPrincipais]);
 
   const extrasDisponiveis = Math.max(
@@ -362,7 +367,6 @@ export default function VitrineDetalhePage() {
                   className="object-contain select-none"
                   sizes="(max-width: 640px) 100vw, (max-width: 1280px) 90vw, 1200px"
                   priority
-                  quality={90}
                   draggable={false}
                 />
               ) : (

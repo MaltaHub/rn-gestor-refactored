@@ -66,6 +66,55 @@ const parseOptionalNumberField = (
   return parseOptionalInteger(stringValue);
 };
 
+const normalizeEnumValue = <T extends string>(
+  value: T | null | undefined,
+  allowed: readonly T[],
+): T | null => {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  const matched = allowed.find((option) => option === normalized);
+  return matched ?? null;
+};
+
+const tipoCambioOptions: readonly Exclude<Modelo["tipo_cambio"], null>[] = [
+  "manual",
+  "automatico",
+  "cvt",
+  "outro",
+];
+
+const combustivelOptions: readonly Exclude<Modelo["combustivel"], null>[] = [
+  "gasolina",
+  "alcool",
+  "flex",
+  "diesel",
+  "eletrico",
+  "hibrido",
+];
+
+const carroceriaOptions: readonly Exclude<Modelo["carroceria"], null>[] = [
+  "sedan",
+  "hatch",
+  "camioneta",
+  "suv",
+  "suv compacto",
+  "suv medio",
+  "van",
+  "buggy",
+];
+
+const normalizeTipoCambio = (
+  value: ModeloFormState["tipo_cambio"],
+): Modelo["tipo_cambio"] => normalizeEnumValue(value, tipoCambioOptions);
+
+const normalizeCombustivel = (
+  value: ModeloFormState["combustivel"],
+): Modelo["combustivel"] => normalizeEnumValue(value, combustivelOptions);
+
+const normalizeCarroceria = (
+  value: ModeloFormState["carroceria"],
+): Modelo["carroceria"] => normalizeEnumValue(value, carroceriaOptions);
+
 const toFeedback = (section: string, type: "success" | "error", message: string) => ({
   section,
   type,
@@ -280,14 +329,14 @@ async function handleDeleteEntity<T extends { id?: string }>(
       id: typeof f.id === "string" ? f.id.trim() : undefined,
       marca: f.marca.trim(),
       nome: f.nome.trim(),
-      combustivel: f.combustivel?.trim() || null,
-      tipo_cambio: f.tipo_cambio?.trim() || null,
+      combustivel: normalizeCombustivel(f.combustivel),
+      tipo_cambio: normalizeTipoCambio(f.tipo_cambio),
       motor: f.motor?.trim() || null,
       lugares: parseOptionalNumberField(f.lugares ?? null),
       portas: parseOptionalNumberField(f.portas ?? null),
       cabine: f.cabine?.trim() || null,
       tracao: f.tracao?.trim() || null,
-      carroceria: f.carroceria?.trim() || null,
+      carroceria: normalizeCarroceria(f.carroceria),
       cambio: f.cambio?.trim() || null,
       criado_em: f.criado_em ?? null,
       edicao: f.edicao?.trim() || null,

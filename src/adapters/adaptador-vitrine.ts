@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 import { adaptVeiculo } from "@/adapters/adaptador-estoque";
+import type { VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useLocais, useModelos } from "@/hooks/use-configuracoes";
 import type {
   Caracteristica,
@@ -199,6 +200,22 @@ const attachFotos = async (
   });
 };
 
+export type VeiculoLojaUI = {
+  id: string;
+  lojaId: string;
+  empresaId: string;
+  veiculoId: string;
+  precoLoja: number | null;
+  precoLojaFormatado: string | null;
+  dataEntrada: string | null;
+  dataEntradaFormatada: string | null;
+  temFotos: boolean;
+  capaUrl: string | null;
+  lojaNome: string | null;
+  loja: Loja | null;
+  veiculo: VeiculoUI | null;
+};
+
 const adaptVeiculoLoja = (
   row: RawVeiculoLojaWithFotos,
   modelos: Modelo[] = [],
@@ -227,8 +244,6 @@ const adaptVeiculoLoja = (
     veiculo: veiculoAdaptado,
   };
 };
-
-export type VeiculoLojaUI = ReturnType<typeof adaptVeiculoLoja>;
 
 export const veiculosLojaKeys = {
   lista: (lojaId: string | undefined) => ["vitrine", "loja", lojaId] as const,
