@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactQueryProvider } from "../components/react-query-provider";
 import { Navbar } from "../components/navbar";  // <-- importa aqui
+import { PWARegister } from "../components/pwa-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,21 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Gestor de Veículos",
   description: "Sistema de gerenciamento de vitrine e estoque",
+  applicationName: "Gestor de Veículos",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#0ea5e9",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192x192.png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Gestor",
+  },
 };
 
 export default function RootLayout({
@@ -39,6 +55,7 @@ export default function RootLayout({
               </div>
             </footer>
           </div>
+          <PWARegister />
         </ReactQueryProvider>
       </body>
     </html>
