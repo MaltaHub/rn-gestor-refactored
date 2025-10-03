@@ -181,18 +181,24 @@ const renderTabela = (veiculos: VeiculoLojaUI[]) => (
       <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
         {veiculos.map((item) => (
           <tr key={item.id} className="transition hover:bg-blue-50/30">
-            <Link href={`/vitrine/${item.id}`}>
-              <td className="px-4 py-3 font-medium text-zinc-800">
-                {item.veiculo?.veiculoDisplay ?? "Veículo"}
-              </td>
-              <td className="px-4 py-3">{item.veiculo?.placa ?? "—"}</td>
-              <td className="px-4 py-3">{getDisplayPrice(item)}</td>
-              <td className="px-4 py-3">{item.veiculo?.estadoVendaLabel ?? "Sem status"}</td>
-              <td className="px-4 py-3">{item.veiculo?.localDisplay ?? "Sem local"}</td>
-              <td className="px-4 py-3">{item.temFotos ? "Sim" : "Não"}</td>
-              <td className="px-4 py-3 text-right">
-              </td>
-            </Link>
+            <td className="px-4 py-3 font-medium text-zinc-800">
+              {item.veiculo?.veiculoDisplay ?? "Veículo"}
+            </td>
+            <td className="px-4 py-3">{item.veiculo?.placa ?? "—"}</td>
+            <td className="px-4 py-3">{getDisplayPrice(item)}</td>
+            <td className="px-4 py-3">{item.veiculo?.estadoVendaLabel ?? "Sem status"}</td>
+            <td className="px-4 py-3">{item.veiculo?.localDisplay ?? "Sem local"}</td>
+            <td className="px-4 py-3">{item.temFotos ? "Sim" : "Não"}</td>
+            <td className="px-4 py-3 text-right">
+              <div className="flex justify-end gap-2">
+                <Link
+                  href={`/vitrine/${item.id}`}
+                  className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
+                >
+                  Abrir vitrine
+                </Link>
+              </div>
+            </td>
           </tr>
         ))}
       </tbody>

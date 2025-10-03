@@ -4,6 +4,7 @@ import "./globals.css";
 import { ReactQueryProvider } from "../components/react-query-provider";
 import { Navbar } from "../components/navbar";  // <-- importa aqui
 import { PWARegister } from "../components/pwa-register";
+import { ThemeScheduler } from "../components/theme-scheduler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,22 +15,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-const themeInitializer = `
-(() => {
-  const applyTheme = () => {
-    const now = new Date();
-    const hour = now.getHours();
-    const isDark = hour >= 18 || hour < 6;
-    const root = document.documentElement;
-    root.dataset.theme = isDark ? "dark" : "light";
-    root.classList.toggle("dark", isDark);
-  };
-
-  applyTheme();
-  setInterval(applyTheme, 15 * 60 * 1000);
-})();
-`;
 
 export const viewport: Viewport = {
   themeColor: [
@@ -63,9 +48,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased theme-surface`}>
-        <script dangerouslySetInnerHTML={{ __html: themeInitializer }} />
+        <ThemeScheduler />
         <ReactQueryProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
