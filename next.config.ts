@@ -21,7 +21,7 @@ const remotePatterns = (() => {
 
 const withPWA = withPWAInit({
   dest: "public",
-  register: false,
+  register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
