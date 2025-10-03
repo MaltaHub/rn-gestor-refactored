@@ -13,12 +13,13 @@ const extractId = (dados: ConfiguracaoPayload): string | undefined => {
 };
 
 export async function salvarConfiguracao(area: ConfiguracaoArea, dados: ConfiguracaoPayload): Promise<{ success: boolean }> {
-  const operacao = `${area}/${extractId(dados) ? "atualizar" : "criar"}`;
+  const id = extractId(dados);
+  const operacao = `${area}/${id ? "atualizar" : "criar"}`;
 
   const response = await callRpc(RPC_CONFIGURACOES, {
     operacao,
     dados,
-    id: extractId(dados),
+    id,
   });
 
   return { success: response.status === "success" };

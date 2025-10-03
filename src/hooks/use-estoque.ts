@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/supabase";
 import { QueryClient, useQuery } from "@tanstack/react-query";
-import type { UseQueryResult } from "@tanstack/react-query";
 import type { Caracteristica } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";
 
@@ -73,21 +72,16 @@ export function invalidateVeiculos(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: ["veiculos"] });
 }
 
-export function useVeiculos(id: string): UseQueryResult<VeiculoResumo>;
-export function useVeiculos(): UseQueryResult<VeiculoResumo[]>;
 export function useVeiculos(id?: string) {
-  if (id) {
-    return useQuery<VeiculoResumo>({
-      queryKey: ["veiculos", id],
-      queryFn: () => fetchVeiculo(id),
-      enabled: Boolean(id),
-      staleTime: 1000 * 60 * 5,
-    });
-  }
-
-  return useQuery<VeiculoResumo[]>({
-    queryKey: ["veiculos"],
-    queryFn: fetchVeiculos,
+  return useQuery<VeiculoResumo | VeiculoResumo[]>({
+    queryKey: id ? ["veiculos", id] : ["veiculos"],
+    queryFn: async () => {
+      if (id) {
+        return fetchVeiculo(id);
+      }
+      return fetchVeiculos();
+    },
+    enabled: id ? Boolean(id) : true,
     staleTime: 1000 * 60 * 5,
   });
 }

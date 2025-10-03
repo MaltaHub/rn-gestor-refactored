@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Loja, Plataforma, Caracteristica, Modelo, Local } from "@/types";
 import { listar_tabela } from "@/services";
-import { useState } from "react";
 
 const configuracoesKeys = {
   lojas: ["configuracoes", "loja"] as const,

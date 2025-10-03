@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,9 +31,9 @@ type ActionType = "local" | "status" | "preco";
 const formatEnumLabel = (value?: string | null) =>
   value
     ? value
-        .split("_")
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(" ")
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
     : "Não informado";
 
 export default function VitrineDetalhePage() {
@@ -54,10 +54,10 @@ export default function VitrineDetalhePage() {
 
   const [feedback, setFeedback] = useState<
     | {
-        action: ActionType;
-        type: "success" | "error";
-        message: string;
-      }
+      action: ActionType;
+      type: "success" | "error";
+      message: string;
+    }
     | null
   >(null);
   const [isSaving, setIsSaving] = useState<ActionType | null>(null);
@@ -91,6 +91,9 @@ export default function VitrineDetalhePage() {
   });
 
   const [fotoAtiva, setFotoAtiva] = useState(0);
+  const miniaturasRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     setFotoAtiva(0);
@@ -99,6 +102,45 @@ export default function VitrineDetalhePage() {
   const fotoAtual = useMemo(() => fotos[fotoAtiva] ?? null, [fotos, fotoAtiva]);
 
   const handleCloseFeedback = () => setFeedback(null);
+
+  useEffect(() => {
+    const container = miniaturasRef.current;
+    if (!container) return;
+
+    const updateScrollButtons = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setCanScrollLeft(scrollLeft > 4);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
+    };
+
+    updateScrollButtons();
+    container.addEventListener("scroll", updateScrollButtons, { passive: true });
+
+    if (typeof ResizeObserver !== "undefined") {
+      const resizeObserver = new ResizeObserver(updateScrollButtons);
+      resizeObserver.observe(container);
+
+      return () => {
+        container.removeEventListener("scroll", updateScrollButtons);
+        resizeObserver.disconnect();
+      };
+    }
+
+    return () => {
+      container.removeEventListener("scroll", updateScrollButtons);
+    };
+  }, [fotos.length]);
+
+  const handleScrollMiniaturas = (direction: "left" | "right") => {
+    const container = miniaturasRef.current;
+    if (!container) return;
+
+    const scrollAmount = container.clientWidth * 0.8;
+    container.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
 
   const invalidateVitrineQueries = async () => {
     await Promise.all([
@@ -260,73 +302,112 @@ export default function VitrineDetalhePage() {
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[2fr,3fr]">
-          <div className="flex flex-col gap-4">
-            <div className="relative overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 shadow-sm">
-              {isFotosLoading ? (
-                <div className="flex aspect-video items-center justify-center text-sm text-zinc-500">
-                  Carregando fotos...
-                </div>
-              ) : fotoAtual ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={fotoAtual.url}
-                    alt={veiculo.veiculoDisplay}
-                    className="aspect-video w-full object-cover"
-                  />
-                </>
-              ) : (
-                <div className="flex aspect-video items-center justify-center text-sm text-zinc-500">
-                  Nenhuma foto cadastrada para esta loja.
-                </div>
-              )}
-              {fotos.length > 1 && (
-                <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-3">
-                  <button
-                    type="button"
-                    onClick={() => setFotoAtiva((prev) => (prev - 1 + fotos.length) % fotos.length)}
-                    className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
-                  >
-                    Anterior
-                  </button>
-                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow">
-                    {fotoAtiva + 1} / {fotos.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setFotoAtiva((prev) => (prev + 1) % fotos.length)}
-                    className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
-                  >
-                    Próxima
-                  </button>
-                </div>
-              )}
+        {/* BLOCO DE FOTOS */}
+<section className="flex flex-col gap-2 h-screen">
+  {/* Foto principal ocupa altura total menos thumbs */}
+<div
+  className="
+    relative 
+    w-screen -mx-6 sm:mx-0 sm:w-full 
+    overflow-hidden 
+    sm:rounded-lg sm:border sm:border-zinc-200 
+    bg-zinc-100 shadow-sm
+  "
+>
+  {isFotosLoading ? (
+    <div className="flex aspect-[9/16] sm:aspect-[16/9] items-center justify-center text-sm text-zinc-500">
+      Carregando fotos...
+    </div>
+  ) : fotoAtual ? (
+    <div className="aspect-[9/16] sm:aspect-[16/9] w-full">
+      <img
+        src={fotoAtual.url}
+        alt={veiculo.veiculoDisplay}
+        className="w-full h-full object-cover"
+      />
+    </div>
+  ) : (
+    <div className="flex aspect-[9/16] sm:aspect-[16/9] items-center justify-center text-sm text-zinc-500">
+      Nenhuma foto cadastrada
+    </div>
+  )}
+
+  {fotos.length > 1 && (
+    <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-3">
+      <button
+        type="button"
+        onClick={() => setFotoAtiva((prev) => (prev - 1 + fotos.length) % fotos.length)}
+        className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
+      >
+        ←
+      </button>
+      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow">
+        {fotoAtiva + 1} / {fotos.length}
+      </span>
+      <button
+        type="button"
+        onClick={() => setFotoAtiva((prev) => (prev + 1) % fotos.length)}
+        className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
+      >
+        →
+      </button>
+    </div>
+  )}
+</div>
+
+
+  {/* Miniaturas com altura fixa */}
+{fotos.length > 1 && (
+  <div className="-mx-6 sm:mx-0">
+    <div
+      ref={miniaturasRef}
+      className="flex gap-2 overflow-x-auto pb-2 px-4 no-scrollbar"
+    >
+      {fotos.map((foto, index) => (
+        <button
+          key={foto.id}
+          type="button"
+          onClick={() => setFotoAtiva(index)}
+          className={`h-20 aspect-square flex-shrink-0 overflow-hidden rounded-md border transition
+            ${fotoAtiva === index ? "border-blue-500 ring-2 ring-blue-300" : "border-transparent"}`}
+        >
+          <img
+            src={foto.url}
+            alt={`Foto ${index + 1}`}
+            className="h-full w-full object-cover object-center"
+          />
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+
+</section>
+
+
+        {/* BLOCO DE INFORMAÇÕES */}
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+                {veiculo.veiculoDisplay}
+              </h1>
+              <p className="text-sm text-zinc-500">
+                Loja {veiculoLoja.lojaNome ?? "não informada"} • Placa {veiculo.placa}
+              </p>
             </div>
-            {fotos.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {fotos.map((foto, index) => (
-                  <button
-                    key={foto.id}
-                    type="button"
-                    onClick={() => setFotoAtiva(index)}
-                    className={`flex h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border ${
-                      fotoAtiva === index ? "border-blue-500" : "border-transparent"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={foto.url}
-                      alt={`Foto ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium uppercase tracking-wide text-blue-600">
+                {veiculo.estadoVendaLabel}
+              </span>
+              <span className="text-xl font-semibold text-zinc-900">
+                {veiculoLoja.precoLojaFormatado ?? veiculo.precoFormatado ?? "Sem preço"}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-6">
+          {/* Aqui você mantém os seus cards de "Informações principais", "Valores" e "Características" */}
+          <div className="flex min-w-0 flex-col gap-6">
             <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold text-zinc-900">Informações principais</h2>
               <dl className="mt-4 grid gap-4 text-sm text-zinc-600 sm:grid-cols-2">
@@ -405,7 +486,9 @@ export default function VitrineDetalhePage() {
               )}
             </div>
           </div>
+
         </section>
+
 
         <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -419,33 +502,30 @@ export default function VitrineDetalhePage() {
               <button
                 type="button"
                 onClick={() => setActiveAction((current) => (current === "local" ? null : "local"))}
-                className={`rounded-md border px-3 py-2 font-medium transition ${
-                  activeAction === "local"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                }`}
+                className={`rounded-md border px-3 py-2 font-medium transition ${activeAction === "local"
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                  }`}
               >
                 Alterar local
               </button>
               <button
                 type="button"
                 onClick={() => setActiveAction((current) => (current === "status" ? null : "status"))}
-                className={`rounded-md border px-3 py-2 font-medium transition ${
-                  activeAction === "status"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                }`}
+                className={`rounded-md border px-3 py-2 font-medium transition ${activeAction === "status"
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                  }`}
               >
                 Alterar status
               </button>
               <button
                 type="button"
                 onClick={() => setActiveAction((current) => (current === "preco" ? null : "preco"))}
-                className={`rounded-md border px-3 py-2 font-medium transition ${
-                  activeAction === "preco"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                }`}
+                className={`rounded-md border px-3 py-2 font-medium transition ${activeAction === "preco"
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                  }`}
               >
                 Alterar valor
               </button>
@@ -454,11 +534,10 @@ export default function VitrineDetalhePage() {
 
           {feedback && (
             <div
-              className={`mt-4 rounded-md border px-4 py-3 text-sm ${
-                feedback.type === "success"
-                  ? "border-green-200 bg-green-50 text-green-700"
-                  : "border-red-200 bg-red-50 text-red-700"
-              }`}
+              className={`mt-4 rounded-md border px-4 py-3 text-sm ${feedback.type === "success"
+                ? "border-green-200 bg-green-50 text-green-700"
+                : "border-red-200 bg-red-50 text-red-700"
+                }`}
             >
               <div className="flex items-center justify-between gap-4">
                 <span>{feedback.message}</span>

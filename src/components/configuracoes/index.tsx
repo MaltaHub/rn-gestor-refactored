@@ -1,12 +1,9 @@
-import type { SimpleFormState, ModeloFormState } from "@/types/configuracoes";
+import type { ModeloFormState } from "@/types/configuracoes";
 
 import {
   type ChangeEventHandler,
-  type Dispatch,
   type FormEvent,
-  type SetStateAction,
-  useMemo,
-  useState,
+  type ReactNode,
 } from "react";
 
 
@@ -21,8 +18,8 @@ export function SectionCard({
 }: {
   title: string;
   subtitle: string;
-  badge?: React.ReactNode;
-  children: React.ReactNode;
+  badge?: ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
@@ -129,7 +126,7 @@ export function EntityList<T extends { id?: string; nome?: string; empresa_id?: 
     onRemove: (item: T) => void;
     removingId: string | null;
     removeDisabled?: (item: T) => boolean;
-    renderExtra?: (item: T) => React.ReactNode;
+    renderExtra?: (item: T) => ReactNode;
   }
 ) {
   if (items.length === 0) {
@@ -242,8 +239,8 @@ export function ModeloForm({
   form: ModeloFormState;
   onChange: (
     field: keyof ModeloFormState
-  ) => React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  ) => ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
   loading: boolean;
   isEditing: boolean;

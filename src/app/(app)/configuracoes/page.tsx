@@ -26,28 +26,6 @@ import {
 import type { SimpleFormState, ModeloFormState } from "@/types/configuracoes";
 import { SectionCard, FeedbackBadge, SimpleForm, EntityList, ModeloForm } from "@/components/configuracoes";
 
-const carrocerias = [
-  "sedan",
-  "hatch",
-  "camioneta",
-  "suv",
-  "suv compacto",
-  "suv medio",
-  "van",
-  "buggy",
-];
-
-const combustiveis = [
-  "gasolina",
-  "alcool",
-  "flex",
-  "diesel",
-  "eletrico",
-  "hibrido",
-];
-
-const tiposCambio = ["manual", "automatico", "cvt", "outro"];
-
 const createSimpleForm = (): SimpleFormState => ({ nome: "" });
 const createModeloForm = (): ModeloFormState => ({
   id: null,
@@ -158,7 +136,7 @@ export default function ConfiguracoesPage() {
 
       try {
         setLoading(true);
-        const payload = mapPayload ? mapPayload(form) : (({ ...form } as unknown) as TPayload);
+        const payload = mapPayload ? mapPayload(form) : (form as unknown as TPayload);
         await salvarConfiguracao(area, payload);
         invalidateForArea(area);
 
