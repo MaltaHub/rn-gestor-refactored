@@ -169,12 +169,6 @@ const renderInfoCards = (veiculos: VeiculoLojaUI[]) => (
             >
               Ver vitrine
             </Link>
-            <Link
-              href={`/editar/${item.veiculoId}`}
-              className="inline-flex items-center justify-center rounded-md border border-zinc-200 px-4 py-2 font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-            >
-              Editar cadastro
-            </Link>
           </div>
         </article>
       </li>
@@ -214,12 +208,6 @@ const renderTabela = (veiculos: VeiculoLojaUI[]) => (
                   className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
                 >
                   Abrir vitrine
-                </Link>
-                <Link
-                  href={`/editar/${item.veiculoId}`}
-                  className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-700"
-                >
-                  Editar cadastro
                 </Link>
               </div>
             </td>
