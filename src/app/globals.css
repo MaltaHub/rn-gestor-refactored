@@ -5,14 +5,11 @@
   --foreground: #171717;
 }
 
-/* globals.css */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;  /* IE e Edge */
-  scrollbar-width: none;     /* Firefox */
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* bloqueia scroll chaining para não arrastar o body */
+.overscroll-x-contain { overscroll-behavior-x: contain; }
 
 @theme inline {
   --color-background: var(--background);

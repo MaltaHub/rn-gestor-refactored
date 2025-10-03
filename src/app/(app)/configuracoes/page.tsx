@@ -289,6 +289,7 @@ async function handleDeleteEntity<T extends { id?: string }>(
       tracao: f.tracao?.trim() || null,
       carroceria: f.carroceria?.trim() || null,
       cambio: f.cambio?.trim() || null,
+      criado_em: f.criado_em ?? null,
       edicao: f.edicao?.trim() || null,
       ano_inicial: parseOptionalNumberField(f.ano_inicial ?? null),
       ano_final: parseOptionalNumberField(f.ano_final ?? null),

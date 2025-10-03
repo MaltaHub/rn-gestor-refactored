@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const { data: empresa, isLoading } = useEmpresaDoUsuario();
+  console.log(empresa?.papel ?? "nenhum");
+
+  const linksProprietario = [
+    { href: "/admin", label: "Admin" },
+    { href: "/estoque", label: "Estoque" },
+    { href: "/configuracoes", label: "Configurações" },
+  ];
 
   return (
     <header className="w-full border-b border-zinc-200 bg-white shadow-sm">
@@ -16,12 +25,18 @@ export function Navbar() {
         {/* Menu desktop */}
         <nav className="hidden gap-6 text-sm font-medium text-zinc-600 sm:flex">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
-          <Link href="/estoque" className="hover:text-blue-600">Estoque</Link>
-          <Link href="/configuracoes" className="hover:text-blue-600">Configurações</Link>
+
+          {!isLoading && empresa?.papel === "proprietario" &&
+            linksProprietario.map(link => (
+              <Link key={link.href} href={link.href} className="hover:text-blue-600">
+                {link.label}
+              </Link>
+            ))}
         </nav>
 
         {/* Botão mobile */}
         <button
+          aria-label="Abrir menu"
           className="rounded-md p-2 text-zinc-600 hover:bg-zinc-100 sm:hidden"
           onClick={() => setOpen(!open)}
         >
@@ -33,8 +48,13 @@ export function Navbar() {
       {open && (
         <nav className="flex flex-col gap-2 border-t border-zinc-200 bg-white px-4 py-3 sm:hidden">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
-          <Link href="/estoque" className="hover:text-blue-600">Estoque</Link>
-          <Link href="/configuracoes" className="hover:text-blue-600">Configurações</Link>
+          {!isLoading && empresa?.papel === "proprietario" &&
+            linksProprietario.map(link => (
+              <Link key={link.href} href={link.href} className="hover:text-blue-600">
+                {link.label}
+              </Link>
+            ))}
+
         </nav>
       )}
     </header>

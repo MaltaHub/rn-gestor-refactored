@@ -11,6 +11,8 @@ import {
 } from "@/adapters/adaptador-vitrine";
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { AddVehicleToStoreButton } from "./loja-actions";
+import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
+import { useCaracteristicas } from "@/hooks/use-configuracoes";
 
 type ViewMode = "cards-photo" | "cards-info" | "table";
 
@@ -144,7 +146,7 @@ const renderInfoCards = (veiculos: VeiculoLojaUI[]) => (
             </div>
             {item.veiculo?.caracteristicasPrincipais?.length ? (
               <div className="flex flex-wrap gap-2">
-                {item.veiculo.caracteristicasPrincipais.map((caracteristica) => (
+                {item.veiculo.caracteristicasPrincipais.map((caracteristica: string) => (
                   <span
                     key={caracteristica}
                     className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600"
@@ -232,9 +234,15 @@ export default function VitrinePage() {
   const lojaSelecionada = useLojaStore((state) => state.lojaSelecionada);
   const lojaId = lojaSelecionada?.id;
 
+  const {data: empresa} = useEmpresaDoUsuario();
+  const { data: caracteristicas = [] } = useCaracteristicas();
+
   const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
   const [searchTerm, setSearchTerm] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoVendaFiltro | "">("");
+  const [caracteristicaFiltro, setCaracteristicaFiltro] = useState<string>("");
+  const [precoMin, setPrecoMin] = useState<string>("");
+  const [precoMax, setPrecoMax] = useState<string>("");
   const [isManaging, setIsManaging] = useState(false);
 
   const { data: veiculosLoja = [], isLoading } = useVeiculosLojaUI(lojaId);
@@ -245,6 +253,10 @@ export default function VitrinePage() {
 
   const filtrados = useMemo(() => {
     const texto = normalizeText(searchTerm);
+    const parsedMin = Number(precoMin);
+    const parsedMax = Number(precoMax);
+    const min = precoMin.trim() !== "" && !Number.isNaN(parsedMin) ? parsedMin : null;
+    const max = precoMax.trim() !== "" && !Number.isNaN(parsedMax) ? parsedMax : null;
 
     return veiculosLoja.filter((item) => {
       const veiculo = item.veiculo;
@@ -253,6 +265,18 @@ export default function VitrinePage() {
       const atendeEstado = estadoFiltro ? veiculo.estado_venda === estadoFiltro : true;
 
       if (!atendeEstado) return false;
+
+      const atendeCaracteristica = caracteristicaFiltro
+        ? (veiculo.caracteristicas ?? []).some((caracteristica: {id: string}) => caracteristica?.id === caracteristicaFiltro)
+        : true;
+
+      if (!atendeCaracteristica) return false;
+
+      const precoReferencia =
+        typeof item.precoLoja === "number" ? item.precoLoja : veiculo.preco_venal ?? null;
+
+      if (min !== null && (precoReferencia === null || precoReferencia < min)) return false;
+      if (max !== null && (precoReferencia === null || precoReferencia > max)) return false;
 
       if (!texto) return true;
 
@@ -266,7 +290,7 @@ export default function VitrinePage() {
 
       return campos.some((campo) => normalizeText(campo).includes(texto));
     });
-  }, [veiculosLoja, searchTerm, estadoFiltro]);
+  }, [veiculosLoja, searchTerm, estadoFiltro, caracteristicaFiltro, precoMin, precoMax]);
 
   const total = filtrados.length;
 
@@ -329,10 +353,10 @@ export default function VitrinePage() {
           </div>
         </div>
 
-          <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-              <label className="flex flex-1 items-center gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-                <span className="hidden sm:inline">Pesquisar:</span>
+        <div className="flex flex-wrap gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:items-start">
+          <div className="flex w-full flex-col gap-2 sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center">
+            <label className="flex w-full min-w-[220px] flex-1 items-center gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+              <span className="hidden sm:inline">Pesquisar:</span>
               <input
                 type="search"
                 placeholder="Busque por modelo, placa ou local"
@@ -344,7 +368,7 @@ export default function VitrinePage() {
             <select
               value={estadoFiltro}
               onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
-              className="h-10 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-48"
             >
               <option value="">Todos os status</option>
               {ESTADOS_VENDA.map((estado) => (
@@ -355,37 +379,74 @@ export default function VitrinePage() {
                 </option>
               ))}
             </select>
+            <select
+              value={caracteristicaFiltro}
+              onChange={(event) => setCaracteristicaFiltro(event.target.value)}
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-56"
+            >
+              <option value="">Todas as características</option>
+              {caracteristicas.map((caracteristica) => (
+                <option key={caracteristica.id} value={caracteristica.id}>
+                  {caracteristica.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Preço mínimo"
+                value={precoMin}
+                onChange={(event) => setPrecoMin(event.target.value)}
+                className="h-10 min-w-[140px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
+              />
+              <span className="text-xs text-zinc-400">até</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Preço máximo"
+                value={precoMax}
+                onChange={(event) => setPrecoMax(event.target.value)}
+                className="h-10 min-w-[140px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleToggleManage}
-                disabled={!lojaSelecionada}
-                className={`rounded-md border px-3 py-2 text-xs font-medium transition ${
-                  isManaging
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
-              >
-                {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
-              </button>
-              {VIEW_MODE_OPTIONS.map((option) => {
-                const active = viewMode === option.value;
-              return (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {(empresa?.papel === "proprietario") && (
                 <button
-                  key={option.value}
                   type="button"
-                  onClick={() => setViewMode(option.value)}
-                  className={`rounded-md px-3 py-2 text-xs font-medium transition ${
-                    active
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                  }`}
+                  onClick={handleToggleManage}
+                  disabled={!lojaSelecionada}
+                  className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
-                  {option.label}
+                  {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
                 </button>
-              );
-            })}
+              )}
+              <div className="flex flex-wrap gap-2">
+                {VIEW_MODE_OPTIONS.map((option) => {
+                  const active = viewMode === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setViewMode(option.value)}
+                      className={`rounded-md px-3 py-2 text-xs font-medium transition ${active
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                        }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 

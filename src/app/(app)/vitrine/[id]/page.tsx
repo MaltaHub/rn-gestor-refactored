@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,13 +10,17 @@ import {
   useVeiculoLojaUI,
   veiculosLojaKeys,
 } from "@/adapters/adaptador-vitrine";
-import { useFotosVeiculoLoja } from "@/hooks/use-fotos-veiculo-loja";
+import {
+  useFotosVeiculoLoja,
+  type FotoVeiculoLoja,
+} from "@/hooks/use-fotos-veiculo-loja";
 import { useLocais } from "@/hooks/use-configuracoes";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { atualizarVeiculo } from "@/services/estoque";
 import { atualizarPrecoVeiculoLoja } from "@/services/vitrine";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { RemoveVehicleFromStoreButton } from "../loja-actions";
+import type { Caracteristica } from "@/types";
 
 const ESTADOS_VENDA = [
   "disponivel",
@@ -31,10 +36,14 @@ type ActionType = "local" | "status" | "preco";
 const formatEnumLabel = (value?: string | null) =>
   value
     ? value
-      .split("_")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(" ")
+        .split("_")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ")
     : "Não informado";
+
+function getImageUrl(url: string, w = 800, q = 80) {
+  return `${url}?width=${w}&quality=${q}&format=webp`;
+}
 
 export default function VitrineDetalhePage() {
   const params = useParams<{ id: string }>();
@@ -49,38 +58,42 @@ export default function VitrineDetalhePage() {
 
   const [activeAction, setActiveAction] = useState<ActionType | null>(null);
   const [localSelecionado, setLocalSelecionado] = useState<string>("");
-  const [statusSelecionado, setStatusSelecionado] = useState<EstadoVenda | "">("");
+  const [statusSelecionado, setStatusSelecionado] = useState<EstadoVenda | "">(
+    ""
+  );
   const [precoLoja, setPrecoLoja] = useState<string>("");
 
-  const [feedback, setFeedback] = useState<
-    | {
-      action: ActionType;
-      type: "success" | "error";
-      message: string;
-    }
-    | null
-  >(null);
+  const [feedback, setFeedback] = useState<{
+    action: ActionType;
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [isSaving, setIsSaving] = useState<ActionType | null>(null);
 
   const veiculo = veiculoLoja?.veiculo ?? null;
 
+  // sincroniza loja selecionada
   useEffect(() => {
     if (veiculoLoja?.loja && veiculoLoja.loja.id !== lojaAtualId) {
       setLojaSelecionada(veiculoLoja.loja);
     }
   }, [veiculoLoja?.loja, setLojaSelecionada, lojaAtualId]);
 
+  // inicializa selects/inputs
   useEffect(() => {
     if (!veiculoLoja) return;
     setLocalSelecionado(veiculoLoja.veiculo?.local?.id ?? "");
-    setStatusSelecionado((veiculoLoja.veiculo?.estado_venda as EstadoVenda) ?? "");
+    setStatusSelecionado(
+      (veiculoLoja.veiculo?.estado_venda as EstadoVenda) ?? ""
+    );
     setPrecoLoja(
       typeof veiculoLoja.precoLoja === "number"
         ? veiculoLoja.precoLoja.toString()
-        : "",
+        : ""
     );
   }, [veiculoLoja]);
 
+  // fotos
   const {
     data: fotos = [],
     isLoading: isFotosLoading,
@@ -92,66 +105,100 @@ export default function VitrineDetalhePage() {
 
   const [fotoAtiva, setFotoAtiva] = useState(0);
   const miniaturasRef = useRef<HTMLDivElement | null>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const imagensPrefetchRef = useRef<Set<string>>(new Set<string>());
+  const [mostrarTodasCaracteristicas, setMostrarTodasCaracteristicas] = useState(false);
 
+  // rola a miniatura ativa para o centro do trilho
+  useEffect(() => {
+    const track = miniaturasRef.current;
+    if (!track) return;
+    const active = track.children?.[fotoAtiva] as HTMLElement | undefined;
+    active?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [fotoAtiva]);
+
+  // reseta foto ativa quando a lista muda
   useEffect(() => {
     setFotoAtiva(0);
+    setMostrarTodasCaracteristicas(false);
   }, [fotos.length]);
 
+  useEffect(() => {
+    setMostrarTodasCaracteristicas(false);
+  }, [veiculoLoja?.id]);
+
+  useEffect(() => {
+    const track = miniaturasRef.current;
+    if (!track) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+
+      event.preventDefault();
+      track.scrollLeft += event.deltaY;
+    };
+
+    track.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      track.removeEventListener("wheel", handleWheel);
+    };
+  }, [fotos.length]);
+
+  // pré-carrega TODAS as fotos (até 30 é ok)
+  useEffect(() => {
+    if (!fotos.length) return;
+    const cache = imagensPrefetchRef.current;
+    fotos.forEach((f: FotoVeiculoLoja) => {
+      if (!f?.url || cache.has(f.url)) return;
+      cache.add(f.url);
+      const img = new window.Image();
+      img.src = f.url;
+    });
+  }, [fotos]);
+
   const fotoAtual = useMemo(() => fotos[fotoAtiva] ?? null, [fotos, fotoAtiva]);
+  const todasCaracteristicas = useMemo(() => {
+    const itens = (veiculo?.caracteristicas ?? []) as Caracteristica[];
+    const nomes = itens
+      .map((item: Caracteristica | null) => item?.nome ?? null)
+      .filter((nome: string | null): nome is string => Boolean(nome && nome.trim() !== ""));
+
+    if (nomes.length === 0) return veiculo?.caracteristicasPrincipais ?? [];
+
+    return Array.from(new Set(nomes));
+  }, [veiculo?.caracteristicas, veiculo?.caracteristicasPrincipais]);
+
+  const caracteristicasVisiveis = useMemo(() => {
+    if (mostrarTodasCaracteristicas) return todasCaracteristicas;
+    return veiculo?.caracteristicasPrincipais ?? [];
+  }, [mostrarTodasCaracteristicas, todasCaracteristicas, veiculo?.caracteristicasPrincipais]);
+
+  const extrasDisponiveis = Math.max(
+    todasCaracteristicas.length - (veiculo?.caracteristicasPrincipais?.length ?? 0),
+    0,
+  );
 
   const handleCloseFeedback = () => setFeedback(null);
 
-  useEffect(() => {
-    const container = miniaturasRef.current;
-    if (!container) return;
-
-    const updateScrollButtons = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = container;
-      setCanScrollLeft(scrollLeft > 4);
-      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
-    };
-
-    updateScrollButtons();
-    container.addEventListener("scroll", updateScrollButtons, { passive: true });
-
-    if (typeof ResizeObserver !== "undefined") {
-      const resizeObserver = new ResizeObserver(updateScrollButtons);
-      resizeObserver.observe(container);
-
-      return () => {
-        container.removeEventListener("scroll", updateScrollButtons);
-        resizeObserver.disconnect();
-      };
-    }
-
-    return () => {
-      container.removeEventListener("scroll", updateScrollButtons);
-    };
-  }, [fotos.length]);
-
-  const handleScrollMiniaturas = (direction: "left" | "right") => {
-    const container = miniaturasRef.current;
-    if (!container) return;
-
-    const scrollAmount = container.clientWidth * 0.8;
-    container.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    });
-  };
-
   const invalidateVitrineQueries = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: veiculosLojaKeys.detalhe(veiculoLojaId) }),
-      queryClient.invalidateQueries({ queryKey: veiculosLojaKeys.lista(veiculoLoja?.lojaId) }),
+      queryClient.invalidateQueries({
+        queryKey: veiculosLojaKeys.detalhe(veiculoLojaId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: veiculosLojaKeys.lista(veiculoLoja?.lojaId),
+      }),
     ]);
     invalidateVeiculos(queryClient);
   };
 
-  const handleUpdateLocal = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // updates
+  const handleUpdateLocal = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!veiculoLoja?.veiculoId) return;
     setIsSaving("local");
     setFeedback(null);
@@ -177,8 +224,8 @@ export default function VitrineDetalhePage() {
     }
   };
 
-  const handleUpdateStatus = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleUpdateStatus = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!veiculoLoja?.veiculoId) return;
     if (!statusSelecionado) return;
     setIsSaving("status");
@@ -205,24 +252,23 @@ export default function VitrineDetalhePage() {
     }
   };
 
-  const handleUpdatePreco = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleUpdatePreco = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!veiculoLojaId) return;
     setIsSaving("preco");
     setFeedback(null);
     try {
       const valorNormalizado = precoLoja.trim();
-      const numero = valorNormalizado === "" ? null : Number(valorNormalizado.replace(/,/g, "."));
+      const numero =
+        valorNormalizado === ""
+          ? null
+          : Number(valorNormalizado.replace(/,/g, "."));
       if (numero !== null && Number.isNaN(numero)) {
         throw new Error("Informe um valor numérico válido.");
       }
       await atualizarPrecoVeiculoLoja(veiculoLojaId, numero);
       await invalidateVitrineQueries();
-      if (numero === null) {
-        setPrecoLoja("");
-      } else {
-        setPrecoLoja(String(numero));
-      }
+      setPrecoLoja(numero === null ? "" : String(numero));
       setFeedback({
         action: "preco",
         type: "success",
@@ -233,12 +279,27 @@ export default function VitrineDetalhePage() {
       setFeedback({
         action: "preco",
         type: "error",
-        message: error instanceof Error ? error.message : "Erro ao atualizar o preço.",
+        message:
+          error instanceof Error ? error.message : "Erro ao atualizar o preço.",
       });
     } finally {
       setIsSaving(null);
     }
   };
+
+  // keybindings para galeria
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!fotos.length) return;
+      if (e.key === "ArrowLeft") {
+        setFotoAtiva((p) => (p - 1 + fotos.length) % fotos.length);
+      } else if (e.key === "ArrowRight") {
+        setFotoAtiva((p) => (p + 1) % fotos.length);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fotos.length]);
 
   if (!veiculoLojaId) {
     return (
@@ -282,108 +343,109 @@ export default function VitrineDetalhePage() {
           >
             ← Voltar para a vitrine
           </Link>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-                {veiculo.veiculoDisplay}
-              </h1>
-              <p className="text-sm text-zinc-500">
-                Loja {veiculoLoja.lojaNome ?? "não informada"} • Placa {veiculo.placa}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium uppercase tracking-wide text-blue-600">
-                {veiculo.estadoVendaLabel}
-              </span>
-              <span className="text-xl font-semibold text-zinc-900">
-                {veiculoLoja.precoLojaFormatado ?? veiculo.precoFormatado ?? "Sem preço"}
-              </span>
-            </div>
-          </div>
         </header>
 
         {/* BLOCO DE FOTOS */}
-<section className="flex flex-col gap-2 h-screen">
-  {/* Foto principal ocupa altura total menos thumbs */}
-<div
-  className="
-    relative 
-    w-screen -mx-6 sm:mx-0 sm:w-full 
-    overflow-hidden 
-    sm:rounded-lg sm:border sm:border-zinc-200 
-    bg-zinc-100 shadow-sm
-  "
->
-  {isFotosLoading ? (
-    <div className="flex aspect-[9/16] sm:aspect-[16/9] items-center justify-center text-sm text-zinc-500">
-      Carregando fotos...
-    </div>
-  ) : fotoAtual ? (
-    <div className="aspect-[9/16] sm:aspect-[16/9] w-full">
-      <img
-        src={fotoAtual.url}
-        alt={veiculo.veiculoDisplay}
-        className="w-full h-full object-cover"
-      />
-    </div>
-  ) : (
-    <div className="flex aspect-[9/16] sm:aspect-[16/9] items-center justify-center text-sm text-zinc-500">
-      Nenhuma foto cadastrada
-    </div>
-  )}
+        <section className="flex flex-col gap-2">
+          {/* Foto principal — altura responsiva, sem corte */}
+          <div className="relative w-full overflow-hidden sm:rounded-lg sm:border sm:border-zinc-200 bg-zinc-100 shadow-sm">
+            <div className="relative h-[68vh] min-h-[320px] max-h-[820px]">
+              {isFotosLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-500">
+                  Carregando fotos...
+                </div>
+              ) : fotoAtual ? (
+                <Image
+                  src={getImageUrl(fotoAtual.url, 1200, 90)}
+                  alt={veiculo?.veiculoDisplay ?? "Foto do veículo"}
+                  fill
+                  className="object-contain select-none"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 90vw, 1200px"
+                  priority
+                  quality={90}
+                  draggable={false}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-500">
+                  Nenhuma foto cadastrada
+                </div>
+              )}
+            </div>
 
-  {fotos.length > 1 && (
-    <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-3">
-      <button
-        type="button"
-        onClick={() => setFotoAtiva((prev) => (prev - 1 + fotos.length) % fotos.length)}
-        className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
-      >
-        ←
-      </button>
-      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow">
-        {fotoAtiva + 1} / {fotos.length}
-      </span>
-      <button
-        type="button"
-        onClick={() => setFotoAtiva((prev) => (prev + 1) % fotos.length)}
-        className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
-      >
-        →
-      </button>
-    </div>
-  )}
-</div>
+            {fotos.length > 1 && (
+              <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFotoAtiva((prev) => (prev - 1 + fotos.length) % fotos.length)
+                  }
+                  className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
+                  aria-label="Foto anterior"
+                >
+                  ←
+                </button>
+                <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow">
+                  {fotoAtiva + 1} / {fotos.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFotoAtiva((prev) => (prev + 1) % fotos.length)}
+                  className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
+                  aria-label="Próxima foto"
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </div>
 
+          {/* Miniaturas com rolagem horizontal invisível (confinada ao container) */}
+          {fotos.length > 1 && (
+            <div className="sm:mx-0">
+              <div className="relative">
+                {/* fades nas laterais */}
+                <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent sm:rounded-l-lg" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent sm:rounded-r-lg" />
 
-  {/* Miniaturas com altura fixa */}
-{fotos.length > 1 && (
-  <div className="-mx-6 sm:mx-0">
-    <div
-      ref={miniaturasRef}
-      className="flex gap-2 overflow-x-auto pb-2 px-4 no-scrollbar"
-    >
-      {fotos.map((foto, index) => (
-        <button
-          key={foto.id}
-          type="button"
-          onClick={() => setFotoAtiva(index)}
-          className={`h-20 aspect-square flex-shrink-0 overflow-hidden rounded-md border transition
-            ${fotoAtiva === index ? "border-blue-500 ring-2 ring-blue-300" : "border-transparent"}`}
-        >
-          <img
-            src={foto.url}
-            alt={`Foto ${index + 1}`}
-            className="h-full w-full object-cover object-center"
-          />
-        </button>
-      ))}
-    </div>
-  </div>
-)}
-
-</section>
-
+                <div
+                  ref={miniaturasRef}
+                  className="
+                    flex gap-2 overflow-x-auto overflow-y-hidden no-scrollbar
+                    pb-2 px-4 h-20 snap-x snap-mandatory touch-pan-x
+                    overscroll-x-contain w-full max-w-full
+                  "
+                >
+                  {fotos.map((foto, index) => (
+                    <button
+                      key={foto.id}
+                      type="button"
+                      onClick={() => setFotoAtiva(index)}
+                      className={`relative h-20 aspect-square flex-shrink-0 overflow-hidden rounded-md border transition snap-start
+                        ${
+                          fotoAtiva === index
+                            ? "border-blue-500 ring-2 ring-blue-300"
+                            : "border-transparent"
+                        }`}
+                      aria-current={fotoAtiva === index}
+                      aria-label={`Miniatura ${index + 1}`}
+                    >
+                      <Image
+                        src={getImageUrl(foto.url, 120, 60)}
+                        alt={`Foto ${index + 1}`}
+                        fill
+                        className="object-cover object-center pointer-events-none select-none"
+                        sizes="80px"
+                        draggable={false}
+                        priority={index === 0}
+                        loading={index === 0 ? "eager" : "lazy"}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
 
         {/* BLOCO DE INFORMAÇÕES */}
         <section className="flex flex-col gap-6">
@@ -393,7 +455,8 @@ export default function VitrineDetalhePage() {
                 {veiculo.veiculoDisplay}
               </h1>
               <p className="text-sm text-zinc-500">
-                Loja {veiculoLoja.lojaNome ?? "não informada"} • Placa {veiculo.placa}
+                Loja {veiculoLoja.lojaNome ?? "não informada"} • Placa{" "}
+                {veiculo.placa}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -401,15 +464,18 @@ export default function VitrineDetalhePage() {
                 {veiculo.estadoVendaLabel}
               </span>
               <span className="text-xl font-semibold text-zinc-900">
-                {veiculoLoja.precoLojaFormatado ?? veiculo.precoFormatado ?? "Sem preço"}
+                {veiculoLoja.precoLojaFormatado ??
+                  veiculo.precoFormatado ??
+                  "Sem preço"}
               </span>
             </div>
           </div>
 
-          {/* Aqui você mantém os seus cards de "Informações principais", "Valores" e "Características" */}
           <div className="flex min-w-0 flex-col gap-6">
             <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold text-zinc-900">Informações principais</h2>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Informações principais
+              </h2>
               <dl className="mt-4 grid gap-4 text-sm text-zinc-600 sm:grid-cols-2">
                 <div>
                   <dt className="font-medium text-zinc-700">Modelo</dt>
@@ -428,7 +494,9 @@ export default function VitrineDetalhePage() {
                   <dd>{veiculo.hodometroFormatado ?? "—"}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium text-zinc-700">Estado do veículo</dt>
+                  <dt className="font-medium text-zinc-700">
+                    Estado do veículo
+                  </dt>
                   <dd>{veiculo.estadoVeiculoLabel}</dd>
                 </div>
                 <div>
@@ -450,82 +518,119 @@ export default function VitrineDetalhePage() {
               <h2 className="text-lg font-semibold text-zinc-900">Valores</h2>
               <div className="mt-4 grid gap-4 text-sm text-zinc-600 sm:grid-cols-2">
                 <div>
-                  <span className="font-medium text-zinc-700">Preço na loja</span>
+                  <span className="font-medium text-zinc-700">
+                    Preço na loja
+                  </span>
                   <p>{veiculoLoja.precoLojaFormatado ?? "Não definido"}</p>
                 </div>
                 <div>
-                  <span className="font-medium text-zinc-700">Preço padrão (veículo)</span>
+                  <span className="font-medium text-zinc-700">
+                    Preço padrão (veículo)
+                  </span>
                   <p>{veiculo.precoFormatado ?? "Não informado"}</p>
                 </div>
               </div>
             </div>
 
             <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold text-zinc-900">Características</h2>
-              {veiculo.caracteristicasPrincipais.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-500">Nenhuma característica cadastrada.</p>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Características
+              </h2>
+              {caracteristicasVisiveis.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-500">
+                  Nenhuma característica cadastrada.
+                </p>
               ) : (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {veiculo.caracteristicasPrincipais.map((item) => (
-                    <span key={item} className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600">
-                      {item}
-                    </span>
-                  ))}
-                  {veiculo.caracteristicasExtrasTotal > 0 && (
-                    <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">
-                      +{veiculo.caracteristicasExtrasTotal} mais
-                    </span>
+                <>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {caracteristicasVisiveis.map((item: string) => (
+                      <span
+                        key={item}
+                        className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                  {extrasDisponiveis > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMostrarTodasCaracteristicas((prev) => !prev)
+                      }
+                      aria-expanded={mostrarTodasCaracteristicas}
+                      className="mt-3 inline-flex w-fit items-center gap-1 text-xs font-medium text-blue-600 transition hover:text-blue-700"
+                    >
+                      {mostrarTodasCaracteristicas
+                        ? "Mostrar menos características"
+                        : `Ver todas (+${extrasDisponiveis})`}
+                    </button>
                   )}
-                </div>
+                </>
               )}
               {veiculo.observacao && (
                 <div className="mt-4">
-                  <h3 className="text-sm font-medium text-zinc-700">Observações</h3>
-                  <p className="mt-1 whitespace-pre-line text-sm text-zinc-600">{veiculo.observacao}</p>
+                  <h3 className="text-sm font-medium text-zinc-700">
+                    Observações
+                  </h3>
+                  <p className="mt-1 whitespace-pre-line text-sm text-zinc-600">
+                    {veiculo.observacao}
+                  </p>
                 </div>
               )}
             </div>
           </div>
-
         </section>
 
-
+        {/* AÇÕES RÁPIDAS */}
         <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Ações rápidas</h2>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Ações rápidas
+              </h2>
               <p className="text-sm text-zinc-500">
-                Ajuste o local do veículo, o status de venda ou o preço específico desta loja.
+                Ajuste o local do veículo, o status de venda ou o preço
+                específico desta loja.
               </p>
             </div>
             <div className="flex flex-wrap gap-2 text-sm">
               <button
                 type="button"
-                onClick={() => setActiveAction((current) => (current === "local" ? null : "local"))}
-                className={`rounded-md border px-3 py-2 font-medium transition ${activeAction === "local"
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                  }`}
+                onClick={() =>
+                  setActiveAction((c) => (c === "local" ? null : "local"))
+                }
+                className={`rounded-md border px-3 py-2 font-medium transition ${
+                  activeAction === "local"
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                }`}
               >
                 Alterar local
               </button>
               <button
                 type="button"
-                onClick={() => setActiveAction((current) => (current === "status" ? null : "status"))}
-                className={`rounded-md border px-3 py-2 font-medium transition ${activeAction === "status"
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                  }`}
+                onClick={() =>
+                  setActiveAction((c) => (c === "status" ? null : "status"))
+                }
+                className={`rounded-md border px-3 py-2 font-medium transition ${
+                  activeAction === "status"
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                }`}
               >
                 Alterar status
               </button>
               <button
                 type="button"
-                onClick={() => setActiveAction((current) => (current === "preco" ? null : "preco"))}
-                className={`rounded-md border px-3 py-2 font-medium transition ${activeAction === "preco"
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                  }`}
+                onClick={() =>
+                  setActiveAction((c) => (c === "preco" ? null : "preco"))
+                }
+                className={`rounded-md border px-3 py-2 font-medium transition ${
+                  activeAction === "preco"
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                }`}
               >
                 Alterar valor
               </button>
@@ -534,10 +639,11 @@ export default function VitrineDetalhePage() {
 
           {feedback && (
             <div
-              className={`mt-4 rounded-md border px-4 py-3 text-sm ${feedback.type === "success"
-                ? "border-green-200 bg-green-50 text-green-700"
-                : "border-red-200 bg-red-50 text-red-700"
-                }`}
+              className={`mt-4 rounded-md border px-4 py-3 text-sm ${
+                feedback.type === "success"
+                  ? "border-green-200 bg-green-50 text-green-700"
+                  : "border-red-200 bg-red-50 text-red-700"
+              }`}
             >
               <div className="flex items-center justify-between gap-4">
                 <span>{feedback.message}</span>
@@ -561,7 +667,7 @@ export default function VitrineDetalhePage() {
                 <select
                   id="local"
                   value={localSelecionado}
-                  onChange={(event) => setLocalSelecionado(event.target.value)}
+                  onChange={(e) => setLocalSelecionado(e.target.value)}
                   className="h-10 rounded-md border border-zinc-200 px-3 text-sm text-zinc-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">Sem local vinculado</option>
@@ -591,7 +697,9 @@ export default function VitrineDetalhePage() {
                 <select
                   id="status"
                   value={statusSelecionado}
-                  onChange={(event) => setStatusSelecionado(event.target.value as EstadoVenda)}
+                  onChange={(e) =>
+                    setStatusSelecionado(e.target.value as EstadoVenda)
+                  }
                   className="h-10 rounded-md border border-zinc-200 px-3 text-sm text-zinc-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 >
@@ -627,7 +735,7 @@ export default function VitrineDetalhePage() {
                   step="0.01"
                   min="0"
                   value={precoLoja}
-                  onChange={(event) => setPrecoLoja(event.target.value)}
+                  onChange={(e) => setPrecoLoja(e.target.value)}
                   className="h-10 rounded-md border border-zinc-200 px-3 text-sm text-zinc-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Informe o valor"
                 />
@@ -648,7 +756,9 @@ export default function VitrineDetalhePage() {
           <div className="mt-8 rounded-md border border-red-200 bg-red-50 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-red-700">Remover veículo desta vitrine</h3>
+                <h3 className="text-sm font-semibold text-red-700">
+                  Remover veículo desta vitrine
+                </h3>
                 <p className="text-xs text-red-600">
                   Ao remover, o veículo continuará disponível no estoque geral.
                 </p>

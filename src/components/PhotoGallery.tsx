@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -277,12 +278,16 @@ export function PhotoGallery({
     return (
       <div ref={setNodeRef} style={style} className="group relative rounded border p-2">
         {displayUrl ? (
-          <img
-            src={displayUrl}
-            alt=""
-            className="aspect-square w-full rounded object-cover"
-            draggable={false}
-          />
+          <div className="relative aspect-square w-full overflow-hidden rounded">
+            <Image
+              src={displayUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="160px"
+              draggable={false}
+            />
+          </div>
         ) : (
           <div className="flex aspect-square w-full items-center justify-center rounded bg-zinc-100 text-xs text-zinc-400">
             Carregando…

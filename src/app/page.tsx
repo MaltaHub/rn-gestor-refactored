@@ -8,6 +8,7 @@ import { useVeiculos } from "@/hooks/use-estoque";
 import { signOut } from "@/services/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
+import { VeiculoResumo } from "@/types/estoque";
 
 const featureHighlights = [
   {
@@ -32,7 +33,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const {
-    data: veiculos = [],
+    data: veiculos = [] as VeiculoResumo[],
     isLoading: isVeiculosLoading,
   } = useVeiculos();
   const totalVeiculos = isVeiculosLoading ? "--" : veiculos.length;
@@ -89,16 +90,10 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Link
-              href="/criar"
-              className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-5 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-            >
-              Cadastrar veículo
-            </Link>
-            <Link
-              href="/estoque"
+              href="/vitrine"
               className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
             >
-              Ver estoque
+              Ver vitrine
             </Link>
             <button
               type="button"
