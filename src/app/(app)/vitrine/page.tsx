@@ -55,53 +55,54 @@ const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
     {veiculos.map((item) => (
       <li key={item.id}>
         <article className="flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md">
-          <Link href={`/vitrine/${item.id}`}/>
-          <div className="relative flex aspect-video items-center justify-center bg-zinc-100">
-            {item.capaUrl ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.capaUrl}
-                  alt={item.veiculo?.veiculoDisplay ?? "Veículo sem foto"}
-                  className="h-full w-full object-cover"
-                />
-              </>
-            ) : (
-              <span className="text-xs font-medium text-zinc-500">Sem foto de capa</span>
-            )}
-          </div>
-          <div className="flex flex-1 flex-col gap-3 p-5">
-            <div className="flex items-center justify-between gap-3">
-              {renderEstadoBadge(item)}
-              <span className="text-sm font-semibold text-zinc-800">
-                {getDisplayPrice(item)}
-              </span>
+          <Link href={`/vitrine/${item.id}`}>
+            <div className="relative flex aspect-video items-center justify-center bg-zinc-100">
+              {item.capaUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.capaUrl}
+                    alt={item.veiculo?.veiculoDisplay ?? "Veículo sem foto"}
+                    className="h-full w-full object-cover"
+                  />
+                </>
+              ) : (
+                <span className="text-xs font-medium text-zinc-500">Sem foto de capa</span>
+              )}
             </div>
-            <div>
-              <h2 className="text-lg font-medium text-zinc-800">
-                {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
-              </h2>
-              <p className="text-sm text-zinc-500">Placa {item.veiculo?.placa ?? "—"}</p>
+            <div className="flex flex-1 flex-col gap-3 p-5">
+              <div className="flex items-center justify-between gap-3">
+                {renderEstadoBadge(item)}
+                <span className="text-sm font-semibold text-zinc-800">
+                  {getDisplayPrice(item)}
+                </span>
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-zinc-800">
+                  {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
+                </h2>
+                <p className="text-sm text-zinc-500">Placa {item.veiculo?.placa ?? "—"}</p>
+              </div>
+              <dl className="grid gap-3 text-xs text-zinc-500 sm:grid-cols-2">
+                <div>
+                  <dt className="font-semibold text-zinc-700">Local</dt>
+                  <dd>{item.veiculo?.localDisplay ?? "Sem local"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-zinc-700">Ano</dt>
+                  <dd>{item.veiculo?.anoPrincipal ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-zinc-700">Disponível desde</dt>
+                  <dd>{item.dataEntradaFormatada ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-zinc-700">Hodômetro</dt>
+                  <dd>{item.veiculo?.hodometroFormatado ?? "—"}</dd>
+                </div>
+              </dl>
             </div>
-            <dl className="grid gap-3 text-xs text-zinc-500 sm:grid-cols-2">
-              <div>
-                <dt className="font-semibold text-zinc-700">Local</dt>
-                <dd>{item.veiculo?.localDisplay ?? "Sem local"}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold text-zinc-700">Ano</dt>
-                <dd>{item.veiculo?.anoPrincipal ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold text-zinc-700">Disponível desde</dt>
-                <dd>{item.dataEntradaFormatada ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="font-semibold text-zinc-700">Hodômetro</dt>
-                <dd>{item.veiculo?.hodometroFormatado ?? "—"}</dd>
-              </div>
-            </dl>
-          </div>
+          </Link>
         </article>
       </li>
     ))}
@@ -113,56 +114,50 @@ const renderInfoCards = (veiculos: VeiculoLojaUI[]) => (
     {veiculos.map((item) => (
       <li key={item.id}>
         <article className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-zinc-300 hover:shadow-md md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-lg font-medium text-zinc-800">
-                {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
-              </h2>
-              {renderEstadoBadge(item)}
-            </div>
-            <div className="flex flex-wrap gap-6 text-sm text-zinc-500">
-              <span>
-                <span className="font-medium text-zinc-700">Placa:</span> {item.veiculo?.placa ?? "—"}
-              </span>
-              <span>
-                <span className="font-medium text-zinc-700">Local:</span> {item.veiculo?.localDisplay ?? "Sem local"}
-              </span>
-              <span>
-                <span className="font-medium text-zinc-700">Ano:</span> {item.veiculo?.anoPrincipal ?? "—"}
-              </span>
-              <span>
-                <span className="font-medium text-zinc-700">Entrada:</span> {item.dataEntradaFormatada ?? "—"}
-              </span>
-              <span>
-                <span className="font-medium text-zinc-700">Preço:</span> {getDisplayPrice(item)}
-              </span>
-            </div>
-            {item.veiculo?.caracteristicasPrincipais?.length ? (
-              <div className="flex flex-wrap gap-2">
-                {item.veiculo.caracteristicasPrincipais.map((caracteristica: string) => (
-                  <span
-                    key={caracteristica}
-                    className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600"
-                  >
-                    {caracteristica}
-                  </span>
-                ))}
-                {item.veiculo.caracteristicasExtrasTotal > 0 && (
-                  <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">
-                    +{item.veiculo.caracteristicasExtrasTotal} mais
-                  </span>
-                )}
+          <Link href={`/vitrine/${item.id}`}>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-lg font-medium text-zinc-800">
+                  {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
+                </h2>
+                {renderEstadoBadge(item)}
               </div>
-            ) : null}
-          </div>
-          <div className="flex gap-2 text-sm md:flex-col">
-            <Link
-              href={`/vitrine/${item.id}`}
-              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700"
-            >
-              Ver vitrine
-            </Link>
-          </div>
+              <div className="flex flex-wrap gap-6 text-sm text-zinc-500">
+                <span>
+                  <span className="font-medium text-zinc-700">Placa:</span> {item.veiculo?.placa ?? "—"}
+                </span>
+                <span>
+                  <span className="font-medium text-zinc-700">Local:</span> {item.veiculo?.localDisplay ?? "Sem local"}
+                </span>
+                <span>
+                  <span className="font-medium text-zinc-700">Ano:</span> {item.veiculo?.anoPrincipal ?? "—"}
+                </span>
+                <span>
+                  <span className="font-medium text-zinc-700">Entrada:</span> {item.dataEntradaFormatada ?? "—"}
+                </span>
+                <span>
+                  <span className="font-medium text-zinc-700">Preço:</span> {getDisplayPrice(item)}
+                </span>
+              </div>
+              {item.veiculo?.caracteristicasPrincipais?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {item.veiculo.caracteristicasPrincipais.map((caracteristica: string) => (
+                    <span
+                      key={caracteristica}
+                      className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600"
+                    >
+                      {caracteristica}
+                    </span>
+                  ))}
+                  {item.veiculo.caracteristicasExtrasTotal > 0 && (
+                    <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">
+                      +{item.veiculo.caracteristicasExtrasTotal} mais
+                    </span>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </Link>
         </article>
       </li>
     ))}
@@ -186,24 +181,18 @@ const renderTabela = (veiculos: VeiculoLojaUI[]) => (
       <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
         {veiculos.map((item) => (
           <tr key={item.id} className="transition hover:bg-blue-50/30">
-            <td className="px-4 py-3 font-medium text-zinc-800">
-              {item.veiculo?.veiculoDisplay ?? "Veículo"}
-            </td>
-            <td className="px-4 py-3">{item.veiculo?.placa ?? "—"}</td>
-            <td className="px-4 py-3">{getDisplayPrice(item)}</td>
-            <td className="px-4 py-3">{item.veiculo?.estadoVendaLabel ?? "Sem status"}</td>
-            <td className="px-4 py-3">{item.veiculo?.localDisplay ?? "Sem local"}</td>
-            <td className="px-4 py-3">{item.temFotos ? "Sim" : "Não"}</td>
-            <td className="px-4 py-3 text-right">
-              <div className="flex justify-end gap-2">
-                <Link
-                  href={`/vitrine/${item.id}`}
-                  className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                >
-                  Abrir vitrine
-                </Link>
-              </div>
-            </td>
+            <Link href={`/vitrine/${item.id}`}>
+              <td className="px-4 py-3 font-medium text-zinc-800">
+                {item.veiculo?.veiculoDisplay ?? "Veículo"}
+              </td>
+              <td className="px-4 py-3">{item.veiculo?.placa ?? "—"}</td>
+              <td className="px-4 py-3">{getDisplayPrice(item)}</td>
+              <td className="px-4 py-3">{item.veiculo?.estadoVendaLabel ?? "Sem status"}</td>
+              <td className="px-4 py-3">{item.veiculo?.localDisplay ?? "Sem local"}</td>
+              <td className="px-4 py-3">{item.temFotos ? "Sim" : "Não"}</td>
+              <td className="px-4 py-3 text-right">
+              </td>
+            </Link>
           </tr>
         ))}
       </tbody>
@@ -215,7 +204,7 @@ export default function VitrinePage() {
   const lojaSelecionada = useLojaStore((state) => state.lojaSelecionada);
   const lojaId = lojaSelecionada?.id;
 
-  const {data: empresa} = useEmpresaDoUsuario();
+  const { data: empresa } = useEmpresaDoUsuario();
   const { data: caracteristicas = [] } = useCaracteristicas();
 
   const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
@@ -248,7 +237,7 @@ export default function VitrinePage() {
       if (!atendeEstado) return false;
 
       const atendeCaracteristica = caracteristicaFiltro
-        ? (veiculo.caracteristicas ?? []).some((caracteristica: {id: string}) => caracteristica?.id === caracteristicaFiltro)
+        ? (veiculo.caracteristicas ?? []).some((caracteristica: { id: string }) => caracteristica?.id === caracteristicaFiltro)
         : true;
 
       if (!atendeCaracteristica) return false;
@@ -402,8 +391,8 @@ export default function VitrinePage() {
                   onClick={handleToggleManage}
                   disabled={!lojaSelecionada}
                   className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
                     } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
@@ -418,8 +407,8 @@ export default function VitrinePage() {
                       type="button"
                       onClick={() => setViewMode(option.value)}
                       className={`rounded-md px-3 py-2 text-xs font-medium transition ${active
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
                         }`}
                     >
                       {option.label}

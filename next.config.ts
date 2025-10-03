@@ -2,25 +2,6 @@ import type { NextConfig } from "next";
 import withPWAInit from "next-pwa";
 
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-const remotePatterns = (() => {
-  if (!supabaseUrl) return [];
-  try {
-    const { hostname } = new URL(supabaseUrl);
-    return [
-      {
-        protocol: "https" as const,
-        hostname,
-        pathname: "/storage/v1/object/public/**",
-      },
-    ];
-  } catch {
-    return [];
-  }
-})();
-
-
 const withPWA = withPWAInit({
   dest: "public",
   register: true,
@@ -31,6 +12,38 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: (() => {
+      const patterns = [
+        {
+          protocol: "https" as const,
+          hostname: "*.supabase.co",
+          pathname: "/storage/v1/object/public/**",
+        },
+        {
+          protocol: "https" as const,
+          hostname: "*.supabase.in",
+          pathname: "/storage/v1/object/public/**",
+        },
+      ];
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (supabaseUrl) {
+        try {
+          const { hostname } = new URL(supabaseUrl);
+          patterns.unshift({
+            protocol: "https" as const,
+            hostname,
+            pathname: "/storage/v1/object/public/**",
+          });
+        } catch {
+          // ignora formato inválido
+        }
+      }
+
+      return patterns;
+    })(),
+  },
 };
 
 export default withPWA(nextConfig);
