@@ -8,7 +8,6 @@ import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const { data: empresa, isLoading } = useEmpresaDoUsuario();
-  console.log(empresa?.papel ?? "nenhum");
 
   const linksProprietario = [
     { href: "/admin", label: "Admin" },
@@ -16,23 +15,12 @@ export function Navbar() {
     { href: "/configuracoes", label: "Configurações" },
   ];
 
-  const linksMobileProprietario = [
-    { href: "/", label: "Dashboard" },
-    { href: "/admin", label: "Admin" },
-    { href: "/estoque", label: "Estoque" },
-    { href: "/configuracoes", label: "Configurações" },
-  ];
-
-  const linksMobile = [
-    { href: "/", label: "Dashboard" }
-  ];
-
 
   return (
     <header className="relative w-full border-b border-zinc-200 bg-white shadow-sm">
       <Link
         href="/"
-        className="absolute left-4 top-1/2 hidden h-20 w-40 -translate-y-1/2 items-center sm:flex"
+        className="absolute left-4 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center sm:flex"
         aria-label="Página inicial"
       >
         <span className="relative block h-full w-full overflow-hidden">
@@ -47,6 +35,26 @@ export function Navbar() {
           />
         </span>
       </Link>
+
+      {!open && (
+        <Link
+          href="/"
+          className="absolute left-4 top-1/2 flex h-[140px] w-[140px] -translate-y-1/2 items-center sm:hidden"
+          aria-label="Página inicial"
+        >
+          <span className="relative block h-full w-full">
+            <Image
+              src="/logo-deitada.png"
+              alt="Logo do RN Gestor"
+              fill
+              priority
+              draggable={false}
+              sizes="260px"
+              className="object-contain drop-shadow-lg"
+            />
+          </span>
+        </Link>
+      )}
 
       <div className="mx-auto flex max-w-6xl items-center justify-end px-4 py-3 pl-32 sm:px-6 sm:pl-60 lg:px-8">
         {/* Menu desktop */}
@@ -75,19 +83,11 @@ export function Navbar() {
         <nav className="flex flex-col gap-2 border-t border-zinc-200 bg-white px-4 py-3 text-zinc-800 sm:hidden">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
           {!isLoading && empresa?.papel === "proprietario" &&
-            linksMobileProprietario.map(link => (
+            linksProprietario.map(link => (
               <Link key={link.href} href={link.href} className="hover:text-blue-600">
                 {link.label}
               </Link>
             ))}
-
-            {!isLoading && empresa?.papel !== "proprietario" && linksMobile.map(link => (
-              <Link key={link.href} href={link.href} className="hover:text-blue-600">
-                {link.label}
-              </Link>
-            ))
-            }
-
         </nav>
       )}
     </header>

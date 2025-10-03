@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactQueryProvider } from "../components/react-query-provider";
@@ -15,12 +15,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+};
+
 export const metadata: Metadata = {
   title: "Gestor de Veículos",
   description: "Sistema de gerenciamento de vitrine e estoque",
   applicationName: "Gestor de Veículos",
   manifest: "/manifest.webmanifest",
-  themeColor: "#0ea5e9",
   icons: {
     icon: [
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
