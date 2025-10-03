@@ -20,7 +20,7 @@ export function Navbar() {
     <header className="relative w-full border-b border-zinc-200 bg-white shadow-sm">
       <Link
         href="/"
-        className="absolute left-4 top-1/2 hidden h-28 w-28 -translate-y-1/2 items-center sm:flex"
+        className="absolute left-4 top-1/2 hidden h-27 w-27 -translate-y-1/2 items-center sm:flex"
         aria-label="Página inicial"
       >
         <span className="relative block h-full w-full overflow-hidden">
