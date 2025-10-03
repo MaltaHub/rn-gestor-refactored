@@ -1,26 +1,36 @@
-# Gestor Automotivo UI (Next.js)
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Interface declarativa construída com Next.js 14 (App Router), focada em demonstrar os principais fluxos de um gestor automotivo sem dependências de back-end. Cada ação relevante possui comentários destacados (`// action:`) indicando onde conectar regras de negócio, integrações externas e automações — mantendo a simplicidade com proficiência operacional.
+## Getting Started
 
-## Scripts
+First, run the development server:
 
-- `npm run dev` — inicia o servidor de desenvolvimento em modo App Router.
-- `npm run build` — gera o build de produção.
-- `npm run start` — inicia o build de produção.
-- `npm run lint` — executa a verificação padrão do Next.js.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Estrutura
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- `src/app/(site)` — landing e login usando o layout público padrão (`MarketingLayout` + `StandardLayout`).
-- `src/app/app` — cockpit interno com layout privado (`AppShell`) e módulos operacionais.
-- `src/app/app/perfil` — módulo dedicado ao perfil pessoal e ajustes rápidos.
-- `src/components/layout` — layouts compartilhados (`PageHeader`, `StandardLayout`, `MarketingLayout`, `AppShell`).
-- `src/components/ui` — componentes atômicos e tipados (`Button`, `Card`, `Input`, `Badge`).
-- `src/data` — descritores de módulos e highlights usados na landing e no app.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Próximos passos sugeridos
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-1. Conectar provedores de autenticação no formulário de login (`src/app/(site)/login/page.tsx`).
-2. Integrar serviços e hooks de dados nos módulos (`src/app/app/*`).
-3. Configurar camada de design tokens/tema conforme identidade da empresa.
-4. Automatizar testes de interface após adicionar lógica dinâmica.
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

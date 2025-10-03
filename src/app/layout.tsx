@@ -1,31 +1,45 @@
-import "./globals.css";
 import type { Metadata } from "next";
-import { ReactNode } from "react";
-import { clsx } from "clsx";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { ReactQueryProvider } from "../components/react-query-provider";
+import { Navbar } from "../components/navbar";  // <-- importa aqui
 
-import { AuthProvider } from "@/components/auth/auth-provider";
-
-const fontSans = Plus_Jakarta_Sans({
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-  weight: ["400", "500", "600", "700"]
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Gestor Automotivo",
-    template: "%s | Gestor Automotivo"
-  },
-  description: "Interface simplificada e declarativa para gestão automotiva."
+  title: "Gestor de Veículos",
+  description: "Sistema de gerenciamento de vitrine e estoque",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="pt-BR">
-      <body className={clsx("min-h-screen bg-slate-950 text-slate-100 antialiased", fontSans.variable, "font-sans")}>
-        <AuthProvider>{children}</AuthProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-50 text-zinc-900`}>
+        <ReactQueryProvider>
+          <div className="flex min-h-screen flex-col">
+            <Navbar />
+            <main className="flex-grow bg-white text-zinc-900">{/* Conteúdo principal */}
+              {children}
+            </main>
+            <footer className="mx-auto w-full border-t border-zinc-200 bg-zinc-50 py-6">
+              <div className="mx-auto max-w-6xl px-4 text-center text-sm text-zinc-500">
+                © {new Date().getFullYear()} Gestor de Veículos
+              </div>
+            </footer>
+          </div>
+        </ReactQueryProvider>
       </body>
     </html>
   );
