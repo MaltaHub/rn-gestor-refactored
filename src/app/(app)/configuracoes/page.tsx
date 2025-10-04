@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import type { Caracteristica, Local, Loja, Modelo, Plataforma } from "@/types";
+import type { Caracteristica, Local, Loja, Modelo, Plataforma, UnidadeLoja } from "@/types";
 import { salvarConfiguracao, remove } from "@/services/configuracoes";
 import {
   useLojas,
@@ -18,13 +18,14 @@ import {
   useCaracteristicas,
   useModelos,
   useLocais,
+  useUnidadesLoja,
 } from "@/hooks/use-configuracoes";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 
 /* =========================
  * Tipos e fábricas de estado
  * ========================= */
-import type { SimpleFormState, ModeloFormState } from "@/types/configuracoes";
+import type { SimpleFormState, ModeloFormState, UnidadeLojaFormState } from "@/types/configuracoes";
 import { SectionCard, FeedbackBadge, SimpleForm, EntityList, ModeloForm } from "@/components/configuracoes";
 
 const createSimpleForm = (): SimpleFormState => ({ nome: "" });
@@ -47,6 +48,14 @@ const createModeloForm = (): ModeloFormState => ({
   valvulas: null,
   ano_inicial: null,
   ano_final: null,
+});
+
+const createUnidadeForm = (): UnidadeLojaFormState => ({
+  id: null,
+  loja_id: null,
+  nome: "",
+  logradouro: "",
+  cep: "",
 });
 
 /* =============
@@ -75,6 +84,15 @@ const normalizeEnumValue = <T extends string>(
   const normalized = value.trim().toLowerCase();
   const matched = allowed.find((option) => option === normalized);
   return matched ?? null;
+};
+
+const sanitizeCep = (value: string) => value.replace(/\D/g, "");
+
+const formatCep = (value: string | null | undefined) => {
+  if (!value) return null;
+  const digits = sanitizeCep(value);
+  if (digits.length !== 8) return value;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 };
 
 const tipoCambioOptions: readonly Exclude<Modelo["tipo_cambio"], null>[] = [
@@ -145,6 +163,7 @@ export default function ConfiguracoesPage() {
     caracteristica = "caracteristica",
     local = "local",
     modelo = "modelo",
+    unidade_loja = "unidade_loja",
   }
 
   /** invalida tanto o padrão específico quanto um possível alias por coleção */
@@ -215,7 +234,7 @@ export default function ConfiguracoesPage() {
 
 /** exclusão genérica */
 async function handleDeleteEntity<T extends { id?: string }>(
-  area: "loja" | "plataforma" | "caracteristica" | "local" | "modelo",
+  area: "loja" | "plataforma" | "caracteristica" | "local" | "modelo" | "unidade_loja",
   entity: T,
   confirmText: string,
   setDeletingId: (id: string | null) => void,
@@ -248,12 +267,14 @@ async function handleDeleteEntity<T extends { id?: string }>(
   const { data: caracteristicas } = useCaracteristicas();
   const { data: locais } = useLocais();
   const { data: modelos } = useModelos();
+  const { data: unidadesLoja } = useUnidadesLoja();
 
   const [lojaForm, setLojaForm] = useState<SimpleFormState>(createSimpleForm());
   const [plataformaForm, setPlataformaForm] = useState<SimpleFormState>(createSimpleForm());
   const [caracteristicaForm, setCaracteristicaForm] = useState<SimpleFormState>(createSimpleForm());
   const [localForm, setLocalForm] = useState<SimpleFormState>(createSimpleForm());
   const [modeloForm, setModeloForm] = useState<ModeloFormState>(createModeloForm());
+  const [unidadeForm, setUnidadeForm] = useState<UnidadeLojaFormState>(createUnidadeForm());
 
   const [feedback, setFeedback] = useState<{ section: string; type: "success" | "error"; message: string } | null>(null);
 
@@ -262,18 +283,45 @@ async function handleDeleteEntity<T extends { id?: string }>(
   const [caracteristicaDeletingId, setCaracteristicaDeletingId] = useState<string | null>(null);
   const [localDeletingId, setLocalDeletingId] = useState<string | null>(null);
   const [modeloDeletingId, setModeloDeletingId] = useState<string | null>(null);
+  const [unidadeDeletingId, setUnidadeDeletingId] = useState<string | null>(null);
 
   const [loadingLoja, setLoadingLoja] = useState(false);
   const [loadingPlataforma, setLoadingPlataforma] = useState(false);
   const [loadingCaracteristica, setLoadingCaracteristica] = useState(false);
   const [loadingLocal, setLoadingLocal] = useState(false);
   const [loadingModelo, setLoadingModelo] = useState(false);
+  const [loadingUnidade, setLoadingUnidade] = useState(false);
 
   const sortedLojas = useMemo(() => (lojas ? [...lojas].sort((a, b) => a.nome.localeCompare(b.nome)) : []), [lojas]);
   const sortedPlataformas = useMemo(() => (plataformas ? [...plataformas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [plataformas]);
   const sortedCaracteristicas = useMemo(() => (caracteristicas ? [...caracteristicas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [caracteristicas]);
   const sortedLocais = useMemo(() => (locais ? [...locais].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [locais]);
+  const lojasPorId = useMemo(() => {
+    const map = new Map<string, Loja>();
+    (lojas ?? []).forEach((loja) => {
+      if (loja.id) {
+        map.set(loja.id, loja);
+      }
+    });
+    return map;
+  }, [lojas]);
   type ModeloComNomeCompleto = Modelo & { nomeCompleto: string };
+  type UnidadeLojaComLoja = UnidadeLoja & { lojaNome: string };
+
+  const unidadesComLoja = useMemo<UnidadeLojaComLoja[]>(() => {
+    if (!unidadesLoja) return [];
+
+    const lista = unidadesLoja.map((unidade) => ({
+      ...unidade,
+      lojaNome: lojasPorId.get(unidade.loja_id)?.nome ?? "Loja não encontrada",
+    }));
+
+    return lista.sort((a, b) => {
+      const lojaComparacao = a.lojaNome.localeCompare(b.lojaNome, "pt-BR", { sensitivity: "base" });
+      if (lojaComparacao !== 0) return lojaComparacao;
+      return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
+    });
+  }, [lojasPorId, unidadesLoja]);
 
   const modelosComNomeCompleto = useMemo<ModeloComNomeCompleto[]>(
     () =>
@@ -363,6 +411,43 @@ async function handleDeleteEntity<T extends { id?: string }>(
       valvulas: parseOptionalNumberField(f.valvulas ?? null),
     }),
     setLoading: setLoadingModelo,
+  });
+
+  const handleUnidadeSubmit = createSubmitHandler<
+    UnidadeLojaFormState,
+    {
+      id?: string;
+      loja_id: string;
+      nome: string;
+      logradouro: string | null;
+      cep: string | null;
+    }
+  >({
+    area: Areas.unidade_loja,
+    form: unidadeForm,
+    setForm: setUnidadeForm,
+    formFactory: createUnidadeForm,
+    setFeedback,
+    validate: (f) => {
+      if (!f.nome.trim()) return "Informe o nome da unidade.";
+      if (!f.loja_id) return "Selecione a loja vinculada.";
+      return null;
+    },
+    mapPayload: (f) => {
+      const id = typeof f.id === "string" && f.id.trim() ? f.id.trim() : undefined;
+      const lojaId = f.loja_id ?? "";
+      const logradouro = f.logradouro.trim() ? f.logradouro.trim() : null;
+      const cepDigits = sanitizeCep(f.cep ?? "");
+
+      return {
+        id,
+        loja_id: lojaId,
+        nome: f.nome.trim(),
+        logradouro,
+        cep: cepDigits ? cepDigits : null,
+      };
+    },
+    setLoading: setLoadingUnidade,
   });
 
   return (
@@ -544,6 +629,135 @@ async function handleDeleteEntity<T extends { id?: string }>(
                 }
               )
             }
+          />
+        </SectionCard>
+
+        {/* UNIDADES POR LOJA */}
+        <SectionCard
+          title="Unidades por loja"
+          subtitle="Cadastre os showrooms e unidades físicas associados a cada loja."
+          badge={<FeedbackBadge feedback={feedback} section="unidade_loja" />}
+        >
+          <form
+            onSubmit={handleUnidadeSubmit}
+            className="flex flex-col gap-4 rounded-md border border-zinc-100 bg-zinc-50 p-4"
+          >
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium text-zinc-700">Loja vinculada</span>
+              <select
+                className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
+                value={unidadeForm.loja_id ?? ""}
+                onChange={(event) =>
+                  setUnidadeForm((prev) => ({ ...prev, loja_id: event.target.value || null }))
+                }
+                required
+              >
+                <option value="">Selecione uma loja</option>
+                {sortedLojas.map((loja) => (
+                  <option key={loja.id} value={loja.id}>
+                    {loja.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium text-zinc-700">Nome da unidade</span>
+              <input
+                className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
+                value={unidadeForm.nome}
+                onChange={handleInputChange(setUnidadeForm, "nome")}
+                required
+              />
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-zinc-700">Logradouro (opcional)</span>
+                <input
+                  className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
+                  value={unidadeForm.logradouro}
+                  onChange={handleInputChange(setUnidadeForm, "logradouro")}
+                  placeholder="Rua, número..."
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-zinc-700">CEP (opcional)</span>
+                <input
+                  className="rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-blue-500 focus:outline-none"
+                  value={unidadeForm.cep}
+                  onChange={(event) => {
+                    const digits = sanitizeCep(event.target.value);
+                    setUnidadeForm((prev) => ({ ...prev, cep: digits }));
+                  }}
+                  maxLength={8}
+                  inputMode="numeric"
+                  placeholder="00000000"
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:border-blue-300 disabled:bg-blue-300"
+                disabled={loadingUnidade}
+              >
+                {loadingUnidade ? "Salvando..." : unidadeForm.id ? "Atualizar" : "Adicionar"}
+              </button>
+              {unidadeForm.id && (
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
+                  onClick={() => {
+                    resetForm(createUnidadeForm, setUnidadeForm);
+                    setFeedback(null);
+                  }}
+                >
+                  Cancelar edição
+                </button>
+              )}
+            </div>
+          </form>
+
+          <EntityList<UnidadeLojaComLoja>
+            items={unidadesComLoja}
+            emptyText="Nenhuma unidade cadastrada."
+            removingId={unidadeDeletingId}
+            removeDisabled={(u) => !u.id}
+            onEdit={(u) => {
+              setUnidadeForm({
+                id: u.id ?? null,
+                loja_id: u.loja_id,
+                nome: u.nome,
+                logradouro: u.logradouro ?? "",
+                cep: sanitizeCep(u.cep ?? ""),
+              });
+              setFeedback(null);
+            }}
+            onRemove={(u) =>
+              handleDeleteEntity(
+                "unidade_loja",
+                u,
+                `Remover a unidade "${u.nome}" da loja "${u.lojaNome}"?`,
+                setUnidadeDeletingId,
+                setFeedback,
+                () => {
+                  if (unidadeForm.id === u.id) resetForm(createUnidadeForm, setUnidadeForm);
+                  invalidateForArea(Areas.unidade_loja);
+                }
+              )
+            }
+            renderTitle={(u) => `${u.lojaNome} — ${u.nome}`}
+            renderExtra={(u) => {
+              const endereco = [u.logradouro?.trim() || null, formatCep(u.cep)]
+                .filter(Boolean)
+                .join(" • ");
+              if (!endereco) {
+                return <p className="text-xs text-zinc-400">Sem endereço informado</p>;
+              }
+              return <p className="text-xs text-zinc-500">{endereco}</p>;
+            }}
           />
         </SectionCard>
 

@@ -484,18 +484,27 @@ export type Database = {
       }
       locais: {
         Row: {
+          cep: string | null
           empresa_id: string
           id: string
+          loja_id: string | null
+          logradouro: string | null
           nome: string
         }
         Insert: {
+          cep?: string | null
           empresa_id: string
           id?: string
+          loja_id?: string | null
+          logradouro?: string | null
           nome: string
         }
         Update: {
+          cep?: string | null
           empresa_id?: string
           id?: string
+          loja_id?: string | null
+          logradouro?: string | null
           nome?: string
         }
         Relationships: [
@@ -504,6 +513,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "locais_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
         ]
@@ -530,6 +546,48 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unidades_loja: {
+        Row: {
+          cep: string | null
+          empresa_id: string
+          id: string
+          loja_id: string
+          logradouro: string | null
+          nome: string
+        }
+        Insert: {
+          cep?: string | null
+          empresa_id: string
+          id?: string
+          loja_id: string
+          logradouro?: string | null
+          nome: string
+        }
+        Update: {
+          cep?: string | null
+          empresa_id?: string
+          id?: string
+          loja_id?: string
+          logradouro?: string | null
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_loja_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unidades_loja_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
         ]

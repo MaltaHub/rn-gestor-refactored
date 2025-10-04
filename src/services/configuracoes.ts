@@ -1,6 +1,12 @@
 import { callRpc } from "@/lib/supabase";
 
-type ConfiguracaoArea = "loja" | "plataforma" | "caracteristica" | "modelo" | "local";
+type ConfiguracaoArea =
+  | "loja"
+  | "plataforma"
+  | "caracteristica"
+  | "modelo"
+  | "local"
+  | "unidade_loja";
 
 type ConfiguracaoPayload = Record<string, unknown>;
 

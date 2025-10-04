@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Loja, Plataforma, Caracteristica, Modelo, Local } from "@/types";
+import type { Loja, Plataforma, Caracteristica, Modelo, Local, UnidadeLoja } from "@/types";
 import { listar_tabela } from "@/services";
 
 const configuracoesKeys = {
@@ -8,6 +8,7 @@ const configuracoesKeys = {
   caracteristicas: ["configuracoes", "caracteristica"] as const,
   modelos: ["configuracoes", "modelo"] as const,
   locais: ["configuracoes", "local"] as const,
+  unidadesLoja: ["configuracoes", "unidade_loja"] as const,
 };
 
 // --- Hooks apenas de leitura -----------------------------------------------
@@ -48,6 +49,14 @@ export function useLocais() {
   return useQuery<Local[]>({
     queryKey: configuracoesKeys.locais,
     queryFn: () => listar_tabela("locais"),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useUnidadesLoja() {
+  return useQuery<UnidadeLoja[]>({
+    queryKey: configuracoesKeys.unidadesLoja,
+    queryFn: () => listar_tabela("unidades_loja"),
     staleTime: 1000 * 60 * 5,
   });
 }

@@ -71,6 +71,9 @@ export type VeiculoUI = VeiculoResumo & {
   anoPrincipal: number | null;
   localNome: string | null;
   localDisplay: string;
+  localLojaId: string | null;
+  estaEmUnidade: boolean;
+  localCategoria: "showroom" | "fora";
   precoFormatado: string | null;
   hodometroFormatado: string | null;
   estadoVendaLabel: string;
@@ -106,6 +109,9 @@ export const adaptVeiculo = (
   const modeloMarca = modelo?.marca ?? null;
 
   const localNome = local?.nome ?? null;
+  const localLojaId = local?.loja_id ?? null;
+  const estaEmUnidade = Boolean(localLojaId);
+  const localCategoria: "showroom" | "fora" = estaEmUnidade ? "showroom" : "fora";
   const localDisplay = localNome ?? "Sem local vinculado";
 
   const caracteristicasNomes = (veiculo.caracteristicas ?? []).map((item) => item?.nome ?? null);
@@ -124,6 +130,9 @@ export const adaptVeiculo = (
     anoPrincipal: veiculo.ano_modelo ?? veiculo.ano_fabricacao ?? null,
     localNome,
     localDisplay,
+    localLojaId,
+    estaEmUnidade,
+    localCategoria,
     precoFormatado: formatCurrency(veiculo.preco_venal),
     hodometroFormatado: formatKilometros(veiculo.hodometro),
     estadoVendaLabel: formatEnumLabel(veiculo.estado_venda) ?? "Não informado",

@@ -23,7 +23,6 @@ async function fetchVeiculos(): Promise<VeiculoResumo[]> {
     .from("veiculos")
     .select(`*,
       modelo: modelos (*),
-      local: locais (*),
       caracteristicas: caracteristicas_veiculos (
         caracteristica: caracteristicas (*)
       )
@@ -45,7 +44,6 @@ async function fetchVeiculo(id: string): Promise<VeiculoResumo> {
     .from("veiculos")
     .select(`*,
       modelo: modelos (*),
-      local: locais ( id, nome ),
       caracteristicas: caracteristicas_veiculos (
         caracteristica: caracteristicas (*)
       )

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
+import { useLocais } from "@/hooks/use-configuracoes";
 
 const ESTADOS_VENDA: VeiculoUI["estado_venda"][] = [
   "disponivel",
@@ -12,6 +13,73 @@ const ESTADOS_VENDA: VeiculoUI["estado_venda"][] = [
   "vendido",
   "repassado",
   "restrito",
+];
+
+const SEM_LOCAL_VALUE = "__sem_local__";
+
+type SortKey =
+  | "veiculoDisplay"
+  | "placa"
+  | "anoPrincipal"
+  | "hodometro"
+  | "estadoVendaLabel"
+  | "estadoVeiculoLabel"
+  | "localDisplay"
+  | "preco_venal"
+  | "estagio_documentacao"
+  | "cor";
+
+type SortDirection = "asc" | "desc";
+
+type SortConfig = {
+  key: SortKey;
+  direction: SortDirection;
+};
+
+const sortAccessors: Record<SortKey, (item: VeiculoUI) => string | number | null> = {
+  veiculoDisplay: (item) => item.veiculoDisplay,
+  placa: (item) => item.placa,
+  anoPrincipal: (item) => item.anoPrincipal,
+  hodometro: (item) => (typeof item.hodometro === "number" ? item.hodometro : null),
+  estadoVendaLabel: (item) => item.estadoVendaLabel,
+  estadoVeiculoLabel: (item) => item.estadoVeiculoLabel,
+  localDisplay: (item) => item.localDisplay,
+  preco_venal: (item) => (typeof item.preco_venal === "number" ? item.preco_venal : null),
+  estagio_documentacao: (item) => item.estagio_documentacao ?? null,
+  cor: (item) => item.cor ?? null,
+};
+
+const compareBySort = (a: VeiculoUI, b: VeiculoUI, config: SortConfig) => {
+  const valueA = sortAccessors[config.key](a);
+  const valueB = sortAccessors[config.key](b);
+
+  if (valueA == null && valueB == null) return 0;
+  if (valueA == null) return config.direction === "asc" ? 1 : -1;
+  if (valueB == null) return config.direction === "asc" ? -1 : 1;
+
+  if (typeof valueA === "number" && typeof valueB === "number") {
+    return config.direction === "asc" ? valueA - valueB : valueB - valueA;
+  }
+
+  const comparison = valueA
+    .toString()
+    .localeCompare(valueB.toString(), "pt-BR", { sensitivity: "base" });
+
+  return config.direction === "asc" ? comparison : -comparison;
+};
+
+const TABLE_COLUMNS: Array<{ label: string; sortKey?: SortKey; align?: "right" }> = [
+  { label: "Veículo", sortKey: "veiculoDisplay" },
+  { label: "Placa", sortKey: "placa" },
+  { label: "Ano", sortKey: "anoPrincipal" },
+  { label: "Hodômetro", sortKey: "hodometro" },
+  { label: "Estado venda", sortKey: "estadoVendaLabel" },
+  { label: "Estado veículo", sortKey: "estadoVeiculoLabel" },
+  { label: "Local", sortKey: "localDisplay" },
+  { label: "Preço", sortKey: "preco_venal", align: "right" },
+  { label: "Documentação", sortKey: "estagio_documentacao" },
+  { label: "Cor", sortKey: "cor" },
+  { label: "Ações", align: "right" },
 ];
 
 const formatEstadoLabel = (value: string) =>
@@ -46,6 +114,7 @@ const matchesSearchTerm = (veiculo: VeiculoUI, normalizedTerm: string) => {
 
 export default function EstoquePage() {
   const { data: veiculos = [], isLoading } = useVeiculosUI();
+  const { data: todosLocais = [] } = useLocais();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const estadoFiltroParam = searchParams.get("estado");
@@ -55,9 +124,11 @@ export default function EstoquePage() {
 
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [searchTerm, setSearchTerm] = useState("");
+  const [localScope, setLocalScope] = useState<"todos" | "showroom" | "fora">("todos");
   const [localFiltro, setLocalFiltro] = useState("");
   const [modeloFiltro, setModeloFiltro] = useState("");
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const itemRefs = useRef(new Map<string, HTMLElement>());
@@ -78,14 +149,67 @@ export default function EstoquePage() {
     return counts;
   }, [veiculos]);
 
-  const uniqueLocais = useMemo(() => {
-    const set = new Set<string>();
-    veiculos.forEach((veiculo) => {
-      const local = veiculo.localDisplay;
-      if (local) set.add(local);
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
-  }, [veiculos]);
+  const localOptionsData = useMemo(() => {
+    const showroom: { value: string; label: string }[] = [];
+    const fora: { value: string; label: string }[] = [];
+    const todos: { value: string; label: string }[] = [];
+
+    const orderByLabel = (list: { value: string; label: string }[]) =>
+      [...list].sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
+
+    for (const local of todosLocais) {
+      if (!local?.id || !local.nome) continue;
+      const option = { value: local.id, label: local.nome };
+      todos.push(option);
+      if (local.loja_id) {
+        showroom.push(option);
+      } else {
+        fora.push(option);
+      }
+    }
+
+    const sortedShowroom = orderByLabel(showroom);
+    let sortedFora = orderByLabel(fora);
+    let sortedTodos = orderByLabel(todos);
+
+    const hasVeiculoSemLocal = veiculos.some((item) => !item.local?.id);
+    if (hasVeiculoSemLocal) {
+      const semLocalOption = { value: SEM_LOCAL_VALUE, label: "Sem local vinculado" };
+      sortedFora = [...sortedFora, semLocalOption];
+      sortedTodos = [...sortedTodos, semLocalOption];
+    }
+
+    const toValueSet = (list: { value: string; label: string }[]) => new Set(list.map((item) => item.value));
+
+    return {
+      options: {
+        todos: sortedTodos,
+        showroom: sortedShowroom,
+        fora: sortedFora,
+      },
+      values: {
+        todos: toValueSet(sortedTodos),
+        showroom: toValueSet(sortedShowroom),
+        fora: toValueSet(sortedFora),
+      },
+    } as const;
+  }, [todosLocais, veiculos]);
+
+  const localOptions = useMemo(() => localOptionsData.options[localScope], [localOptionsData, localScope]);
+
+  const localPlaceholderLabel = useMemo(() => {
+    if (localScope === "showroom") return "Todas as unidades";
+    if (localScope === "fora") return "Todos os locais fora das unidades";
+    return "Todos os locais";
+  }, [localScope]);
+
+  useEffect(() => {
+    if (!localFiltro) return;
+    const validValues = localOptionsData.values[localScope];
+    if (!validValues.has(localFiltro)) {
+      setLocalFiltro("");
+    }
+  }, [localFiltro, localOptionsData, localScope]);
 
   const uniqueModelos = useMemo(() => {
     const set = new Set<string>();
@@ -96,14 +220,30 @@ export default function EstoquePage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
   }, [veiculos]);
 
-  const filtrados = useMemo(() => {
+  const veiculosFiltrados = useMemo(() => {
     return veiculos.filter((veiculo) => {
       if (estadoFiltro && veiculo.estado_venda !== estadoFiltro) return false;
-      if (localFiltro && veiculo.localDisplay !== localFiltro) return false;
+
+      if (localScope === "showroom" && !veiculo.estaEmUnidade) return false;
+      if (localScope === "fora" && veiculo.estaEmUnidade) return false;
+
+      if (localFiltro) {
+        if (localFiltro === SEM_LOCAL_VALUE) {
+          if (veiculo.local?.id) return false;
+        } else if (veiculo.local?.id !== localFiltro) {
+          return false;
+        }
+      }
+
       if (modeloFiltro && veiculo.modeloCompleto !== modeloFiltro) return false;
       return true;
     });
-  }, [estadoFiltro, localFiltro, modeloFiltro, veiculos]);
+  }, [estadoFiltro, localFiltro, localScope, modeloFiltro, veiculos]);
+
+  const veiculosOrdenados = useMemo(() => {
+    if (!sortConfig) return veiculosFiltrados;
+    return [...veiculosFiltrados].sort((a, b) => compareBySort(a, b, sortConfig));
+  }, [sortConfig, veiculosFiltrados]);
 
   useEffect(() => {
     if (!highlightedId) return;
@@ -113,10 +253,10 @@ export default function EstoquePage() {
 
   useEffect(() => {
     setHighlightedId(null);
-  }, [estadoFiltro, localFiltro, modeloFiltro, viewMode, searchTerm]);
+  }, [estadoFiltro, localFiltro, localScope, modeloFiltro, viewMode, searchTerm, sortConfig]);
 
   const totalVeiculos = veiculos.length;
-  const totalFiltrados = filtrados.length;
+  const totalFiltrados = veiculosFiltrados.length;
 
   const handleSearchSubmit = useCallback(
     (event?: React.FormEvent<HTMLFormElement>) => {
@@ -128,7 +268,7 @@ export default function EstoquePage() {
         return;
       }
 
-      const match = filtrados.find((veiculo) => matchesSearchTerm(veiculo, normalizedTerm));
+      const match = veiculosOrdenados.find((veiculo) => matchesSearchTerm(veiculo, normalizedTerm));
       if (!match) return;
 
       const element = itemRefs.current.get(match.id);
@@ -137,7 +277,7 @@ export default function EstoquePage() {
         setHighlightedId(match.id);
       }
     },
-    [filtrados, searchTerm],
+    [veiculosOrdenados, searchTerm],
   );
 
   const handleViewToggle = useCallback(() => {
@@ -155,9 +295,31 @@ export default function EstoquePage() {
     [],
   );
 
+  const handleSort = useCallback((key: SortKey) => {
+    setSortConfig((prev) => {
+      if (!prev || prev.key !== key) {
+        return { key, direction: "asc" } as SortConfig;
+      }
+
+      if (prev.direction === "asc") {
+        return { key, direction: "desc" } as SortConfig;
+      }
+
+      return null;
+    });
+  }, []);
+
+  const getSortIndicator = useCallback(
+    (key: SortKey) => {
+      if (!sortConfig || sortConfig.key !== key) return "";
+      return sortConfig.direction === "asc" ? "A-Z" : "Z-A";
+    },
+    [sortConfig],
+  );
+
   const renderCards = useCallback(() => (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {filtrados.map((veiculo) => {
+      {veiculosOrdenados.map((veiculo) => {
         const precoFormatado = veiculo.precoFormatado;
         const hodometroFormatado = veiculo.hodometroFormatado ?? "—";
         const caracteristicasResumo = veiculo.caracteristicasPrincipais;
@@ -243,7 +405,7 @@ export default function EstoquePage() {
         );
       })}
     </ul>
-  ), [filtrados, highlightedId, registerItemRef]);
+  ), [veiculosOrdenados, highlightedId, registerItemRef]);
 
   const renderTabela = useCallback(() => (
     <div className="rounded-lg border border-zinc-200">
@@ -251,21 +413,48 @@ export default function EstoquePage() {
         <table className="min-w-[1100px] divide-y divide-zinc-200">
           <thead className="bg-zinc-50 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
             <tr>
-              <th className="px-4 py-3">Veículo</th>
-              <th className="px-4 py-3">Placa</th>
-              <th className="px-4 py-3">Ano</th>
-              <th className="px-4 py-3">Hodômetro</th>
-              <th className="px-4 py-3">Estado venda</th>
-              <th className="px-4 py-3">Estado veículo</th>
-              <th className="px-4 py-3">Local</th>
-              <th className="px-4 py-3">Preço</th>
-              <th className="px-4 py-3">Documentação</th>
-              <th className="px-4 py-3">Cor</th>
-              <th className="px-4 py-3 text-right">Ações</th>
+              {TABLE_COLUMNS.map((column) => {
+                const alignmentClass = column.align === "right" ? "text-right" : "";
+
+                if (!column.sortKey) {
+                  return (
+                    <th key={column.label} className={`px-4 py-3 ${alignmentClass}`}>
+                      {column.label}
+                    </th>
+                  );
+                }
+
+                const isSorted = sortConfig?.key === column.sortKey;
+                const ariaSort: "ascending" | "descending" | "none" = isSorted
+                  ? sortConfig?.direction === "asc"
+                    ? "ascending"
+                    : "descending"
+                  : "none";
+                const indicator = getSortIndicator(column.sortKey);
+                const indicatorLabel = indicator || "A-Z";
+                const indicatorClass = indicator ? "text-blue-600" : "text-zinc-400";
+
+                return (
+                  <th
+                    key={column.label}
+                    className={`px-4 py-3 ${alignmentClass}`}
+                    aria-sort={ariaSort}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort(column.sortKey!)}
+                      className="flex w-full items-center justify-between gap-2 uppercase transition hover:text-blue-600 focus:outline-none"
+                    >
+                      <span>{column.label}</span>
+                      <span className={`text-[0.65rem] font-semibold ${indicatorClass}`}>{indicatorLabel}</span>
+                    </button>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
-            {filtrados.map((veiculo) => {
+            {veiculosOrdenados.map((veiculo) => {
               const isHighlighted = highlightedId === veiculo.id;
               const baseRowClass = "transition hover:bg-blue-50/40";
               const highlightClass = isHighlighted ? "bg-blue-50/70 ring-1 ring-inset ring-blue-300" : "";
@@ -283,7 +472,7 @@ export default function EstoquePage() {
                   <td className="px-4 py-3">{veiculo.estadoVendaLabel}</td>
                   <td className="px-4 py-3">{veiculo.estadoVeiculoLabel}</td>
                   <td className="px-4 py-3">{veiculo.localDisplay}</td>
-                  <td className="px-4 py-3">{veiculo.precoFormatado ?? "—"}</td>
+                  <td className="px-4 py-3 text-right">{veiculo.precoFormatado ?? "—"}</td>
                   <td className="px-4 py-3">{veiculo.estagio_documentacao ?? "Sem informação"}</td>
                   <td className="px-4 py-3">{veiculo.cor ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
@@ -309,7 +498,7 @@ export default function EstoquePage() {
         </table>
       </div>
     </div>
-  ), [filtrados, highlightedId, registerItemRef]);
+  ), [getSortIndicator, handleSort, veiculosOrdenados, highlightedId, registerItemRef, sortConfig]);
 
   return (
     <div className="bg-white px-6 py-10 text-zinc-900">
@@ -420,14 +609,23 @@ export default function EstoquePage() {
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="flex flex-1 flex-wrap gap-2">
             <select
+              value={localScope}
+              onChange={(event) => setLocalScope(event.target.value as "todos" | "showroom" | "fora")}
+              className="h-10 flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-initial sm:min-w-[200px]"
+            >
+              <option value="todos">Todos os locais</option>
+              <option value="showroom">Showroom (unidades)</option>
+              <option value="fora">Fora das unidades</option>
+            </select>
+            <select
               value={localFiltro}
               onChange={(event) => setLocalFiltro(event.target.value)}
               className="h-10 flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-initial sm:min-w-[200px]"
             >
-              <option value="">Todos os locais</option>
-              {uniqueLocais.map((local) => (
-                <option key={local} value={local}>
-                  {local}
+              <option value="">{localPlaceholderLabel}</option>
+              {localOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>

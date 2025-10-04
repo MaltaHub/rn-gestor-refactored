@@ -77,7 +77,6 @@ async function fetchVeiculosLoja(lojaId: string): Promise<RawVeiculoLoja[]> {
       veiculo: veiculos (
         *,
         modelo: modelos (*),
-        local: locais (*),
         caracteristicas: caracteristicas_veiculos (
           caracteristica: caracteristicas (*)
         )
@@ -105,7 +104,6 @@ async function fetchVeiculoLojaById(id: string): Promise<RawVeiculoLoja | null> 
       veiculo: veiculos (
         *,
         modelo: modelos (*),
-        local: locais (*),
         caracteristicas: caracteristicas_veiculos (
           caracteristica: caracteristicas (*)
         )
