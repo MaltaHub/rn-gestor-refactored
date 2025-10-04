@@ -4,10 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const { data: empresa, isLoading } = useEmpresaDoUsuario();
+  const { loading: authLoading, isAuthenticated } = useAuth();
+  const { data: empresa, isLoading } = useEmpresaDoUsuario(isAuthenticated);
 
   const linksProprietario = [
     { href: "/admin", label: "Admin" },
@@ -60,7 +62,7 @@ export function Navbar() {
         {/* Menu desktop */}
         <nav className="hidden gap-6 text-sm font-medium sm:flex">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
-          {!isLoading && empresa?.papel === "proprietario" &&
+          {!authLoading && isAuthenticated && !isLoading && empresa?.papel === "proprietario" &&
             linksProprietario.map(link => (
               <Link key={link.href} href={link.href} className="hover:text-blue-600">
                 {link.label}
@@ -82,7 +84,7 @@ export function Navbar() {
       {open && (
         <nav className="flex flex-col gap-2 border-t theme-border theme-surface px-4 py-3 sm:hidden">
           <Link href="/vitrine" className="hover:text-blue-600">Vitrine</Link>
-          {!isLoading && empresa?.papel === "proprietario" &&
+          {!authLoading && isAuthenticated && !isLoading && empresa?.papel === "proprietario" &&
             linksProprietario.map(link => (
               <Link key={link.href} href={link.href} className="hover:text-blue-600">
                 {link.label}

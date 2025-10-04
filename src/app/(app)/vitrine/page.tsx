@@ -51,39 +51,48 @@ const renderEstadoBadge = (veiculo: VeiculoLojaUI) => {
 };
 
 const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
-  <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-screen-xl mx-auto">
     {veiculos.map((item) => (
-      <li key={item.id}>
-        <article className="flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md">
-          <Link href={`/vitrine/${item.id}`}>
-            <div className="relative flex aspect-video items-center justify-center bg-zinc-100">
+      <li key={item.id} className="flex flex-col h-full w-full">
+        <article className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md">
+          <Link href={`/vitrine/${item.id}`} className="block h-full w-full">
+            {/* Imagem */}
+            <div className="relative aspect-video w-full bg-zinc-100 overflow-hidden">
               {item.capaUrl ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={item.capaUrl}
-                    alt={item.veiculo?.veiculoDisplay ?? "Veículo sem foto"}
-                    className="h-full w-full object-cover"
-                  />
-                </>
+                <img
+                  src={item.capaUrl}
+                  alt={item.veiculo?.veiculoDisplay ?? "Veículo sem foto"}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <span className="text-xs font-medium text-zinc-500">Sem foto de capa</span>
+                <span className="flex h-full items-center justify-center text-xs sm:text-sm font-medium text-zinc-500">
+                  Sem foto de capa
+                </span>
               )}
             </div>
-            <div className="flex flex-1 flex-col gap-3 p-5">
-              <div className="flex items-center justify-between gap-3">
-                {renderEstadoBadge(item)}
-                <span className="text-sm font-semibold text-zinc-800">
+
+            {/* Conteúdo */}
+            <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5 min-h-0 break-words">
+              {/* Badge + Preço */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex-shrink-0">{renderEstadoBadge(item)}</div>
+                <span className="flex-shrink-0 text-sm sm:text-base lg:text-lg font-semibold text-zinc-800 truncate">
                   {getDisplayPrice(item)}
                 </span>
               </div>
+
+              {/* Título + Placa */}
               <div>
-                <h2 className="text-lg font-medium text-zinc-800">
+                <h4 className="text-sm sm:text-base lg:text-lg font-bold text-zinc-800 truncate">
                   {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
-                </h2>
-                <p className="text-sm text-zinc-500">Placa {item.veiculo?.placa ?? "—"}</p>
+                </h4>
+                <p className="text-xs sm:text-sm lg:text-base text-zinc-500">
+                  Placa {item.veiculo?.placa ?? "—"}
+                </p>
               </div>
-              <dl className="grid gap-3 text-xs text-zinc-500 sm:grid-cols-2">
+
+              {/* Informações */}
+              <dl className="grid gap-3 text-xs sm:text-sm lg:text-base text-zinc-500 sm:grid-cols-2">
                 <div>
                   <dt className="font-semibold text-zinc-700">Local</dt>
                   <dd>{item.veiculo?.localDisplay ?? "Sem local"}</dd>
@@ -330,13 +339,13 @@ export default function VitrinePage() {
         </div>
 
         <div className="flex flex-wrap gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:items-start">
-          <div className="flex w-full flex-col gap-2 sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center">
-            <label className="flex w-full min-w-[220px] flex-1 items-center gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+          <div className="flex w-auto flex-col gap-2 sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center">
+            <label className="flex w-auto min-w-[100px] flex-shrink-0 items-center gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-md">
               <span className="hidden sm:inline">Pesquisar:</span>
               <input
                 type="search"
                 placeholder="Busque por modelo, placa ou local"
-                className="h-8 flex-1 border-none bg-transparent text-sm text-zinc-700 outline-none"
+                className="h-8 w-full border-none bg-transparent text-sm text-zinc-700 outline-none"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
@@ -377,7 +386,7 @@ export default function VitrinePage() {
                 placeholder="Preço mínimo"
                 value={precoMin}
                 onChange={(event) => setPrecoMin(event.target.value)}
-                className="h-10 min-w-[140px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
+                className="h-10 min-w-[100px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
               />
               <span className="text-xs text-zinc-400">até</span>
               <input
@@ -387,7 +396,7 @@ export default function VitrinePage() {
                 placeholder="Preço máximo"
                 value={precoMax}
                 onChange={(event) => setPrecoMax(event.target.value)}
-                className="h-10 min-w-[140px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
+                className="h-10 min-w-[100px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
               />
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
@@ -438,7 +447,7 @@ export default function VitrinePage() {
         ) : null}
       </header>
 
-      <main className="mx-auto mt-8 w-full max-w-6xl">
+      <main className="mx-auto mt-8 w-auto max-w-6xl">
         {renderConteudo()}
         {isManaging && (
           <section className="mt-10 space-y-4 rounded-lg border border-dashed border-zinc-200 bg-zinc-50 p-6">

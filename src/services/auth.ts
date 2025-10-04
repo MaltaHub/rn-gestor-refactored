@@ -1,5 +1,6 @@
 // src/services/auth.ts
 import { supabase } from "@/lib/supabase";
+import { requestLogout } from "@/lib/logout-events";
 
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -19,9 +20,8 @@ export async function signUp(email: string, password: string) {
   return data.user;
 }
 
-export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+export async function signOut(redirectTo = "/login") {
+  await requestLogout({ reason: "manual", redirectTo });
 }
 
 export async function getSession() {

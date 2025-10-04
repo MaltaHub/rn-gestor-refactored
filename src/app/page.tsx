@@ -49,7 +49,6 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     await signOut();
-    router.replace("/login");
   };
 
   useEffect(() => {
