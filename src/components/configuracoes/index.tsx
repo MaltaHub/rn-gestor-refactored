@@ -119,6 +119,7 @@ export function EntityList<T extends { id?: string; nome?: string; empresa_id?: 
     removingId,
     removeDisabled,
     renderExtra,
+    renderTitle,
   }: {
     items: T[];
     emptyText: string;
@@ -127,6 +128,7 @@ export function EntityList<T extends { id?: string; nome?: string; empresa_id?: 
     removingId: string | null;
     removeDisabled?: (item: T) => boolean;
     renderExtra?: (item: T) => ReactNode;
+    renderTitle?: (item: T) => ReactNode;
   }
 ) {
   if (items.length === 0) {
@@ -144,7 +146,9 @@ export function EntityList<T extends { id?: string; nome?: string; empresa_id?: 
           className="flex flex-col justify-between gap-3 rounded-md border border-zinc-200 p-4 sm:flex-row sm:items-center"
         >
           <div>
-            <p className="font-medium text-zinc-800">{item.nome}</p>
+            <p className="font-medium text-zinc-800">
+              {renderTitle ? renderTitle(item) : item.nome}
+            </p>
             {renderExtra?.(item)}
           </div>
           <div className="flex gap-2">

@@ -1,14 +1,16 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos } from "@/hooks/use-configuracoes";
 import { criarVeiculo } from "@/services/estoque";
+import type { Modelo } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";
 import { useQueryClient } from "@tanstack/react-query";
+import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 
 type EstadoVendaOption = VeiculoResumo["estado_venda"];
 type EstadoVeiculoOption = NonNullable<VeiculoResumo["estado_veiculo"]>;
@@ -86,6 +88,24 @@ export default function CriarVeiculoPage() {
     message: string;
   } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  type ModeloComNomeCompleto = Modelo & { nomeCompleto: string };
+
+  const modelosComNomeCompleto = useMemo<ModeloComNomeCompleto[]>(
+    () =>
+      modelos.map((modelo) => ({
+        ...modelo,
+        nomeCompleto: buildModeloNomeCompletoOrDefault(modelo),
+      })),
+    [modelos],
+  );
+
+  const modeloSelecionado = useMemo(() => {
+    if (!formState.modelo_id) return null;
+    return (
+      modelosComNomeCompleto.find((modelo) => modelo.id === formState.modelo_id) ?? null
+    );
+  }, [formState.modelo_id, modelosComNomeCompleto]);
 
   const handleChange =
     (field: keyof VehicleFormState) =>
@@ -333,12 +353,22 @@ export default function CriarVeiculoPage() {
                   className="rounded-md border px-3 py-2 text-sm"
                 >
                   <option value="">Selecione um modelo</option>
-                  {modelos.map((modelo) => (
-                    <option key={modelo.id} value={modelo.id}>
-                      {modelo.nome}
-                    </option>
-                  ))}
+                  {modelosComNomeCompleto
+                    .filter((modelo) => Boolean(modelo.id))
+                    .map((modelo) => (
+                      <option
+                        key={modelo.id as string}
+                        value={modelo.id as string}
+                      >
+                        {modelo.nomeCompleto}
+                      </option>
+                    ))}
                 </select>
+                <span className="text-xs text-zinc-500">
+                  {formState.modelo_id
+                    ? modeloSelecionado?.nomeCompleto ?? "Modelo não encontrado nas configurações."
+                    : "Selecione um modelo para ver o nome completo."}
+                </span>
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span>Local</span>

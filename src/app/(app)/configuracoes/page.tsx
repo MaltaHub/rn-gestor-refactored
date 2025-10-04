@@ -19,6 +19,7 @@ import {
   useModelos,
   useLocais,
 } from "@/hooks/use-configuracoes";
+import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 
 /* =========================
  * Tipos e fábricas de estado
@@ -272,9 +273,25 @@ async function handleDeleteEntity<T extends { id?: string }>(
   const sortedPlataformas = useMemo(() => (plataformas ? [...plataformas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [plataformas]);
   const sortedCaracteristicas = useMemo(() => (caracteristicas ? [...caracteristicas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [caracteristicas]);
   const sortedLocais = useMemo(() => (locais ? [...locais].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [locais]);
+  type ModeloComNomeCompleto = Modelo & { nomeCompleto: string };
+
+  const modelosComNomeCompleto = useMemo<ModeloComNomeCompleto[]>(
+    () =>
+      (modelos ?? []).map((modelo) => ({
+        ...modelo,
+        nomeCompleto: buildModeloNomeCompletoOrDefault(modelo),
+      })),
+    [modelos],
+  );
+
   const sortedModelos = useMemo(
-    () => (modelos ? [...modelos].sort((a, b) => `${a.marca} ${a.nome}`.localeCompare(`${b.marca} ${b.nome}`, "pt-BR")) : []),
-    [modelos]
+    () =>
+      [...modelosComNomeCompleto].sort((a, b) => {
+        const chaveA = `${a.marca ?? ""} ${a.nomeCompleto}`.trim();
+        const chaveB = `${b.marca ?? ""} ${b.nomeCompleto}`.trim();
+        return chaveA.localeCompare(chaveB, "pt-BR", { sensitivity: "base" });
+      }),
+    [modelosComNomeCompleto],
   );
 
   // handlers genéricos (um por área)
@@ -547,7 +564,7 @@ async function handleDeleteEntity<T extends { id?: string }>(
           loading={loadingModelo}
           isEditing={!!modeloForm.id}
         />
-          <EntityList<Modelo>
+          <EntityList<ModeloComNomeCompleto>
             items={sortedModelos}
             emptyText="Nenhum modelo cadastrado."
             removingId={modeloDeletingId}
@@ -591,12 +608,13 @@ async function handleDeleteEntity<T extends { id?: string }>(
               )
             }
             renderExtra={(m) => (
-              <>
-                <p className="text-xs text-zinc-500">
-                  {[m.combustivel, m.tipo_cambio, m.motor, m.carroceria, m.edicao].filter(Boolean).join(" • ") || "—"}
-                </p>
-              </>
+              <p className="text-xs text-zinc-500">
+                {[m.combustivel, m.tipo_cambio, m.motor, m.carroceria, m.edicao]
+                  .filter(Boolean)
+                  .join(" • ") || "—"}
+              </p>
             )}
+            renderTitle={(m) => (m.marca ? `${m.marca} — ${m.nomeCompleto}` : m.nomeCompleto)}
           />
         </SectionCard>
       </div>

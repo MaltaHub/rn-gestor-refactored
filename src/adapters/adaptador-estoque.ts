@@ -2,6 +2,7 @@ import { useVeiculos } from "@/hooks/use-estoque";
 import { useModelos, useLocais } from "@/hooks/use-configuracoes";
 import type { VeiculoResumo } from "@/types/estoque";
 import type { Modelo, Local } from "@/types";
+import { buildModeloNomeCompleto, buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -28,25 +29,29 @@ const formatKilometros = (value?: number | null) => {
   return `${numberFormatter.format(value)} km`;
 };
 
-const buildModeloCompleto = (modelo: Modelo | null) => {
-  if (!modelo) return "Modelo não informado";
-  const parts = [modelo.nome, modelo.motor, modelo.edicao, formatEnumLabel(modelo.tipo_cambio)]
-    .map((part) => (part && part.trim() !== "" ? part : null))
-    .filter(Boolean) as string[];
-  return parts.length > 0 ? parts.join(" • ") : modelo.nome ?? "Modelo não informado";
-};
+const buildModeloCompleto = (modelo: Modelo | null) =>
+  buildModeloNomeCompletoOrDefault(modelo);
 
 const buildModeloDisplay = (modelo: Modelo | null) => {
-  if (!modelo) return "Modelo não informado";
-  const parts = [modelo.nome, modelo.motor, modelo.combustivel, modelo.edicao, modelo.tipo_cambio ].filter(Boolean) as string[];
-  return parts.length > 0 ? parts.join(" ").toUpperCase() : modelo.nome.toUpperCase() ?? "Modelo não informado";
+  const nomeCompleto = buildModeloNomeCompleto(modelo);
+  return nomeCompleto ? nomeCompleto.toUpperCase() : "Modelo não informado";
 };
 
 const buildVeiculoDisplay = (veiculo: VeiculoResumo | null) => {
   if (!veiculo) return "Veiculo não informado";
   const modelo = veiculo.modelo ?? null;
-  const parts = [modelo?.nome, modelo?.motor, modelo?.combustivel, modelo?.edicao, modelo?.tipo_cambio, veiculo.cor, veiculo.ano_modelo, `${veiculo.hodometro}km` ].filter(Boolean) as string[];
-  return parts.length > 0 ? parts.join(" ").toUpperCase() : modelo?.nome.toUpperCase() ?? "Modelo não informado";
+  const modeloNomeCompleto = buildModeloNomeCompleto(modelo);
+  const extraParts = [
+    veiculo.cor,
+    veiculo.ano_modelo,
+    veiculo.ano_fabricacao,
+    veiculo.hodometro != null ? `${veiculo.hodometro}km` : null,
+  ];
+  const parts = [modeloNomeCompleto, ...extraParts]
+    .map((part) => (typeof part === "string" ? part.trim() : part))
+    .filter((part): part is string => Boolean(part));
+
+  return parts.length > 0 ? parts.join(" ").toUpperCase() : "Modelo não informado";
 };
 
 const pickCaracterísticas = (nomes: (string | null | undefined)[] = []) => {
