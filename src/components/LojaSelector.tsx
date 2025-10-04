@@ -1,6 +1,8 @@
 // components/LojaSelector.tsx
 "use client";
 
+import { useEffect } from "react";
+
 import { useLojaStore } from "@/stores/useLojaStore";
 import { useLojas } from "@/hooks/use-configuracoes";
 
@@ -8,6 +10,12 @@ export function LojaSelector() {
   const { data: lojas = [], isLoading } = useLojas();
   const lojaSelecionada = useLojaStore((s) => s.lojaSelecionada);
   const setLojaSelecionada = useLojaStore((s) => s.setLojaSelecionada);
+
+  useEffect(() => {
+    if (!isLoading && lojas.length && !lojaSelecionada) {
+      setLojaSelecionada(lojas[0]);
+    }
+  }, [isLoading, lojas, lojaSelecionada, setLojaSelecionada]);
 
   if (isLoading) {
     return <p className="text-sm text-zinc-500">Carregando lojas…</p>;

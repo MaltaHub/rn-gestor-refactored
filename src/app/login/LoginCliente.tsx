@@ -17,9 +17,9 @@ export default function LoginPage() {
   const [isSubmitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const redirectParam = searchParams.get("redirect") ?? "/";
+  const redirectParam = searchParams.get("redirect") ?? "/vitrine";
   const redirectPath = useMemo(() => {
-    return redirectParam.startsWith("/") ? redirectParam : "/";
+    return redirectParam.startsWith("/") ? redirectParam : "/vitrine";
   }, [redirectParam]);
 
   useEffect(() => {

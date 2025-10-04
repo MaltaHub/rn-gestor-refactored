@@ -550,7 +550,7 @@ export default function VitrineDetalhePage() {
                     {caracteristicasVisiveis.map((item: string) => (
                       <span
                         key={item}
-                        className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600"
+                        className="rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-600"
                       >
                         {item}
                       </span>
@@ -563,7 +563,7 @@ export default function VitrineDetalhePage() {
                         setMostrarTodasCaracteristicas((prev) => !prev)
                       }
                       aria-expanded={mostrarTodasCaracteristicas}
-                      className="mt-3 inline-flex w-fit items-center gap-1 text-xs font-medium text-blue-600 transition hover:text-blue-700"
+                      className="mt-3 inline-flex w-fit items-center gap-1 text-sm font-medium text-blue-600 transition hover:text-blue-700"
                     >
                       {mostrarTodasCaracteristicas
                         ? "Mostrar menos características"

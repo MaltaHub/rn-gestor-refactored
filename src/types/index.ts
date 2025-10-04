@@ -15,6 +15,7 @@ export type Loja = Database["public"]["Tables"]["lojas"]["Row"];
 export type Local = Database["public"]["Tables"]["locais"]["Row"];
 export type Plataforma = Database["public"]["Tables"]["plataformas"]["Row"];
 export type MembroEmpresa = Database["public"]["Tables"]["membros_empresa"]["Row"];
+export type Empresa = Database["public"]["Tables"]["empresas"]["Row"];
 
 export enum EstadoVenda {
     "disponivel", "reservado", "vendido", "repassado", "restrito" 

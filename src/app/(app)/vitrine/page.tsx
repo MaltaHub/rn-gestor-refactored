@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import { LojaSelector } from "@/components/LojaSelector";
 import { useLojaStore } from "@/stores/useLojaStore";
@@ -16,11 +17,12 @@ import { useCaracteristicas } from "@/hooks/use-configuracoes";
 
 type ViewMode = "cards-photo" | "cards-info" | "table";
 
-const VIEW_MODE_OPTIONS: { value: ViewMode; label: string }[] = [
-  { value: "cards-photo", label: "Cards com foto" },
-  { value: "cards-info", label: "Cards informativos" },
-  { value: "table", label: "Tabela" },
-];
+const VIEW_MODE_ORDER: ViewMode[] = ["cards-photo", "cards-info", "table"];
+const VIEW_MODE_LABEL: Record<ViewMode, string> = {
+  "cards-photo": "Cards com foto",
+  "cards-info": "Cards informativos",
+  table: "Tabela",
+};
 
 const ESTADOS_VENDA = [
   "disponivel",
@@ -59,10 +61,13 @@ const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
             {/* Imagem */}
             <div className="relative aspect-video w-full bg-zinc-100 overflow-hidden">
               {item.capaUrl ? (
-                <img
+                <Image
                   src={item.capaUrl}
                   alt={item.veiculo?.veiculoDisplay ?? "Veículo sem foto"}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
+                  priority={false}
                 />
               ) : (
                 <span className="flex h-full items-center justify-center text-xs sm:text-sm font-medium text-zinc-500">
@@ -83,7 +88,7 @@ const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
 
               {/* Título + Placa */}
               <div>
-                <h4 className="text-sm sm:text-base lg:text-lg font-bold text-zinc-800 truncate">
+                <h4 className="text-sm sm:text-base lg:text-lg font-bold text-zinc-800 clamp-2 leading-tight">
                   {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
                 </h4>
                 <p className="text-xs sm:text-sm lg:text-base text-zinc-500">
@@ -110,6 +115,24 @@ const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
                   <dd>{item.veiculo?.hodometroFormatado ?? "—"}</dd>
                 </div>
               </dl>
+
+              {item.veiculo?.caracteristicasPrincipais?.length ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {item.veiculo.caracteristicasPrincipais.slice(0, 3).map((caracteristica: string) => (
+                    <span
+                      key={caracteristica}
+                      className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700"
+                    >
+                      {caracteristica}
+                    </span>
+                  ))}
+                  {item.veiculo.caracteristicasPrincipais.length > 3 && (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-500">
+                      +{item.veiculo.caracteristicasPrincipais.length - 3} mais
+                    </span>
+                  )}
+                </div>
+              ) : null}
             </div>
           </Link>
         </article>
@@ -150,17 +173,17 @@ const renderInfoCards = (veiculos: VeiculoLojaUI[]) => (
               </div>
               {item.veiculo?.caracteristicasPrincipais?.length ? (
                 <div className="flex flex-wrap gap-2">
-                  {item.veiculo.caracteristicasPrincipais.map((caracteristica: string) => (
+                  {item.veiculo.caracteristicasPrincipais.slice(0, 4).map((caracteristica: string) => (
                     <span
                       key={caracteristica}
-                      className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600"
+                      className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
                     >
                       {caracteristica}
                     </span>
                   ))}
-                  {item.veiculo.caracteristicasExtrasTotal > 0 && (
-                    <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">
-                      +{item.veiculo.caracteristicasExtrasTotal} mais
+                  {item.veiculo.caracteristicasPrincipais.length > 4 && (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-500">
+                      +{item.veiculo.caracteristicasPrincipais.length - 4} mais
                     </span>
                   )}
                 </div>
@@ -229,6 +252,16 @@ export default function VitrinePage() {
   const [precoMin, setPrecoMin] = useState<string>("");
   const [precoMax, setPrecoMax] = useState<string>("");
   const [isManaging, setIsManaging] = useState(false);
+
+  const handleCycleViewMode = () => {
+    setViewMode((prev) => {
+      const currentIndex = VIEW_MODE_ORDER.indexOf(prev);
+      const nextIndex = (currentIndex + 1) % VIEW_MODE_ORDER.length;
+      return VIEW_MODE_ORDER[nextIndex];
+    });
+  };
+
+  const nextViewMode = VIEW_MODE_ORDER[(VIEW_MODE_ORDER.indexOf(viewMode) + 1) % VIEW_MODE_ORDER.length];
 
   const { data: veiculosLoja = [], isLoading } = useVeiculosLojaUI(lojaId);
   const {
@@ -338,22 +371,49 @@ export default function VitrinePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:items-start">
-          <div className="flex w-auto flex-col gap-2 sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center">
-            <label className="flex w-auto min-w-[100px] flex-shrink-0 items-center gap-2 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-md">
-              <span className="hidden sm:inline">Pesquisar:</span>
+        <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-lg">
+              <span className="text-xs font-semibold uppercase text-zinc-400">Pesquisar</span>
               <input
                 type="search"
-                placeholder="Busque por modelo, placa ou local"
+                placeholder="Modelo, placa, local..."
                 className="h-8 w-full border-none bg-transparent text-sm text-zinc-700 outline-none"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </label>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {empresa?.papel === "proprietario" && (
+                <button
+                  type="button"
+                  onClick={handleToggleManage}
+                  disabled={!lojaSelecionada}
+                  className={`rounded-md border px-3 py-2 text-xs font-medium transition ${
+                    isManaging
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleCycleViewMode}
+                className="inline-flex h-10 flex-col justify-center gap-1 rounded-md bg-blue-600 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700 sm:flex-row sm:items-center sm:gap-2"
+              >
+                <span>Layout atual: {VIEW_MODE_LABEL[viewMode]}</span>
+                <span className="text-[11px] text-blue-100/80">Próximo: {VIEW_MODE_LABEL[nextViewMode]}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <select
               value={estadoFiltro}
               onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-48"
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">Todos os status</option>
               {ESTADOS_VENDA.map((estado) => (
@@ -367,7 +427,7 @@ export default function VitrinePage() {
             <select
               value={caracteristicaFiltro}
               onChange={(event) => setCaracteristicaFiltro(event.target.value)}
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-56"
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">Todas as características</option>
               {caracteristicas.map((caracteristica) => (
@@ -376,64 +436,26 @@ export default function VitrinePage() {
                 </option>
               ))}
             </select>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Preço mínimo"
+              value={precoMin}
+              onChange={(event) => setPrecoMin(event.target.value)}
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Preço máximo"
+              value={precoMax}
+              onChange={(event) => setPrecoMax(event.target.value)}
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Preço mínimo"
-                value={precoMin}
-                onChange={(event) => setPrecoMin(event.target.value)}
-                className="h-10 min-w-[100px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
-              />
-              <span className="text-xs text-zinc-400">até</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Preço máximo"
-                value={precoMax}
-                onChange={(event) => setPrecoMax(event.target.value)}
-                className="h-10 min-w-[100px] flex-1 rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:flex-none sm:w-32"
-              />
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {(empresa?.papel === "proprietario") && (
-                <button
-                  type="button"
-                  onClick={handleToggleManage}
-                  disabled={!lojaSelecionada}
-                  className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
-                </button>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {VIEW_MODE_OPTIONS.map((option) => {
-                  const active = viewMode === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setViewMode(option.value)}
-                      className={`rounded-md px-3 py-2 text-xs font-medium transition ${active
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                        }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
+        </section>
 
         {lojaSelecionada ? (
           <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-500">
