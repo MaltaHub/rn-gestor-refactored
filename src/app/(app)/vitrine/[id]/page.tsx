@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 
 import {
   useVeiculoLojaUI,
@@ -48,6 +49,7 @@ function getImageUrl(url: string, w = 800, q = 80) {
 export default function VitrineDetalhePage() {
   const params = useParams<{ id: string }>();
   const veiculoLojaId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const {data: empresa, isLoading: isLoadingEmpresa} = useEmpresaDoUsuario()
 
   const { data: veiculoLoja, isLoading } = useVeiculoLojaUI(veiculoLojaId);
   const { data: locais = [] } = useLocais();
@@ -757,7 +759,8 @@ export default function VitrineDetalhePage() {
             </form>
           )}
 
-          <div className="mt-8 rounded-md border border-red-200 bg-red-50 p-4">
+          {!isLoadingEmpresa && empresa?.papel === "proprietario" &&
+            <div className="mt-8 rounded-md border border-red-200 bg-red-50 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-red-700">
@@ -773,7 +776,7 @@ export default function VitrineDetalhePage() {
                 onRemoved={() => setActiveAction(null)}
               />
             </div>
-          </div>
+          </div>}
         </section>
       </div>
     </div>
