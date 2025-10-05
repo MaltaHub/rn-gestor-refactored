@@ -5,12 +5,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { invalidateVeiculos } from "@/hooks/use-estoque";
-import { useCaracteristicas, useLocais, useModelos } from "@/hooks/use-configuracoes";
+import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
 import { criarVeiculo } from "@/services/estoque";
 import type { Modelo } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";
 import { useQueryClient } from "@tanstack/react-query";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
+import { useLojaStore } from "@/stores/useLojaStore";
 
 type EstadoVendaOption = VeiculoResumo["estado_venda"];
 type EstadoVeiculoOption = NonNullable<VeiculoResumo["estado_veiculo"]>;
@@ -78,6 +79,7 @@ const formatEnumLabel = (value: string) =>
 export default function CriarVeiculoPage() {
   const { data: modelos = [] } = useModelos();
   const { data: locais = [] } = useLocais();
+  const { data: lojas = [] } = useLojas();
   const { data: caracteristicasDisponiveis = [] } =
     useCaracteristicas() as { data: CaracteristicaFormValue[] };
   const queryClient = useQueryClient();
@@ -106,6 +108,42 @@ export default function CriarVeiculoPage() {
       modelosComNomeCompleto.find((modelo) => modelo.id === formState.modelo_id) ?? null
     );
   }, [formState.modelo_id, modelosComNomeCompleto]);
+
+  const lojaSelecionadaId = useLojaStore((state) => state.lojaSelecionada?.id ?? null);
+
+  const lojaNomePorId = useMemo(() => {
+    const mapa = new Map<string, string>();
+    lojas.forEach((loja) => {
+      if (loja.id) {
+        mapa.set(loja.id, loja.nome);
+      }
+    });
+    return mapa;
+  }, [lojas]);
+
+  const localOptions = useMemo(() => {
+    return locais
+      .map((local) => {
+        const pertenceALojaSelecionada = lojaSelecionadaId
+          ? local.loja_id === lojaSelecionadaId
+          : false;
+        const lojaNome = local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null;
+        const label = lojaNome ? `${lojaNome} • ${local.nome}` : local.nome;
+        const prioridade = pertenceALojaSelecionada ? 0 : local.loja_id ? 1 : 2;
+        return {
+          value: local.id,
+          label,
+          pertenceALojaSelecionada,
+          prioridade,
+        } as const;
+      })
+      .sort((a, b) => {
+        if (a.prioridade !== b.prioridade) return a.prioridade - b.prioridade;
+        return a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" });
+      });
+  }, [locais, lojaNomePorId, lojaSelecionadaId]);
+
+  const possuiUnidadeSelecionada = localOptions.some((option) => option.pertenceALojaSelecionada);
 
   const handleChange =
     (field: keyof VehicleFormState) =>
@@ -378,12 +416,17 @@ export default function CriarVeiculoPage() {
                   className="rounded-md border px-3 py-2 text-sm"
                 >
                   <option value="">Selecione um local</option>
-                  {locais.map((local) => (
-                    <option key={local.id} value={local.id}>
-                      {local.nome}
+                  {localOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
+                {lojaSelecionadaId && !possuiUnidadeSelecionada ? (
+                  <span className="text-xs text-zinc-500">
+                    Nenhuma unidade cadastrada para a loja selecionada. Cadastre uma em configurações.
+                  </span>
+                ) : null}
               </label>
             </div>
           </section>

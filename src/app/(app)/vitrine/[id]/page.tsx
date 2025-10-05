@@ -15,7 +15,7 @@ import {
   useFotosVeiculoLoja,
   type FotoVeiculoLoja,
 } from "@/hooks/use-fotos-veiculo-loja";
-import { useLocais } from "@/hooks/use-configuracoes";
+import { useLocais, useLojas } from "@/hooks/use-configuracoes";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { atualizarVeiculo } from "@/services/estoque";
 import { atualizarPrecoVeiculoLoja } from "@/services/vitrine";
@@ -53,6 +53,7 @@ export default function VitrineDetalhePage() {
 
   const { data: veiculoLoja, isLoading } = useVeiculoLojaUI(veiculoLojaId);
   const { data: locais = [] } = useLocais();
+  const { data: lojas = [] } = useLojas();
 
   const setLojaSelecionada = useLojaStore((state) => state.setLojaSelecionada);
   const lojaAtualId = useLojaStore((state) => state.lojaSelecionada?.id ?? null);
@@ -73,6 +74,38 @@ export default function VitrineDetalhePage() {
   const [isSaving, setIsSaving] = useState<ActionType | null>(null);
 
   const veiculo = veiculoLoja?.veiculo ?? null;
+
+  const lojaNomePorId = useMemo(() => {
+    const mapa = new Map<string, string>();
+    lojas.forEach((loja) => {
+      if (loja.id) {
+        mapa.set(loja.id, loja.nome);
+      }
+    });
+    return mapa;
+  }, [lojas]);
+
+  const localOptions = useMemo(() => {
+    return locais
+      .map((local) => {
+        const pertenceALoja = local.loja_id ? local.loja_id === veiculoLoja?.lojaId : false;
+        const lojaNome = local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null;
+        const label = lojaNome ? `${lojaNome} • ${local.nome}` : local.nome;
+        const prioridade = pertenceALoja ? 0 : local.loja_id ? 1 : 2;
+        return {
+          value: local.id,
+          label,
+          pertenceALoja,
+          prioridade,
+        } as const;
+      })
+      .sort((a, b) => {
+        if (a.prioridade !== b.prioridade) return a.prioridade - b.prioridade;
+        return a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" });
+      });
+  }, [locais, lojaNomePorId, veiculoLoja?.lojaId]);
+
+  const possuiUnidadeDaLoja = localOptions.some((option) => option.pertenceALoja);
 
   // sincroniza loja selecionada
   useEffect(() => {
@@ -677,12 +710,17 @@ export default function VitrineDetalhePage() {
                   className="h-10 rounded-md border border-zinc-200 px-3 text-sm text-zinc-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">Sem local vinculado</option>
-                  {locais.map((local) => (
-                    <option key={local.id} value={local.id}>
-                      {local.nome}
+                  {localOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
+                {!possuiUnidadeDaLoja && veiculoLoja?.loja?.nome ? (
+                  <span className="text-xs text-zinc-500">
+                    Nenhuma unidade cadastrada para {veiculoLoja.loja.nome}. Cadastre uma em configurações.
+                  </span>
+                ) : null}
               </div>
               <button
                 type="submit"

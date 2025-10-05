@@ -2,6 +2,6 @@ import { Caracteristica, Local, Modelo, SupabaseVeiculo } from "../index";
 
 export interface VeiculoResumo extends SupabaseVeiculo {
   modelo?: Modelo | null;
-  local?: {id: string, nome: string} | null;
+  local?: Local | null;
   caracteristicas: Caracteristica[] | [];
 }

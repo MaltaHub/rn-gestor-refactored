@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
-import { useCaracteristicas, useLocais, useModelos } from "@/hooks/use-configuracoes";
+import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
 import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
 import { useQueryClient } from "@tanstack/react-query";
 import { PhotoGallery } from "@/components/PhotoGallery";
@@ -14,6 +14,7 @@ import { LojaSelector } from "@/components/LojaSelector";
 import { supabase } from "@/lib/supabase";
 import type { Modelo } from "@/types";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
+import { useLojaStore } from "@/stores/useLojaStore";
 
 type EstadoVendaOption = VeiculoUI["estado_venda"];
 type EstadoVeiculoOption = NonNullable<VeiculoUI["estado_veiculo"]>;
@@ -105,9 +106,11 @@ export default function EditarVeiculoPage() {
   const { data: veiculoData, isLoading: isVeiculoLoading } = useVeiculosUI(veiculoId);
   const { data: modelos = [] } = useModelos();
   const { data: locais = [] } = useLocais();
+  const { data: lojas = [] } = useLojas();
   const { data: caracteristicasDisponiveis = [] } =
     useCaracteristicas() as { data: CaracteristicaFormValue[] };
   const queryClient = useQueryClient();
+  const lojaSelecionadaId = useLojaStore((state) => state.lojaSelecionada?.id ?? null);
 
 
   const [formState, setFormState] = useState<VehicleFormState | null>(null);
@@ -118,6 +121,44 @@ export default function EditarVeiculoPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
+
+  const lojaNomePorId = useMemo(() => {
+    const mapa = new Map<string, string>();
+    lojas.forEach((loja) => {
+      if (loja.id) {
+        mapa.set(loja.id, loja.nome);
+      }
+    });
+    return mapa;
+  }, [lojas]);
+
+  const localLojaId = veiculo?.localLojaId ?? null;
+  const alvoPreferencialId = lojaSelecionadaId ?? localLojaId;
+
+  const localOptions = useMemo(() => {
+    return locais
+      .map((local) => {
+        const pertenceAoAlvo = alvoPreferencialId ? local.loja_id === alvoPreferencialId : false;
+        const lojaNome = local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null;
+        const label = lojaNome ? `${lojaNome} • ${local.nome}` : local.nome;
+        const prioridade = pertenceAoAlvo ? 0 : local.loja_id ? 1 : 2;
+        return {
+          value: local.id,
+          label,
+          pertenceAoAlvo,
+          prioridade,
+        } as const;
+      })
+      .sort((a, b) => {
+        if (a.prioridade !== b.prioridade) return a.prioridade - b.prioridade;
+        return a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" });
+      });
+  }, [locais, lojaNomePorId, alvoPreferencialId]);
+
+  const possuiUnidadePreferencial = alvoPreferencialId
+    ? localOptions.some((option) => option.pertenceAoAlvo)
+    : localOptions.length > 0;
+  const nomePreferencial = alvoPreferencialId ? lojaNomePorId.get(alvoPreferencialId) : null;
 
   type ModeloComNomeCompleto = Modelo & { nomeCompleto: string };
 
@@ -430,12 +471,17 @@ export default function EditarVeiculoPage() {
                   className="rounded-md border px-3 py-2 text-sm"
                 >
                   <option value="">Selecione um local</option>
-                  {locais.map((local) => (
-                    <option key={local.id} value={local.id}>
-                      {local.nome}
+                  {localOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
+                {alvoPreferencialId && !possuiUnidadePreferencial ? (
+                  <span className="text-xs text-zinc-500">
+                    Nenhuma unidade cadastrada para {nomePreferencial ?? "a loja selecionada"}. Cadastre uma em configurações.
+                  </span>
+                ) : null}
               </label>
             </div>
           </section>

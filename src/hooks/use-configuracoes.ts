@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import type { Loja, Plataforma, Caracteristica, Modelo, Local, UnidadeLoja } from "@/types";
 import { listar_tabela } from "@/services";
 
+export type LocalComOrigem = Local & { origem: "local" | "unidade" };
+
 const configuracoesKeys = {
   lojas: ["configuracoes", "loja"] as const,
   plataformas: ["configuracoes", "plataforma"] as const,
@@ -46,9 +48,37 @@ export function useModelos() {
 }
 
 export function useLocais() {
-  return useQuery<Local[]>({
+  return useQuery<LocalComOrigem[]>({
     queryKey: configuracoesKeys.locais,
-    queryFn: () => listar_tabela("locais"),
+    queryFn: async () => {
+      const [locais, unidades] = await Promise.all([
+        listar_tabela("locais"),
+        listar_tabela("unidades_loja"),
+      ]);
+
+      const locaisAdaptados = (locais ?? []).map((local) => ({
+        ...local,
+        origem: "local" as const,
+      }));
+
+      const unidadesAdaptadas = (unidades ?? []).map((unidade) => ({
+        id: unidade.id,
+        nome: unidade.nome,
+        empresa_id: unidade.empresa_id,
+        loja_id: unidade.loja_id,
+        logradouro: unidade.logradouro,
+        cep: unidade.cep,
+        origem: "unidade" as const,
+      } satisfies LocalComOrigem));
+
+      const unificados = [...locaisAdaptados, ...unidadesAdaptadas];
+      const mapa = new Map<string, LocalComOrigem>();
+      for (const item of unificados) {
+        mapa.set(item.id, item);
+      }
+
+      return Array.from(mapa.values());
+    },
     staleTime: 1000 * 60 * 5,
   });
 }

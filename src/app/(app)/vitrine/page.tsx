@@ -16,12 +16,20 @@ import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useCaracteristicas } from "@/hooks/use-configuracoes";
 
 type ViewMode = "cards-photo" | "cards-info" | "table";
+type Ordenacao = "recentes" | "preco-desc" | "preco-asc" | "modelo";
 
 const VIEW_MODE_ORDER: ViewMode[] = ["cards-photo", "cards-info", "table"];
 const VIEW_MODE_LABEL: Record<ViewMode, string> = {
   "cards-photo": "Cards com foto",
   "cards-info": "Cards informativos",
   table: "Tabela",
+};
+
+const ORDENACAO_LABEL: Record<Ordenacao, string> = {
+  recentes: "Mais recentes",
+  "preco-desc": "Maior preço",
+  "preco-asc": "Menor preço",
+  modelo: "Modelo (A-Z)",
 };
 
 const ESTADOS_VENDA = [
@@ -53,7 +61,7 @@ const renderEstadoBadge = (veiculo: VeiculoLojaUI) => {
 };
 
 const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
-  <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-screen-xl mx-auto">
+  <ul className="grid max-w-screen-xl grid-cols-1 gap-6 px-4 mx-auto sm:grid-cols-2 lg:grid-cols-3 sm:px-6">
     {veiculos.map((item) => (
       <li key={item.id} className="flex flex-col h-full w-full">
         <article className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md">
@@ -253,6 +261,7 @@ export default function VitrinePage() {
   const [caracteristicaFiltro, setCaracteristicaFiltro] = useState<string>("");
   const [precoMin, setPrecoMin] = useState<string>("");
   const [precoMax, setPrecoMax] = useState<string>("");
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>("recentes");
   const [isManaging, setIsManaging] = useState(false);
 
   const handleCycleViewMode = () => {
@@ -278,7 +287,20 @@ export default function VitrinePage() {
     const min = precoMin.trim() !== "" && !Number.isNaN(parsedMin) ? parsedMin : null;
     const max = precoMax.trim() !== "" && !Number.isNaN(parsedMax) ? parsedMax : null;
 
-    return veiculosLoja.filter((item) => {
+    const ordenaPorPreco = (veiculo: VeiculoLojaUI) => {
+      const precoReferencia =
+        typeof veiculo.precoLoja === "number" ? veiculo.precoLoja : veiculo.veiculo?.preco_venal ?? null;
+      return precoReferencia;
+    };
+
+    const ordenaPorData = (veiculo: VeiculoLojaUI) => {
+      const datas = [veiculo.dataEntrada, veiculo.veiculo?.registrado_em].filter(Boolean) as string[];
+      if (!datas.length) return 0;
+      const timestamp = Date.parse(datas[0]!);
+      return Number.isNaN(timestamp) ? 0 : timestamp;
+    };
+
+    const aplicado = veiculosLoja.filter((item) => {
       const veiculo = item.veiculo;
       if (!veiculo) return false;
 
@@ -292,8 +314,7 @@ export default function VitrinePage() {
 
       if (!atendeCaracteristica) return false;
 
-      const precoReferencia =
-        typeof item.precoLoja === "number" ? item.precoLoja : veiculo.preco_venal ?? null;
+      const precoReferencia = ordenaPorPreco(item);
 
       if (min !== null && (precoReferencia === null || precoReferencia < min)) return false;
       if (max !== null && (precoReferencia === null || precoReferencia > max)) return false;
@@ -310,7 +331,40 @@ export default function VitrinePage() {
 
       return campos.some((campo) => normalizeText(campo).includes(texto));
     });
-  }, [veiculosLoja, searchTerm, estadoFiltro, caracteristicaFiltro, precoMin, precoMax]);
+    const comparador = (a: VeiculoLojaUI, b: VeiculoLojaUI) => {
+      switch (ordenacao) {
+        case "preco-asc": {
+          const precoA = ordenaPorPreco(a);
+          const precoB = ordenaPorPreco(b);
+          if (precoA == null && precoB == null) return 0;
+          if (precoA == null) return 1;
+          if (precoB == null) return -1;
+          return precoA - precoB;
+        }
+        case "preco-desc": {
+          const precoA = ordenaPorPreco(a);
+          const precoB = ordenaPorPreco(b);
+          if (precoA == null && precoB == null) return 0;
+          if (precoA == null) return 1;
+          if (precoB == null) return -1;
+          return precoB - precoA;
+        }
+        case "modelo": {
+          const modeloA = a.veiculo?.veiculoDisplay ?? "";
+          const modeloB = b.veiculo?.veiculoDisplay ?? "";
+          return modeloA.localeCompare(modeloB, "pt-BR", { sensitivity: "base" });
+        }
+        case "recentes":
+        default: {
+          const dataA = ordenaPorData(a);
+          const dataB = ordenaPorData(b);
+          return dataB - dataA;
+        }
+      }
+    };
+
+    return aplicado.sort(comparador);
+  }, [veiculosLoja, searchTerm, estadoFiltro, caracteristicaFiltro, precoMin, precoMax, ordenacao]);
 
   const total = filtrados.length;
 
@@ -411,7 +465,7 @@ export default function VitrinePage() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <select
               value={estadoFiltro}
               onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
@@ -456,6 +510,17 @@ export default function VitrinePage() {
               onChange={(event) => setPrecoMax(event.target.value)}
               className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
+            <select
+              value={ordenacao}
+              onChange={(event) => setOrdenacao(event.target.value as Ordenacao)}
+              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
         </section>
 

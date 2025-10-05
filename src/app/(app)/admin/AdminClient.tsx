@@ -1,13 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   useAdminEmpresas,
   useAdminMembros,
   useAdminUsuarios,
   useSalvarEmpresaDoUsuario,
-  useCriarEmpresa,
   useRemoverEmpresaDoUsuario,
 } from "@/hooks/use-admin";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
@@ -21,14 +20,11 @@ export default function AdminClient() {
   const { data: membros = [], isLoading: isLoadingMembros } = useAdminMembros();
   const { data: usuarios = [], isLoading: isLoadingUsuarios } = useAdminUsuarios();
   const salvarEmpresa = useSalvarEmpresaDoUsuario();
-  const criarEmpresa = useCriarEmpresa();
   const removerEmpresa = useRemoverEmpresaDoUsuario();
 
   const [usuarioEmAtualizacao, setUsuarioEmAtualizacao] = useState<string | null>(null);
   const [usuarioEmRemocao, setUsuarioEmRemocao] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
-  const [novaEmpresaNome, setNovaEmpresaNome] = useState("");
-  const [novaEmpresaDominio, setNovaEmpresaDominio] = useState("");
 
   const empresasOrdenadas = useMemo(
     () => [...empresas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
@@ -142,31 +138,6 @@ export default function AdminClient() {
         setUsuarioEmAtualizacao(null);
       },
     });
-  };
-
-  const handleCriarEmpresa = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    setFeedback(null);
-
-    criarEmpresa.mutate(
-      {
-        nome: novaEmpresaNome,
-        dominio: novaEmpresaDominio || undefined,
-      },
-      {
-        onSuccess: () => {
-          setFeedback({ type: "success", message: "Empresa criada com sucesso." });
-          setNovaEmpresaNome("");
-          setNovaEmpresaDominio("");
-        },
-        onError: (error) => {
-          const message =
-            error instanceof Error ? error.message : "Não foi possível criar a empresa.";
-          setFeedback({ type: "error", message });
-        },
-      },
-    );
   };
 
   const handleRemoverEmpresa = (usuarioId: string, membroId: string) => {

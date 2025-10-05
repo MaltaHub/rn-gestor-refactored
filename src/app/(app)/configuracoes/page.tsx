@@ -295,7 +295,12 @@ async function handleDeleteEntity<T extends { id?: string }>(
   const sortedLojas = useMemo(() => (lojas ? [...lojas].sort((a, b) => a.nome.localeCompare(b.nome)) : []), [lojas]);
   const sortedPlataformas = useMemo(() => (plataformas ? [...plataformas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [plataformas]);
   const sortedCaracteristicas = useMemo(() => (caracteristicas ? [...caracteristicas].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [caracteristicas]);
-  const sortedLocais = useMemo(() => (locais ? [...locais].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : []), [locais]);
+  const sortedLocais = useMemo<Local[]>(() => {
+    if (!locais) return [];
+    return locais
+      .filter((local) => local.origem === "local")
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
+  }, [locais]);
   const lojasPorId = useMemo(() => {
     const map = new Map<string, Loja>();
     (lojas ?? []).forEach((loja) => {
