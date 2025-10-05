@@ -1,6 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+  FormEvent,
+  PointerEvent as ReactPointerEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -139,8 +144,10 @@ export default function VitrineDetalhePage() {
   });
 
   const [fotoAtiva, setFotoAtiva] = useState(0);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const miniaturasRef = useRef<HTMLDivElement | null>(null);
   const imagensPrefetchRef = useRef<Set<string>>(new Set<string>());
+  const swipeStartRef = useRef<number | null>(null);
   const [mostrarTodasCaracteristicas, setMostrarTodasCaracteristicas] = useState(false);
 
   // rola a miniatura ativa para o centro do trilho
@@ -196,6 +203,75 @@ export default function VitrineDetalhePage() {
   }, [fotos]);
 
   const fotoAtual = useMemo(() => fotos[fotoAtiva] ?? null, [fotos, fotoAtiva]);
+
+  const goToPrevFoto = useCallback(() => {
+    if (!fotos.length) return;
+    setFotoAtiva((prev) => (prev - 1 + fotos.length) % fotos.length);
+  }, [fotos.length]);
+
+  const goToNextFoto = useCallback(() => {
+    if (!fotos.length) return;
+    setFotoAtiva((prev) => (prev + 1) % fotos.length);
+  }, [fotos.length]);
+
+  const handleSwipeStart = useCallback((clientX: number | null) => {
+    swipeStartRef.current = clientX;
+  }, []);
+
+  const handleSwipeEnd = useCallback(
+    (clientX: number | null) => {
+      const start = swipeStartRef.current;
+      if (start == null || clientX == null) {
+        swipeStartRef.current = null;
+        return;
+      }
+
+      const delta = clientX - start;
+      const SWIPE_THRESHOLD = 40;
+      if (Math.abs(delta) > SWIPE_THRESHOLD) {
+        if (delta < 0) {
+          goToNextFoto();
+        } else {
+          goToPrevFoto();
+        }
+      }
+
+      swipeStartRef.current = null;
+    },
+    [goToNextFoto, goToPrevFoto],
+  );
+
+  const handleOverlayPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      handleSwipeStart(event.clientX);
+    },
+    [handleSwipeStart],
+  );
+
+  const handleOverlayPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      handleSwipeEnd(event.clientX);
+    },
+    [handleSwipeEnd],
+  );
+
+  const handleOpenFocusMode = useCallback(() => {
+    if (!fotoAtual) return;
+    setIsFocusMode(true);
+  }, [fotoAtual]);
+
+  const handleOpenFocusModeKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (!fotoAtual) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        setIsFocusMode(true);
+      }
+    },
+    [fotoAtual],
+  );
+
   const sortCaracteristicas = (lista: string[]) =>
     [...lista].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
 
@@ -330,16 +406,41 @@ export default function VitrineDetalhePage() {
   // keybindings para galeria
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFocusMode) {
+        e.preventDefault();
+        setIsFocusMode(false);
+        return;
+      }
+
       if (!fotos.length) return;
+
       if (e.key === "ArrowLeft") {
-        setFotoAtiva((p) => (p - 1 + fotos.length) % fotos.length);
+        e.preventDefault();
+        goToPrevFoto();
       } else if (e.key === "ArrowRight") {
-        setFotoAtiva((p) => (p + 1) % fotos.length);
+        e.preventDefault();
+        goToNextFoto();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [fotos.length]);
+  }, [fotos.length, goToNextFoto, goToPrevFoto, isFocusMode]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!isFocusMode) {
+      swipeStartRef.current = null;
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      swipeStartRef.current = null;
+    };
+  }, [isFocusMode]);
 
   if (!veiculoLojaId) {
     return (
@@ -374,7 +475,89 @@ export default function VitrineDetalhePage() {
   }
 
   return (
-    <div className="bg-white px-6 py-10 text-zinc-900">
+    <>
+      {isFocusMode && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 px-4 py-6"
+          onClick={() => setIsFocusMode(false)}
+        >
+          <div
+            className="relative flex h-full w-full max-w-6xl flex-col items-center justify-center gap-6"
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={handleOverlayPointerDown}
+            onPointerUp={handleOverlayPointerUp}
+            onPointerLeave={(event) => handleSwipeEnd(event.clientX)}
+            onPointerCancel={() => handleSwipeEnd(null)}
+          >
+            <button
+              type="button"
+              onClick={() => setIsFocusMode(false)}
+              className="absolute right-4 top-4 z-10 inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-medium text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+              aria-label="Fechar visualização em foco"
+            >
+              Fechar
+            </button>
+
+            {fotos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goToPrevFoto();
+                  }}
+                  className="absolute left-4 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 p-3 text-xl text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  aria-label="Foto anterior"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goToNextFoto();
+                  }}
+                  className="absolute right-4 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 p-3 text-xl text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  aria-label="Próxima foto"
+                >
+                  →
+                </button>
+              </>
+            )}
+
+            <div className="relative flex w-full flex-1 items-center justify-center">
+              {fotoAtual ? (
+                <div className="relative h-full w-full">
+                  <Image
+                    src={getImageUrl(fotoAtual.url, 1920, 95)}
+                    alt={veiculo?.veiculoDisplay ?? "Foto do veículo"}
+                    fill
+                    className="select-none object-contain"
+                    sizes="100vw"
+                    priority
+                    draggable={false}
+                  />
+                </div>
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm text-white/70">
+                  Nenhuma foto disponível
+                </div>
+              )}
+            </div>
+
+            {fotos.length > 0 && (
+              <div className="flex items-center gap-3 text-sm font-medium text-white/80">
+                <span>{veiculo?.veiculoDisplay}</span>
+                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs text-white">
+                  {fotoAtiva + 1} / {fotos.length}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white px-6 py-10 text-zinc-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <header className="flex flex-col gap-3">
           <Link
@@ -388,7 +571,17 @@ export default function VitrineDetalhePage() {
         {/* BLOCO DE FOTOS */}
         <section className="flex flex-col gap-2">
           {/* Foto principal — altura responsiva, sem corte */}
-          <div className="relative w-full overflow-hidden sm:rounded-lg sm:border sm:border-zinc-200 bg-zinc-100 shadow-sm">
+          <div
+            role="button"
+            tabIndex={fotoAtual ? 0 : -1}
+            onClick={handleOpenFocusMode}
+            onKeyDown={handleOpenFocusModeKeyDown}
+            className={`relative w-full overflow-hidden bg-zinc-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 sm:rounded-lg sm:border sm:border-zinc-200 ${
+              fotoAtual ? "cursor-zoom-in" : "cursor-not-allowed opacity-70"
+            }`}
+            aria-label="Ampliar foto"
+            aria-disabled={!fotoAtual}
+          >
             <div className="relative h-[68vh] min-h-[320px] max-h-[820px]">
               {isFotosLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-500">
@@ -415,9 +608,10 @@ export default function VitrineDetalhePage() {
               <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-3">
                 <button
                   type="button"
-                  onClick={() =>
-                    setFotoAtiva((prev) => (prev - 1 + fotos.length) % fotos.length)
-                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goToPrevFoto();
+                  }}
                   className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
                   aria-label="Foto anterior"
                 >
@@ -428,7 +622,10 @@ export default function VitrineDetalhePage() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setFotoAtiva((prev) => (prev + 1) % fotos.length)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goToNextFoto();
+                  }}
                   className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-zinc-700 shadow transition hover:bg-white"
                   aria-label="Próxima foto"
                 >
@@ -818,5 +1015,6 @@ export default function VitrineDetalhePage() {
         </section>
       </div>
     </div>
+    </>
   );
 }
