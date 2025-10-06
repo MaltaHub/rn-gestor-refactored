@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -26,11 +26,12 @@ const VIEW_MODE_ICON: Record<ViewMode, React.ElementType> = {
 };
 
 const VIEW_MODE_ORDER: ViewMode[] = ["cards-photo", "cards-info", "table"];
-const VIEW_MODE_LABEL: Record<ViewMode, string> = {
-  "cards-photo": "Cards com foto",
-  "cards-info": "Cards informativos",
-  table: "Tabela",
-};
+
+const VIEW_MODE_STORAGE_KEY = "vitrine:view-mode";
+const FILTERS_OPEN_STORAGE_KEY = "vitrine:filters-open";
+
+const isValidViewMode = (value: string): value is ViewMode =>
+  VIEW_MODE_ORDER.includes(value as ViewMode);
 
 const ORDENACAO_LABEL: Record<Ordenacao, string> = {
   recentes: "Mais recentes",
@@ -211,61 +212,115 @@ const renderInfoCards = (veiculos: VeiculoLojaUI[]) => (
   </ul>
 );
 
-const renderTabela = (veiculos: VeiculoLojaUI[]) => (
-  <div className="rounded-lg border border-zinc-200">
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200">
-        <thead className="bg-zinc-50 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
-          <tr>
-            <th className="px-4 py-3">Veículo</th>
-            <th className="px-4 py-3">Placa</th>
-            <th className="px-4 py-3">Preço</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Local</th>
-            <th className="px-4 py-3">Fotos</th>
-            <th className="px-4 py-3 text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
-          {veiculos.map((item) => (
-            <tr key={item.id} className="transition hover:bg-blue-50/30">
-              <td className="px-4 py-3 font-medium text-zinc-800">
-                {item.veiculo?.veiculoDisplay ?? "Veículo"}
-              </td>
-              <td className="px-4 py-3">{item.veiculo?.placa ?? "—"}</td>
-              <td className="px-4 py-3">{getDisplayPrice(item)}</td>
-              <td className="px-4 py-3">{item.veiculo?.estadoVendaLabel ?? "Sem status"}</td>
-              <td className="px-4 py-3">{item.veiculo?.localDisplay ?? "Sem local"}</td>
-              <td className="px-4 py-3">{item.temFotos ? "Sim" : "Não"}</td>
-              <td className="px-4 py-3 text-right">
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/vitrine/${item.id}`}
-                    className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                  >
-                    Abrir vitrine
-                  </Link>
-                </div>
-              </td>
+import { useRouter } from "next/navigation"; // ⬅️ adicione no topo
+import { type AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+
+const renderTabela = (veiculos: VeiculoLojaUI[], router: AppRouterInstance) => {
+
+  return (
+    <div className="rounded-lg border border-zinc-200">
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-fixed divide-y divide-zinc-200">
+          <colgroup>
+            <col style={{ width: "34%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "10%" }} />
+          </colgroup>
+
+          <thead className="bg-zinc-50 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <tr>
+              <th className="px-4 py-3">Veículo</th>
+              <th className="px-4 py-3">Placa</th>
+              <th className="px-4 py-3">Preço</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Local</th>
+              <th className="px-4 py-3">Fotos</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
+            {veiculos.map((item) => (
+              <tr
+                key={item.id}
+                onClick={() => router.push(`/vitrine/${item.id}`)}
+                className="cursor-pointer select-none transition-colors hover:bg-blue-50/40 active:bg-blue-100 focus:bg-blue-100"
+              >
+                <td className="px-4 py-3 whitespace-nowrap align-middle">
+                  <span className="block overflow-hidden text-ellipsis font-medium text-zinc-800">
+                    {item.veiculo?.veiculoDisplay ?? "Veículo"}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 whitespace-nowrap align-middle">
+                  <span className="block overflow-hidden text-ellipsis">
+                    {item.veiculo?.placa ?? "—"}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 whitespace-nowrap align-middle">
+                  <span className="block overflow-hidden text-ellipsis">
+                    {getDisplayPrice(item)}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 whitespace-nowrap align-middle">
+                  <span className="block overflow-hidden text-ellipsis">
+                    {item.veiculo?.estadoVendaLabel ?? "Sem status"}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 whitespace-nowrap align-middle">
+                  <span className="block overflow-hidden text-ellipsis">
+                    {item.veiculo?.localDisplay ?? "Sem local"}
+                  </span>
+                </td>
+
+                <td className="px-4 py-3 whitespace-nowrap align-middle">
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] text-zinc-700">
+                    {item.temFotos ? "Sim" : "Não"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function VitrinePage() {
+  const router = useRouter(); // ⬅️ adicione no topo do componente
   const lojaSelecionada = useLojaStore((state) => state.lojaSelecionada);
   const lojaId = lojaSelecionada?.id;
 
   const { data: empresa } = useEmpresaDoUsuario();
   const { data: caracteristicas = [] } = useCaracteristicas();
 
-  // ✅ NOVO: estado para colapsar a área de pesquisa/filtros
-  const [filtersOpen, setFiltersOpen] = useState<boolean>(true);
+  // ❌ REMOVA este inicializador antigo:
+// const [filtersOpen, setFiltersOpen] = useState<boolean>(() => {
+//   if (typeof window === "undefined") return true;
+//   const stored = window.localStorage.getItem(FILTERS_OPEN_STORAGE_KEY);
+//   return stored === null ? true : stored === "true";
+// });
 
-  const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
+// ✅ USE este, com default estável no SSR/CSR (sem window)
+const [filtersOpen, setFiltersOpen] = useState<boolean>(true);
+
+
+  // ❌ REMOVA este inicializador antigo:
+// const [viewMode, setViewMode] = useState<ViewMode>(() => {
+//   if (typeof window === "undefined") return "cards-photo";
+//   const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+//   return stored && isValidViewMode(stored) ? stored : "cards-photo";
+// });
+
+// ✅ USE este, com default estável no SSR/CSR
+const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoVendaFiltro | "">("");
   const [caracteristicaFiltro, setCaracteristicaFiltro] = useState<string>("");
@@ -282,7 +337,31 @@ export default function VitrinePage() {
     });
   };
 
-  const nextViewMode = VIEW_MODE_ORDER[(VIEW_MODE_ORDER.indexOf(viewMode) + 1) % VIEW_MODE_ORDER.length];
+  // ✅ Carrega preferências do cliente pós-mount (evita mismatch)
+useEffect(() => {
+  try {
+    const storedFilters = window.localStorage.getItem(FILTERS_OPEN_STORAGE_KEY);
+    if (storedFilters !== null) {
+      setFiltersOpen(storedFilters === "true");
+    }
+
+    const storedView = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (storedView && isValidViewMode(storedView)) {
+      setViewMode(storedView);
+    }
+  } catch {
+    // se o storage estiver bloqueado, siga com os defaults
+  }
+}, []);
+
+
+  useEffect(() => {
+  window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+}, [viewMode]);
+
+useEffect(() => {
+  window.localStorage.setItem(FILTERS_OPEN_STORAGE_KEY, String(filtersOpen));
+}, [filtersOpen]);
 
   const { data: veiculosLoja = [], isLoading } = useVeiculosLojaUI(lojaId);
   const {
@@ -417,7 +496,7 @@ export default function VitrinePage() {
       );
     }
 
-    if (viewMode === "table") return renderTabela(filtrados);
+    if (viewMode === "table") return renderTabela(filtrados, router);
     if (viewMode === "cards-info") return renderInfoCards(filtrados);
     return renderGridCards(filtrados);
   };
