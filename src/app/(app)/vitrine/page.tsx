@@ -15,8 +15,15 @@ import { AddVehicleToStoreButton } from "./loja-actions";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useCaracteristicas } from "@/hooks/use-configuracoes";
 
+import { Grid, Rows, Table } from "lucide-react";
 type ViewMode = "cards-photo" | "cards-info" | "table";
 type Ordenacao = "recentes" | "preco-desc" | "preco-asc" | "modelo";
+// ✅ NOVO: mapa de emojis p/ cada modo
+const VIEW_MODE_ICON: Record<ViewMode, React.ElementType> = {
+  "cards-photo": Grid,
+  "cards-info": Rows,
+  table: Table,
+};
 
 const VIEW_MODE_ORDER: ViewMode[] = ["cards-photo", "cards-info", "table"];
 const VIEW_MODE_LABEL: Record<ViewMode, string> = {
@@ -208,41 +215,41 @@ const renderTabela = (veiculos: VeiculoLojaUI[]) => (
   <div className="rounded-lg border border-zinc-200">
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-zinc-200">
-      <thead className="bg-zinc-50 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
-        <tr>
-          <th className="px-4 py-3">Veículo</th>
-          <th className="px-4 py-3">Placa</th>
-          <th className="px-4 py-3">Preço</th>
-          <th className="px-4 py-3">Status</th>
-          <th className="px-4 py-3">Local</th>
-          <th className="px-4 py-3">Fotos</th>
-          <th className="px-4 py-3 text-right">Ações</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
-        {veiculos.map((item) => (
-          <tr key={item.id} className="transition hover:bg-blue-50/30">
-            <td className="px-4 py-3 font-medium text-zinc-800">
-              {item.veiculo?.veiculoDisplay ?? "Veículo"}
-            </td>
-            <td className="px-4 py-3">{item.veiculo?.placa ?? "—"}</td>
-            <td className="px-4 py-3">{getDisplayPrice(item)}</td>
-            <td className="px-4 py-3">{item.veiculo?.estadoVendaLabel ?? "Sem status"}</td>
-            <td className="px-4 py-3">{item.veiculo?.localDisplay ?? "Sem local"}</td>
-            <td className="px-4 py-3">{item.temFotos ? "Sim" : "Não"}</td>
-            <td className="px-4 py-3 text-right">
-              <div className="flex justify-end gap-2">
-                <Link
-                  href={`/vitrine/${item.id}`}
-                  className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                >
-                  Abrir vitrine
-                </Link>
-              </div>
-            </td>
+        <thead className="bg-zinc-50 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
+          <tr>
+            <th className="px-4 py-3">Veículo</th>
+            <th className="px-4 py-3">Placa</th>
+            <th className="px-4 py-3">Preço</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3">Local</th>
+            <th className="px-4 py-3">Fotos</th>
+            <th className="px-4 py-3 text-right">Ações</th>
           </tr>
-        ))}
-      </tbody>
+        </thead>
+        <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
+          {veiculos.map((item) => (
+            <tr key={item.id} className="transition hover:bg-blue-50/30">
+              <td className="px-4 py-3 font-medium text-zinc-800">
+                {item.veiculo?.veiculoDisplay ?? "Veículo"}
+              </td>
+              <td className="px-4 py-3">{item.veiculo?.placa ?? "—"}</td>
+              <td className="px-4 py-3">{getDisplayPrice(item)}</td>
+              <td className="px-4 py-3">{item.veiculo?.estadoVendaLabel ?? "Sem status"}</td>
+              <td className="px-4 py-3">{item.veiculo?.localDisplay ?? "Sem local"}</td>
+              <td className="px-4 py-3">{item.temFotos ? "Sim" : "Não"}</td>
+              <td className="px-4 py-3 text-right">
+                <div className="flex justify-end gap-2">
+                  <Link
+                    href={`/vitrine/${item.id}`}
+                    className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
+                  >
+                    Abrir vitrine
+                  </Link>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </table>
     </div>
   </div>
@@ -254,6 +261,9 @@ export default function VitrinePage() {
 
   const { data: empresa } = useEmpresaDoUsuario();
   const { data: caracteristicas = [] } = useCaracteristicas();
+
+  // ✅ NOVO: estado para colapsar a área de pesquisa/filtros
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(true);
 
   const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
   const [searchTerm, setSearchTerm] = useState("");
@@ -428,7 +438,8 @@ export default function VitrinePage() {
         </div>
 
         <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Cabeçalho de controle */}
+          <div className="flex items-center justify-between">
             <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-lg">
               <span className="text-xs font-semibold uppercase text-zinc-400">Pesquisar</span>
               <input
@@ -439,90 +450,111 @@ export default function VitrinePage() {
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </label>
-            <div className="flex flex-wrap items-center justify-end gap-2">
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((prev) => !prev)}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+              >
+                {filtersOpen ? "Ocultar filtros ▲" : "Mostrar filtros ▼"}
+              </button>
+
               {empresa?.papel === "proprietario" && (
                 <button
                   type="button"
                   onClick={handleToggleManage}
                   disabled={!lojaSelecionada}
-                  className={`rounded-md border px-3 py-2 text-xs font-medium transition ${
-                    isManaging
+                  className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
                       ? "border-blue-600 bg-blue-50 text-blue-700"
                       : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={handleCycleViewMode}
-                className="inline-flex h-10 flex-col justify-center gap-1 rounded-md bg-blue-600 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700 sm:flex-row sm:items-center sm:gap-2"
-              >
-                <span>Layout atual: {VIEW_MODE_LABEL[viewMode]}</span>
-                <span className="text-[11px] text-blue-100/80">Próximo: {VIEW_MODE_LABEL[nextViewMode]}</span>
-              </button>
+
+              {/* Botão de layout apenas com ícone */}
+              {(() => {
+                const Icon = VIEW_MODE_ICON[viewMode];
+                return (
+                  <button
+                    type="button"
+                    onClick={handleCycleViewMode}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    <Icon className="h-5 w-5" />
+                  </button>
+                );
+              })()}
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <select
-              value={estadoFiltro}
-              onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Todos os status</option>
-              {ESTADOS_VENDA.map((estado) => (
-                <option key={estado} value={estado}>
-                  {estado
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (char) => char.toUpperCase())}
-                </option>
-              ))}
-            </select>
-            <select
-              value={caracteristicaFiltro}
-              onChange={(event) => setCaracteristicaFiltro(event.target.value)}
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="">Todas as características</option>
-              {caracteristicas.map((caracteristica) => (
-                <option key={caracteristica.id} value={caracteristica.id}>
-                  {caracteristica.nome}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Preço mínimo"
-              value={precoMin}
-              onChange={(event) => setPrecoMin(event.target.value)}
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Preço máximo"
-              value={precoMax}
-              onChange={(event) => setPrecoMax(event.target.value)}
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-            <select
-              value={ordenacao}
-              onChange={(event) => setOrdenacao(event.target.value as Ordenacao)}
-              className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Filtros colapsáveis */}
+          {filtersOpen && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <select
+                value={estadoFiltro}
+                onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Todos os status</option>
+                {ESTADOS_VENDA.map((estado) => (
+                  <option key={estado} value={estado}>
+                    {estado.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={caracteristicaFiltro}
+                onChange={(event) => setCaracteristicaFiltro(event.target.value)}
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Todas as características</option>
+                {caracteristicas.map((caracteristica) => (
+                  <option key={caracteristica.id} value={caracteristica.id}>
+                    {caracteristica.nome}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Preço mínimo"
+                value={precoMin}
+                onChange={(event) => setPrecoMin(event.target.value)}
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Preço máximo"
+                value={precoMax}
+                onChange={(event) => setPrecoMax(event.target.value)}
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+
+              <select
+                value={ordenacao}
+                onChange={(event) => setOrdenacao(event.target.value as Ordenacao)}
+                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </section>
+
+
 
         {lojaSelecionada ? (
           <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-500">
