@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+
 
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useLocais } from "@/hooks/use-configuracoes";
@@ -142,6 +143,8 @@ export default function EstoquePage() {
   const { data: todosLocais = [] } = useLocais();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const router = useRouter();
+  const isHydrated = useRef(false);
 
   // estado via URL (mantém comportamento original)
   const estadoFiltroParam = searchParams.get("estado");
@@ -167,6 +170,15 @@ export default function EstoquePage() {
   const headerRef = useRef<HTMLDivElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   const [barHeight, setBarHeight] = useState(0);
+
+  const temFiltrosAtivos = useMemo(() => {
+    return (
+      searchTerm.trim() !== "" ||
+      localScope !== "todos" ||
+      localFiltro !== "" ||
+      modeloFiltro !== ""
+    );
+  }, [searchTerm, estadoFiltro, localFiltro, modeloFiltro]);
 
   useEffect(() => {
     if (!searchOpen) return; // só mede quando estiver visível
@@ -206,101 +218,102 @@ export default function EstoquePage() {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  /* =========================
-   * Carregar do localStorage (hydrate)
-   * ========================= */
-  useEffect(() => {
+  // =========================
+// Carregar do localStorage (hydrate seguro)
+// =========================
+useEffect(() => {
+  // evita execução no SSR
+  if (typeof window === "undefined") return;
+
+  const stored = {
+    viewMode: localStorage.getItem(LS_KEYS.viewMode),
+    searchTerm: localStorage.getItem(LS_KEYS.searchTerm),
+    localScope: localStorage.getItem(LS_KEYS.localScope),
+    localFiltro: localStorage.getItem(LS_KEYS.localFiltro),
+    modeloFiltro: localStorage.getItem(LS_KEYS.modeloFiltro),
+    searchOpen: localStorage.getItem(LS_KEYS.searchOpen),
+    sortConfig: localStorage.getItem(LS_KEYS.sortConfig),
+  };
+
+  // aplica todos os estados de uma vez (sincronizados)
+  setViewMode((prev) => (isValidView(stored.viewMode) ? stored.viewMode : prev));
+  setSearchTerm((prev) => (stored.searchTerm ?? prev));
+  setLocalScope((prev) => (isValidScope(stored.localScope) ? stored.localScope : prev));
+  setLocalFiltro((prev) => (stored.localFiltro ?? prev));
+  setModeloFiltro((prev) => (stored.modeloFiltro ?? prev));
+  setSearchOpen(stored.searchOpen === "true");
+
+  if (stored.sortConfig) {
     try {
-      const v = localStorage.getItem(LS_KEYS.viewMode);
-      if (isValidView(v)) setViewMode(v);
+      const parsed = JSON.parse(stored.sortConfig);
+      if (parsed && parsed.key && parsed.direction) setSortConfig(parsed as SortConfig);
+    } catch {
+      console.warn("Erro ao restaurar sortConfig");
+    }
+  }
 
-      const t = localStorage.getItem(LS_KEYS.searchTerm);
-      if (t != null) setSearchTerm(t);
+  // ⚠️ Espera um tick antes de liberar a escrita (garante re-render completo)
+  requestAnimationFrame(() => {
+    isHydrated.current = true;
+  });
+}, []);
 
-      const s = localStorage.getItem(LS_KEYS.localScope);
-      if (isValidScope(s)) setLocalScope(s);
+useEffect(() => {
+  if (!isHydrated.current) return; // ⛔ ignora até o hydrate acabar
+  try {
+    localStorage.setItem(LS_KEYS.viewMode, viewMode);
+  } catch {}
+}, [viewMode]);
 
-      const lf = localStorage.getItem(LS_KEYS.localFiltro);
-      if (lf != null) setLocalFiltro(lf);
-
-      const mf = localStorage.getItem(LS_KEYS.modeloFiltro);
-      if (mf != null) setModeloFiltro(mf);
-
-      const so = localStorage.getItem(LS_KEYS.searchOpen);
-      if (so === "true") setSearchOpen(true);
-
-      const sc = localStorage.getItem(LS_KEYS.sortConfig);
-      if (sc) {
-        try {
-          const parsed = JSON.parse(sc);
-          if (parsed && parsed.key && parsed.direction) {
-            setSortConfig(parsed as SortConfig);
-          }
-        } catch { }
-      }
-    } catch { }
-  }, []);
 
   /* =========================
    * Salvar no localStorage
    * ========================= */
   useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEYS.viewMode, viewMode);
-    } catch { }
-  }, [viewMode]);
+  if (!isHydrated.current) return;
+  try {
+    localStorage.setItem(LS_KEYS.searchOpen, searchOpen ? "true" : "false");
+  } catch {}
+}, [searchOpen]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEYS.searchOpen, searchOpen ? "true" : "false");
-    } catch { }
-  }, [searchOpen]);
+useEffect(() => {
+  if (!isHydrated.current) return;
+  try {
+    localStorage.setItem(LS_KEYS.searchTerm, searchTerm);
+  } catch {}
+}, [searchTerm]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEYS.searchTerm, searchTerm);
-    } catch { }
-  }, [searchTerm]);
+useEffect(() => {
+  if (!isHydrated.current) return;
+  try {
+    localStorage.setItem(LS_KEYS.localScope, localScope);
+  } catch {}
+}, [localScope]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEYS.localScope, localScope);
-    } catch { }
-  }, [localScope]);
+useEffect(() => {
+  if (!isHydrated.current) return;
+  try {
+    localStorage.setItem(LS_KEYS.localFiltro, localFiltro);
+  } catch {}
+}, [localFiltro]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEYS.localFiltro, localFiltro);
-    } catch { }
-  }, [localFiltro]);
+useEffect(() => {
+  if (!isHydrated.current) return;
+  try {
+    localStorage.setItem(LS_KEYS.modeloFiltro, modeloFiltro);
+  } catch {}
+}, [modeloFiltro]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEYS.modeloFiltro, modeloFiltro);
-    } catch { }
-  }, [modeloFiltro]);
-
-  useEffect(() => {
-    try {
-      if (sortConfig) {
-        localStorage.setItem(LS_KEYS.sortConfig, JSON.stringify(sortConfig));
-      } else {
-        localStorage.removeItem(LS_KEYS.sortConfig);
-      }
-    } catch { }
-  }, [sortConfig]);
-
-  const temFiltrosAtivos = useMemo(() => {
-    return (
-      searchTerm.trim() !== "" ||
-      localScope !== "todos" ||
-      localFiltro !== "" ||
-      modeloFiltro !== ""
-      // precoMin != null ||
-      // precoMax != null
-    );
-  }, [searchTerm, estadoFiltro, localFiltro, modeloFiltro]);
-
+useEffect(() => {
+  if (!isHydrated.current) return;
+  try {
+    if (sortConfig) {
+      localStorage.setItem(LS_KEYS.sortConfig, JSON.stringify(sortConfig));
+    } else {
+      localStorage.removeItem(LS_KEYS.sortConfig);
+    }
+  } catch {}
+}, [sortConfig]);
 
   /* =========================
    * Dados derivados e filtros
@@ -442,55 +455,56 @@ export default function EstoquePage() {
   /* =========================
    * Handlers
    * ========================= */
+
   // Adicione acima do handleSearchSubmit
-const [searchMatches, setSearchMatches] = useState<string[]>([]);
-const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [searchMatches, setSearchMatches] = useState<string[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
-// Substitua o handleSearchSubmit existente
-const handleSearchSubmit = useCallback(
-  (event?: React.FormEvent<HTMLFormElement>) => {
-    event?.preventDefault();
-    const normalizedTerm = normalizeText(searchTerm);
+  // Substitua o handleSearchSubmit existente
+  const handleSearchSubmit = useCallback(
+    (event?: React.FormEvent<HTMLFormElement>) => {
+      event?.preventDefault();
+      const normalizedTerm = normalizeText(searchTerm);
 
-    if (!normalizedTerm) {
-      searchInputRef.current?.focus();
-      return;
-    }
-
-    // 1️⃣ Filtra todos os veículos que combinam com o termo
-    const matches = veiculosOrdenados
-      .filter((v) => matchesSearchTerm(v, normalizedTerm))
-      .map((v) => v.id);
-
-    if (matches.length === 0) {
-      console.log("Nenhum resultado encontrado para:", normalizedTerm);
-      return;
-    }
-
-    // 2️⃣ Atualiza lista de correspondências e índice atual
-    setSearchMatches(matches);
-
-    // Se é a primeira busca, começa do primeiro; senão vai para o próximo
-    setCurrentMatchIndex((prev) => {
-      const nextIndex = (prev + 1) % matches.length;
-      const targetId = matches[nextIndex];
-      const element = itemRefs.current.get(targetId);
-
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
-        setHighlightedId(targetId);
+      if (!normalizedTerm) {
+        searchInputRef.current?.focus();
+        return;
       }
 
-      return nextIndex;
-    });
-  },
-  [veiculosOrdenados, searchTerm],
-);
+      // 1️⃣ Filtra todos os veículos que combinam com o termo
+      const matches = veiculosOrdenados
+        .filter((v) => matchesSearchTerm(v, normalizedTerm))
+        .map((v) => v.id);
 
-useEffect(() => {
-  setSearchMatches([]);
-  setCurrentMatchIndex(0);
-}, [searchTerm]);
+      if (matches.length === 0) {
+        console.log("Nenhum resultado encontrado para:", normalizedTerm);
+        return;
+      }
+
+      // 2️⃣ Atualiza lista de correspondências e índice atual
+      setSearchMatches(matches);
+
+      // Se é a primeira busca, começa do primeiro; senão vai para o próximo
+      setCurrentMatchIndex((prev) => {
+        const nextIndex = (prev + 1) % matches.length;
+        const targetId = matches[nextIndex];
+        const element = itemRefs.current.get(targetId);
+
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          setHighlightedId(targetId);
+        }
+
+        return nextIndex;
+      });
+    },
+    [veiculosOrdenados, searchTerm],
+  );
+
+  useEffect(() => {
+    setSearchMatches([]);
+    setCurrentMatchIndex(0);
+  }, [searchTerm]);
 
   const handleViewToggle = useCallback(() => {
     setViewMode((prev) => (prev === "cards" ? "table" : "cards"));
@@ -675,7 +689,12 @@ useEffect(() => {
                   <tr
                     key={veiculo.id}
                     ref={registerItemRef(veiculo.id)}
-                    className={`${baseRowClass} ${highlightClass}`.trim()}
+                    onClick={() => router.push(`/editar/${veiculo.id}`)}
+                    className={`${baseRowClass} ${highlightClass} cursor-pointer hover:bg-blue-50/60`.trim()}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") router.push(`/editar/${veiculo.id}`);
+                    }}
                   >
                     <td className="max-w-xs px-4 py-3 font-medium text-zinc-800">{veiculo.veiculoDisplay}</td>
                     <td className="px-4 py-3">{veiculo.placa}</td>
@@ -688,7 +707,10 @@ useEffect(() => {
                     <td className="px-4 py-3">{veiculo.estagio_documentacao ?? "Sem informação"}</td>
                     <td className="px-4 py-3">{veiculo.cor ?? "—"}</td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div
+                        className="flex justify-end gap-2"
+                        onClick={(e) => e.stopPropagation()} // ⛔ impede que o clique nos botões dispare o redirecionamento
+                      >
                         <Link
                           href={`/estoque/${veiculo.id}`}
                           className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
@@ -735,7 +757,7 @@ useEffect(() => {
             <div className="mx-auto w-full max-w-5xl px-6 pt-4 pb-3">
               <form onSubmit={handleSearchSubmit} className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
                 <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-xl">
-                  <span className="text-xs font-semibold uppercase text-zinc-400">Pesquisar</span>
+                  <span className="text-xs font-semibold uppercase text-zinc-400">Pesq.:</span>
                   <input
                     ref={searchInputRef}
                     type="search"
@@ -799,7 +821,7 @@ useEffect(() => {
 
                 <button
                   type="button"
-                  onClick={handleViewToggle}
+                  onClick={() => handleViewToggle()}
                   className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
                 >
                   {viewMode === "cards" ? "Ver em tabela" : "Ver em cartões"}
@@ -815,27 +837,27 @@ useEffect(() => {
           <main
             style={{ marginTop: `${barHeight}px` }}
             className="mx-auto mt-6 w-full max-w-5xl">
-              
+
             {temFiltrosAtivos && (
-            <div className="mt-3 flex items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
-                <span className="text-base">🔎</span>
-                <span>Filtrando resultados</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchTerm("");
-                  setLocalFiltro("");
-                  setLocalScope("todos");
-                  setModeloFiltro("");
-                }}
-                className="text-xs font-medium text-blue-600 hover:text-blue-800"
-              >
-                Limpar filtros
-              </button>
-            </div>
-          )}
+              <div className="mt-3 flex items-center gap-3 text-sm">
+                <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
+                  <span className="text-base">🔎</span>
+                  <span>Filtrando resultados</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setLocalFiltro("");
+                    setLocalScope("todos");
+                    setModeloFiltro("");
+                  }}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Limpar filtros
+                </button>
+              </div>
+            )}
 
             {isLoading ? (
               <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50 py-16 text-center">
