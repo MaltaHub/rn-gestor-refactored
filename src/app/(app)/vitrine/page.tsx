@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Search, X } from "lucide-react";
 
 import { LojaSelector } from "@/components/LojaSelector";
 import { useLojaStore } from "@/stores/useLojaStore";
@@ -29,6 +30,12 @@ const VIEW_MODE_ORDER: ViewMode[] = ["cards-photo", "cards-info", "table"];
 
 const VIEW_MODE_STORAGE_KEY = "vitrine:view-mode";
 const FILTERS_OPEN_STORAGE_KEY = "vitrine:filters-open";
+const SEARCH_OPEN_STORAGE_KEY = "vitrine:search-open";
+const STATUS_VALUE_STORAGE_KEY = "vitrine:status-value";
+const CHARACTERISTIC_VALUE_STORAGE_KEY = "vitrine:characteristic-value";
+const PRICE_MIN_VALUE_STORAGE_KEY = "vitrine:price-min-value";
+const PRICE_MAX_VALUE_STORAGE_KEY = "vitrine:price-max-value";
+const SORT_VALUE_STORAGE_KEY = "vitrine:sort-value";
 
 const isValidViewMode = (value: string): value is ViewMode =>
   VIEW_MODE_ORDER.includes(value as ViewMode);
@@ -301,25 +308,25 @@ export default function VitrinePage() {
   const { data: caracteristicas = [] } = useCaracteristicas();
 
   // ❌ REMOVA este inicializador antigo:
-// const [filtersOpen, setFiltersOpen] = useState<boolean>(() => {
-//   if (typeof window === "undefined") return true;
-//   const stored = window.localStorage.getItem(FILTERS_OPEN_STORAGE_KEY);
-//   return stored === null ? true : stored === "true";
-// });
+  // const [filtersOpen, setFiltersOpen] = useState<boolean>(() => {
+  //   if (typeof window === "undefined") return true;
+  //   const stored = window.localStorage.getItem(FILTERS_OPEN_STORAGE_KEY);
+  //   return stored === null ? true : stored === "true";
+  // });
 
-// ✅ USE este, com default estável no SSR/CSR (sem window)
-const [filtersOpen, setFiltersOpen] = useState<boolean>(true);
-
+  // ✅ USE este, com default estável no SSR/CSR (sem window)
+  const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
+  const [searchOpen, setSearchOpen] = useState<boolean>(true);
 
   // ❌ REMOVA este inicializador antigo:
-// const [viewMode, setViewMode] = useState<ViewMode>(() => {
-//   if (typeof window === "undefined") return "cards-photo";
-//   const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-//   return stored && isValidViewMode(stored) ? stored : "cards-photo";
-// });
+  // const [viewMode, setViewMode] = useState<ViewMode>(() => {
+  //   if (typeof window === "undefined") return "cards-photo";
+  //   const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+  //   return stored && isValidViewMode(stored) ? stored : "cards-photo";
+  // });
 
-// ✅ USE este, com default estável no SSR/CSR
-const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
+  // ✅ USE este, com default estável no SSR/CSR
+  const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoVendaFiltro | "">("");
@@ -338,30 +345,85 @@ const [viewMode, setViewMode] = useState<ViewMode>("cards-photo");
   };
 
   // ✅ Carrega preferências do cliente pós-mount (evita mismatch)
-useEffect(() => {
-  try {
-    const storedFilters = window.localStorage.getItem(FILTERS_OPEN_STORAGE_KEY);
-    if (storedFilters !== null) {
-      setFiltersOpen(storedFilters === "true");
-    }
+  useEffect(() => {
+    try {
+      const storedFilters = window.localStorage.getItem(FILTERS_OPEN_STORAGE_KEY);
+      if (storedFilters !== null) {
+        setFiltersOpen(storedFilters === "true");
+      }
 
-    const storedView = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-    if (storedView && isValidViewMode(storedView)) {
-      setViewMode(storedView);
+      const storedSearch = window.localStorage.getItem("vitrine:search-open");
+      if (storedSearch !== null) {
+        setSearchOpen(storedSearch === "true");
+      }
+
+      const storedView = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+      if (storedView && isValidViewMode(storedView)) {
+        setViewMode(storedView);
+      }
+
+      const storedStatus = window.localStorage.getItem(STATUS_VALUE_STORAGE_KEY);
+      if (storedStatus && ESTADOS_VENDA.includes(storedStatus as EstadoVendaFiltro)) {
+        setEstadoFiltro(storedStatus as EstadoVendaFiltro);
+      }
+
+      const storedCharacteristic = window.localStorage.getItem(CHARACTERISTIC_VALUE_STORAGE_KEY);
+      if (storedCharacteristic) {
+        setCaracteristicaFiltro(storedCharacteristic);
+      }
+
+      const storedMin = window.localStorage.getItem(PRICE_MIN_VALUE_STORAGE_KEY);
+      if (storedMin) {
+        setPrecoMin(storedMin);
+      }
+
+      const storedMax = window.localStorage.getItem(PRICE_MAX_VALUE_STORAGE_KEY);
+      if (storedMax) {
+        setPrecoMax(storedMax);
+      }
+
+      const storedSort = window.localStorage.getItem(SORT_VALUE_STORAGE_KEY);
+      if (storedSort && Object.keys(ORDENACAO_LABEL).includes(storedSort)) {
+        setOrdenacao(storedSort as Ordenacao);
+      }
+
+    } catch {
+      // se o storage estiver bloqueado, siga com os defaults
     }
-  } catch {
-    // se o storage estiver bloqueado, siga com os defaults
-  }
-}, []);
+  }, []);
 
 
   useEffect(() => {
-  window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
-}, [viewMode]);
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
-useEffect(() => {
-  window.localStorage.setItem(FILTERS_OPEN_STORAGE_KEY, String(filtersOpen));
-}, [filtersOpen]);
+  useEffect(() => {
+    window.localStorage.setItem(FILTERS_OPEN_STORAGE_KEY, String(filtersOpen));
+  }, [filtersOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem(SEARCH_OPEN_STORAGE_KEY, String(searchOpen));
+  }, [searchOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STATUS_VALUE_STORAGE_KEY, estadoFiltro);
+  }, [estadoFiltro]);
+
+  useEffect(() => {
+    window.localStorage.setItem(CHARACTERISTIC_VALUE_STORAGE_KEY, caracteristicaFiltro);
+  }, [caracteristicaFiltro]);
+
+  useEffect(() => {
+    window.localStorage.setItem(PRICE_MIN_VALUE_STORAGE_KEY, precoMin);
+  }, [precoMin]);
+
+  useEffect(() => {
+    window.localStorage.setItem(PRICE_MAX_VALUE_STORAGE_KEY, precoMax);
+  }, [precoMax]);
+
+  useEffect(() => {
+    window.localStorage.setItem(SORT_VALUE_STORAGE_KEY, ordenacao);
+  }, [ordenacao]);
 
   const { data: veiculosLoja = [], isLoading } = useVeiculosLojaUI(lojaId);
   const {
@@ -501,6 +563,18 @@ useEffect(() => {
     return renderGridCards(filtrados);
   };
 
+  // Barra fixa: medir altura p/ criar um spacer e evitar sobreposição
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barH, setBarH] = useState(0);
+
+  useEffect(() => {
+    const measure = () => setBarH(barRef.current?.offsetHeight ?? 0);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+
   return (
     <div className="bg-white px-6 py-10 text-zinc-900">
       <header className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -516,124 +590,149 @@ useEffect(() => {
           </div>
         </div>
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-          {/* Cabeçalho de controle */}
-          <div className="flex items-center justify-between">
-            <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-lg">
-              <span className="text-xs font-semibold uppercase text-zinc-400">Pesquisar</span>
-              <input
-                type="search"
-                placeholder="Modelo, placa, local..."
-                className="h-8 w-full border-none bg-transparent text-sm text-zinc-700 outline-none"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-            </label>
+        {/* 🔒 Barra de pesquisa/filtros sempre visível no topo */}
+        {searchOpen && <section
+          ref={barRef}
+          className="
+    fixed inset-x-0 top-0 z-50
+    border-b border-zinc-200
+    bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75
+  "
+        >
+          {/* Conteúdo centralizado no mesmo grid da página */}
+          <div className="mx-auto w-full max-w-6xl px-6 pt-4 pb-3">
+            {/* Cabeçalho de controle */}
+            <div className="flex items-center justify-between">
+              <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-lg">
+                <span className="text-xs font-semibold uppercase text-zinc-400">Pesquisar</span>
+                <input
+                  type="search"
+                  placeholder="Modelo, placa, local..."
+                  className="h-8 w-full border-none bg-transparent text-sm text-zinc-700 outline-none"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                />
+              </label>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setFiltersOpen((prev) => !prev)}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-              >
-                {filtersOpen ? "Ocultar filtros ▲" : "Mostrar filtros ▼"}
-              </button>
-
-              {empresa?.papel === "proprietario" && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleToggleManage}
-                  disabled={!lojaSelecionada}
-                  className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
+                  onClick={() => setFiltersOpen((prev) => !prev)}
+                  className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
                 >
-                  {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
+                  {filtersOpen ? "Ocultar filtros ▲" : "Mostrar filtros ▼"}
                 </button>
-              )}
 
-              {/* Botão de layout apenas com ícone */}
-              {(() => {
-                const Icon = VIEW_MODE_ICON[viewMode];
-                return (
+                {empresa?.papel === "proprietario" && (
                   <button
                     type="button"
-                    onClick={handleCycleViewMode}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                    onClick={handleToggleManage}
+                    disabled={!lojaSelecionada}
+                    className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
+                        ? "border-blue-600 bg-blue-50 text-blue-700"
+                        : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                      } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
-                    <Icon className="h-5 w-5" />
+                    {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
                   </button>
-                );
-              })()}
+                )}
+
+                {(() => {
+                  const Icon = VIEW_MODE_ICON[viewMode];
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleCycleViewMode}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                    >
+                      <Icon className="h-5 w-5" />
+                    </button>
+                  );
+                })()}
+              </div>
             </div>
+
+            {/* Filtros colapsáveis */}
+            {filtersOpen && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <select
+                  value={estadoFiltro}
+                  onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
+                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">Todos os status</option>
+                  {ESTADOS_VENDA.map((estado) => (
+                    <option key={estado} value={estado}>
+                      {estado.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={caracteristicaFiltro}
+                  onChange={(event) => setCaracteristicaFiltro(event.target.value)}
+                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">Todas as características</option>
+                  {caracteristicas.map((caracteristica) => (
+                    <option key={caracteristica.id} value={caracteristica.id}>
+                      {caracteristica.nome}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Preço mínimo"
+                  value={precoMin}
+                  onChange={(event) => setPrecoMin(event.target.value)}
+                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Preço máximo"
+                  value={precoMax}
+                  onChange={(event) => setPrecoMax(event.target.value)}
+                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+
+                <select
+                  value={ordenacao}
+                  onChange={(event) => setOrdenacao(event.target.value as Ordenacao)}
+                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
+        </section>}
 
-          {/* Filtros colapsáveis */}
-          {filtersOpen && (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <select
-                value={estadoFiltro}
-                onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
-                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              >
-                <option value="">Todos os status</option>
-                {ESTADOS_VENDA.map((estado) => (
-                  <option key={estado} value={estado}>
-                    {estado.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
-                  </option>
-                ))}
-              </select>
+        {/* 🔍 Botão flutuante para mostrar/ocultar */}
+        <button
+          onClick={() => setSearchOpen(!searchOpen)}
+          className="
+    fixed bottom-6 right-6 z-50
+    flex items-center justify-center
+    h-14 w-14 rounded-full
+    bg-blue-600 text-white shadow-lg
+    transition hover:bg-blue-700 active:scale-95
+  "
+          aria-label="Alternar pesquisa"
+        >
+          {searchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
+        </button>
 
-              <select
-                value={caracteristicaFiltro}
-                onChange={(event) => setCaracteristicaFiltro(event.target.value)}
-                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              >
-                <option value="">Todas as características</option>
-                {caracteristicas.map((caracteristica) => (
-                  <option key={caracteristica.id} value={caracteristica.id}>
-                    {caracteristica.nome}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Preço mínimo"
-                value={precoMin}
-                onChange={(event) => setPrecoMin(event.target.value)}
-                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Preço máximo"
-                value={precoMax}
-                onChange={(event) => setPrecoMax(event.target.value)}
-                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-
-              <select
-                value={ordenacao}
-                onChange={(event) => setOrdenacao(event.target.value as Ordenacao)}
-                className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              >
-                {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </section>
-
-
+        {/* ⛳️ Spacer para não sobrepor o conteúdo (altura da barra fixa) */}
 
         {lojaSelecionada ? (
           <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-500">

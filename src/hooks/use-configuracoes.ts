@@ -2,8 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { Loja, Plataforma, Caracteristica, Modelo, Local, UnidadeLoja } from "@/types";
 import { listar_tabela } from "@/services";
 
-export type LocalComOrigem = Local & { origem: "local" | "unidade" };
-
 const configuracoesKeys = {
   lojas: ["configuracoes", "loja"] as const,
   plataformas: ["configuracoes", "plataforma"] as const,
@@ -47,46 +45,116 @@ export function useModelos() {
   });
 }
 
+export type LocalComOrigem = Local & {
+  origem: "local" | "unidade";
+  loja_nome?: string | null;
+  label?: string;
+  prioridade?: number;
+  pertenceALoja?: boolean;
+};
+
 export function useLocais() {
   return useQuery<LocalComOrigem[]>({
     queryKey: configuracoesKeys.locais,
-    queryFn: async () => {
-      const [locais, unidades] = await Promise.all([
+    queryFn: async (): Promise<LocalComOrigem[]> => {
+      // Busca simultânea das tabelas
+      const [locaisRaw, unidadesRaw, lojasRaw] = await Promise.all([
         listar_tabela("locais"),
         listar_tabela("unidades_loja"),
+        listar_tabela("lojas"),
       ]);
 
-      const locaisAdaptados = (locais ?? []).map((local) => ({
+      const locais = (locaisRaw ?? []) as Local[];
+      const unidades = (unidadesRaw ?? []) as UnidadeLoja[];
+      const lojas = (lojasRaw ?? []) as Loja[];
+
+      // Cria mapa de nome de loja por ID
+      const lojaNomePorId = new Map<string, string>(
+        lojas.map((l) => [l.id, l.nome]),
+      );
+
+      // 🔹 Locais
+      const locaisAdaptados: LocalComOrigem[] = locais.map((local) => ({
         ...local,
-        origem: "local" as const,
+        origem: "local",
+        loja_nome: local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null,
+        label: local.loja_id
+          ? `${lojaNomePorId.get(local.loja_id) ?? "Loja desconhecida"} • ${local.nome}`
+          : local.nome,
+        prioridade: local.loja_id ? 1 : 2,
       }));
 
-      const unidadesAdaptadas = (unidades ?? []).map((unidade) => ({
-        id: unidade.id,
-        nome: unidade.nome,
-        empresa_id: unidade.empresa_id,
-        loja_id: unidade.loja_id,
-        logradouro: unidade.logradouro,
-        cep: unidade.cep,
-        origem: "unidade" as const,
-      } satisfies LocalComOrigem));
+      // 🔹 Unidades
+      const unidadesAdaptadas: LocalComOrigem[] = unidades.map((unidade) => {
+        const lojaNome = unidade.loja_id ? lojaNomePorId.get(unidade.loja_id) ?? null : null;
+        const label = lojaNome ? `${lojaNome} • ${unidade.nome}` : unidade.nome;
 
-      const unificados = [...locaisAdaptados, ...unidadesAdaptadas];
-      const mapa = new Map<string, LocalComOrigem>();
-      for (const item of unificados) {
-        mapa.set(item.id, item);
-      }
+        return {
+          ...unidade,
+          origem: "unidade",
+          loja_nome: lojaNome,
+          label,
+          prioridade: 0,
+        };
+      });
 
-      return Array.from(mapa.values());
+      // 🔹 Junta tudo e ordena (sem 'any')
+      const todos: LocalComOrigem[] = [...unidadesAdaptadas, ...locaisAdaptados].sort(
+        (a: LocalComOrigem, b: LocalComOrigem) => {
+          const pa = a.prioridade ?? 99;
+          const pb = b.prioridade ?? 99;
+          if (pa !== pb) return pa - pb;
+
+          const la = a.label ?? "";
+          const lb = b.label ?? "";
+          return la.localeCompare(lb, "pt-BR", { sensitivity: "base" });
+        },
+      );
+
+      // ✅ Garante retorno (corrige o erro TS2355)
+      return todos;
     },
     staleTime: 1000 * 60 * 5,
   });
 }
 
+export type UnidadeLojaComposta = {
+  id: string;
+  nome: string;        // Nome já composto: Loja + Unidade
+  nome_unidade: string; // Apenas nome da unidade
+  loja_id: string | null;
+};
+
+/**
+ * Retorna as unidades já com nome composto:
+ * "Loja Central * Principal"
+ */
+
 export function useUnidadesLoja() {
+  const { data: lojas = [], isLoading: isLojasLoading } = useLojas();
+
   return useQuery<UnidadeLoja[]>({
-    queryKey: configuracoesKeys.unidadesLoja,
-    queryFn: () => listar_tabela("unidades_loja"),
+    queryKey: ["configuracoes", "unidadesLoja"],
+    enabled: !isLojasLoading, // 🚀 só executa quando lojas tiverem carregado
+    queryFn: async () => {
+      const unidades = await listar_tabela("unidades_loja");
+
+      // 💡 monta nome composto “Loja * Unidade”
+      const resposta = unidades.map((u) => {
+        const lojaNome = lojas.find((l) => l.id === u.loja_id)?.nome ?? null;
+        return {
+          ...u,
+          nome: lojaNome ? `${lojaNome} * ${u.nome}` : u.nome,
+        };
+      });
+
+      console.warn("✅ Unidades com nome composto", resposta);
+      console.warn("✅ Lojas carregadas", lojas);
+
+      return resposta;
+    },
     staleTime: 1000 * 60 * 5,
   });
 }
+
+

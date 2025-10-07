@@ -9,7 +9,7 @@ import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
 import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
 import { useQueryClient } from "@tanstack/react-query";
-import { PhotoGallery } from "@/components/PhotoGallery";
+import { PhotoGallery } from "@/components/Gallery";
 import { LojaSelector } from "@/components/LojaSelector";
 import { supabase } from "@/lib/supabase";
 import type { Modelo } from "@/types";

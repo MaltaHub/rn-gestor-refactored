@@ -84,6 +84,19 @@ export default function CriarVeiculoPage() {
     useCaracteristicas() as { data: CaracteristicaFormValue[] };
   const queryClient = useQueryClient();
 
+  const camposEspecificacoes: Array<{
+    label: string;
+    key: keyof Pick<
+      VehicleFormState,
+      "ano_fabricacao" | "ano_modelo" | "hodometro" | "preco_venal"
+    >;
+  }> = [
+      { label: "Ano de fabricação", key: "ano_fabricacao" },
+      { label: "Ano do modelo", key: "ano_modelo" },
+      { label: "Hodômetro", key: "hodometro" },
+      { label: "Preço venal", key: "preco_venal" },
+    ];
+
   const [formState, setFormState] = useState<VehicleFormState>({ ...INITIAL_FORM_STATE });
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -147,9 +160,9 @@ export default function CriarVeiculoPage() {
 
   const handleChange =
     (field: keyof VehicleFormState) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-      setFormState((prev) => ({ ...prev, [field]: event.target.value }));
-    };
+      (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        setFormState((prev) => ({ ...prev, [field]: event.target.value }));
+      };
 
   const handleToggleCaracteristica = (caracteristica: CaracteristicaFormValue) => {
     setFormState((prev) => {
@@ -163,11 +176,20 @@ export default function CriarVeiculoPage() {
     });
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
 
-    setIsSaving(true);
-    setFeedback(null);
+    // ✅ dispara a validação visual do navegador
+    if (!form.reportValidity()) {
+      setFeedback({
+        type: "error",
+        message: "Preencha todos os campos obrigatórios antes de salvar.",
+      });
+      return;
+    }
+
+    setIsSaving(true); // 👈 garante feedback de carregamento
 
     try {
       const toNumberOrNull = (value: string) => {
@@ -176,9 +198,10 @@ export default function CriarVeiculoPage() {
         const parsed = Number(trimmed);
         return Number.isNaN(parsed) ? null : parsed;
       };
+
       const toValueOrNull = (value: string) => {
         const trimmed = value.trim();
-        return trimmed === "" ? null : value;
+        return trimmed === "" ? null : trimmed;
       };
 
       const hodometroValue = Number(formState.hodometro.trim());
@@ -186,11 +209,14 @@ export default function CriarVeiculoPage() {
         throw new Error("Informe um valor numérico válido para o hodômetro.");
       }
 
-      const estadoVeiculo = formState.estado_veiculo === "" ? null : formState.estado_veiculo;
+      const estadoVeiculo =
+        formState.estado_veiculo === "" ? null : formState.estado_veiculo;
+
       const caracteristicasSelecionadas = formState.caracteristicas.map((item) => ({
         id: item.id,
         nome: item.nome,
       }));
+
       const modeloId = formState.modelo_id.trim();
       const localId = formState.local_id.trim();
 
@@ -216,204 +242,197 @@ export default function CriarVeiculoPage() {
 
       setFeedback({
         type: "success",
-        message: "Veículo criado com sucesso!",
+        message: "✅ Veículo criado com sucesso!",
       });
+
       setFormState({ ...INITIAL_FORM_STATE });
     } catch (error) {
       setFeedback({
         type: "error",
         message:
-          error instanceof Error ? error.message : "Erro ao criar veículo. Tente novamente.",
+          error instanceof Error
+            ? error.message
+            : "Erro ao criar veículo. Tente novamente.",
       });
     } finally {
       setIsSaving(false);
     }
   };
 
+
   return (
-    <div className="bg-white px-6 py-10">
-      <div className="mx-auto w-full max-w-5xl space-y-8">
+    <div className="relative bg-zinc-50 min-h-screen pb-24">
+      <div className="mx-auto w-full max-w-5xl px-6 py-10 space-y-10">
+        {/* Cabeçalho */}
         <header className="border-b border-zinc-200 pb-6">
-          <h1 className="text-2xl font-semibold text-zinc-900">Cadastrar veículo</h1>
-          <p className="text-sm text-zinc-500">Preencha os dados para adicionar um novo veículo.</p>
+          <h1 className="text-2xl font-semibold text-zinc-900">
+            Cadastrar veículo
+          </h1>
+          <p className="text-sm text-zinc-500 mt-1">
+            Preencha as informações abaixo para adicionar um novo veículo.
+          </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form id="form-veiculo" onSubmit={handleSubmit} className="space-y-8">
+          {/* Feedback visual */}
           {feedback && (
             <div
-              className={`rounded-md px-4 py-3 text-sm ${
-                feedback.type === "success"
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
-              }`}
+              className={`rounded-md px-4 py-3 text-sm shadow-sm ${feedback.type === "success"
+                  ? "bg-green-50 text-green-700 border border-green-200"
+                  : "bg-red-50 text-red-700 border border-red-200"
+                }`}
             >
               {feedback.message}
             </div>
           )}
 
-          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium">Dados principais</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Placa</span>
+          {/* Seção: Dados principais */}
+          <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-md transition">
+            <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
+              <span className="text-blue-600">•</span> Dados principais
+            </h2>
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Placa</span>
                 <input
                   value={formState.placa.toLocaleUpperCase()}
                   onChange={handleChange("placa")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                   required
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Chassi</span>
+
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Chassi</span>
                 <input
                   value={formState.chassi}
                   onChange={handleChange("chassi")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Cor</span>
+
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Cor</span>
                 <input
                   value={formState.cor}
                   onChange={handleChange("cor")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                   required
                 />
               </label>
             </div>
-            <label className="mt-4 flex flex-col gap-1 text-sm">
-              <span>Observações</span>
+
+            <label className="mt-5 flex flex-col gap-1.5 text-sm">
+              <span className="font-medium text-zinc-700">Observações</span>
               <textarea
                 value={formState.observacao}
                 onChange={handleChange("observacao")}
-                className="rounded-md border px-3 py-2 text-sm"
+                className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none"
                 rows={4}
+                placeholder="Ex: veículo revisado recentemente, pequenas avarias..."
               />
             </label>
           </section>
 
-          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium">Especificações</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Ano de fabricação</span>
-                <input
-                  type="number"
-                  value={formState.ano_fabricacao}
-                  onChange={handleChange("ano_fabricacao")}
-                  className="rounded-md border px-3 py-2 text-sm"
-                  min={1900}
-                  max={9999}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Ano do modelo</span>
-                <input
-                  type="number"
-                  value={formState.ano_modelo}
-                  onChange={handleChange("ano_modelo")}
-                  className="rounded-md border px-3 py-2 text-sm"
-                  min={1900}
-                  max={9999}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Hodômetro</span>
-                <input
-                  type="number"
-                  value={formState.hodometro}
-                  onChange={handleChange("hodometro")}
-                  className="rounded-md border px-3 py-2 text-sm"
-                  min={0}
-                  required
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Preço venal</span>
-                <input
-                  type="number"
-                  value={formState.preco_venal}
-                  onChange={handleChange("preco_venal")}
-                  className="rounded-md border px-3 py-2 text-sm"
-                  min={0}
-                  step="0.01"
-                />
-              </label>
+          {/* Seção: Especificações */}
+          <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-md transition">
+            <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
+              <span className="text-blue-600">•</span> Especificações
+            </h2>
+            <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+              {camposEspecificacoes.map((campo) => (
+                <label key={campo.key} className="flex flex-col gap-1.5 text-sm">
+                  <span className="font-medium text-zinc-700">{campo.label}</span>
+                  <input
+                    type="number"
+                    value={formState[campo.key] ?? ""}
+                    onChange={handleChange(campo.key)}
+                    className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  />
+                </label>
+              ))}
             </div>
           </section>
 
-          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium">Status e localização</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Estado de venda</span>
+          {/* Seção: Status e localização */}
+          <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-md transition">
+            <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
+              <span className="text-blue-600">•</span> Status e localização
+            </h2>
+            <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {/* Estado de venda */}
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Estado de venda</span>
                 <select
                   value={formState.estado_venda}
                   onChange={handleChange("estado_venda")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                   required
                 >
-                  {ESTADO_VENDA_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {formatEnumLabel(option)}
+                  {ESTADO_VENDA_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {formatEnumLabel(opt)}
                     </option>
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Estado do veículo</span>
+
+              {/* Estado do veículo */}
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Estado do veículo</span>
                 <select
                   value={formState.estado_veiculo}
                   onChange={handleChange("estado_veiculo")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                 >
                   <option value="">Sem definição</option>
-                  {ESTADO_VEICULO_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {formatEnumLabel(option)}
+                  {ESTADO_VEICULO_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {formatEnumLabel(opt)}
                     </option>
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Estágio da documentação</span>
+
+              {/* Estágio da documentação */}
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Estágio da documentação</span>
                 <input
                   value={formState.estagio_documentacao}
                   onChange={handleChange("estagio_documentacao")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Modelo</span>
+
+              {/* Modelo */}
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Modelo</span>
                 <select
                   value={formState.modelo_id}
                   onChange={handleChange("modelo_id")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                 >
                   <option value="">Selecione um modelo</option>
-                  {modelosComNomeCompleto
-                    .filter((modelo) => Boolean(modelo.id))
-                    .map((modelo) => (
-                      <option
-                        key={modelo.id as string}
-                        value={modelo.id as string}
-                      >
-                        {modelo.nomeCompleto}
-                      </option>
-                    ))}
+                  {modelosComNomeCompleto.map((modelo) => (
+                    <option key={modelo.id as string} value={modelo.id as string}>
+                      {modelo.nomeCompleto}
+                    </option>
+                  ))}
                 </select>
                 <span className="text-xs text-zinc-500">
                   {formState.modelo_id
-                    ? modeloSelecionado?.nomeCompleto ?? "Modelo não encontrado nas configurações."
-                    : "Selecione um modelo para ver o nome completo."}
+                    ? modeloSelecionado?.nomeCompleto ?? "Modelo não encontrado."
+                    : "Selecione um modelo."}
                 </span>
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Local</span>
+
+              {/* Local */}
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-zinc-700">Local</span>
                 <select
                   value={formState.local_id}
                   onChange={handleChange("local_id")}
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                 >
                   <option value="">Selecione um local</option>
                   {localOptions.map((option) => (
@@ -422,32 +441,33 @@ export default function CriarVeiculoPage() {
                     </option>
                   ))}
                 </select>
-                {lojaSelecionadaId && !possuiUnidadeSelecionada ? (
+                {lojaSelecionadaId && !possuiUnidadeSelecionada && (
                   <span className="text-xs text-zinc-500">
-                    Nenhuma unidade cadastrada para a loja selecionada. Cadastre uma em configurações.
+                    Nenhuma unidade cadastrada para esta loja.
                   </span>
-                ) : null}
+                )}
               </label>
             </div>
           </section>
 
-          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium">Características</h2>
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {/* Seção: Características */}
+          <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-md transition">
+            <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
+              <span className="text-blue-600">•</span> Características
+            </h2>
+            <ul className="mt-5 grid gap-2 sm:grid-cols-2">
               {caracteristicasDisponiveis.map((caracteristica) => (
                 <li key={caracteristica.id}>
-                  <label className="flex items-center gap-3 text-sm">
+                  <label className="flex items-center gap-3 text-sm text-zinc-700">
                     <input
                       type="checkbox"
                       checked={formState.caracteristicas.some(
-                        (selecionada) => selecionada.id === caracteristica.id,
+                        (c) => c.id === caracteristica.id,
                       )}
                       onChange={() =>
-                        handleToggleCaracteristica({
-                          id: caracteristica.id,
-                          nome: caracteristica.nome,
-                        })
+                        handleToggleCaracteristica(caracteristica)
                       }
+                      className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
                     />
                     {caracteristica.nome}
                   </label>
@@ -455,20 +475,27 @@ export default function CriarVeiculoPage() {
               ))}
             </ul>
           </section>
-
-          <div className="flex justify-end gap-3">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSaving ? "Salvando..." : "Criar veículo"}
-            </button>
-            <Link href="/estoque" className="rounded-md border px-6 py-2 text-sm">
-              Cancelar
-            </Link>
-          </div>
         </form>
+      </div>
+
+      {/* Botões flutuantes (Salvar / Cancelar) */}
+      <div className="fixed bottom-6 right-6 flex flex-col items-center gap-3 z-50">
+        <button
+          type="submit"
+          form="form-veiculo"
+          disabled={isSaving}
+          className="h-14 w-14 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 active:scale-95 transition disabled:opacity-60"
+          title="Salvar"
+        >
+          💾
+        </button>
+        <Link
+          href="/estoque"
+          className="h-14 w-14 rounded-full border border-zinc-300 bg-white text-zinc-700 shadow-lg flex items-center justify-center hover:bg-zinc-100 active:scale-95 transition"
+          title="Cancelar"
+        >
+          ✖
+        </Link>
       </div>
     </div>
   );
