@@ -425,6 +425,17 @@ export default function VitrinePage() {
     window.localStorage.setItem(SORT_VALUE_STORAGE_KEY, ordenacao);
   }, [ordenacao]);
 
+  const temFiltrosAtivos = useMemo(() => {
+  return (
+    searchTerm.trim() !== "" ||
+    estadoFiltro !== "" ||
+    caracteristicaFiltro !== "" ||
+    precoMin.trim() !== "" ||
+    precoMax.trim() !== ""
+  );
+}, [searchTerm, estadoFiltro, caracteristicaFiltro, precoMin, precoMax]);
+
+
   const { data: veiculosLoja = [], isLoading } = useVeiculosLojaUI(lojaId);
   const {
     data: veiculosEstoque = [],
@@ -604,7 +615,7 @@ export default function VitrinePage() {
             {/* Cabeçalho de controle */}
             <div className="flex items-center justify-between">
               <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-lg">
-                <span className="text-xs font-semibold uppercase text-zinc-400">Pesquisar</span>
+                <span className="text-xs font-semibold uppercase text-zinc-400">Pesq.:</span>
                 <input
                   type="search"
                   placeholder="Modelo, placa, local..."
@@ -744,6 +755,28 @@ export default function VitrinePage() {
             </span>
           </div>
         ) : null}
+        {temFiltrosAtivos && (
+  <div className="mt-3 flex items-center gap-3 text-sm">
+    <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
+      <span className="text-base">🔎</span>
+      <span>Filtrando resultados</span>
+    </span>
+    <button
+      type="button"
+      onClick={() => {
+        setSearchTerm("");
+        setEstadoFiltro("");
+        setCaracteristicaFiltro("");
+        setPrecoMin("");
+        setPrecoMax("");
+      }}
+      className="text-xs font-medium text-blue-600 hover:text-blue-800"
+    >
+      Limpar filtros
+    </button>
+  </div>
+)}
+
       </header>
 
       <main className="mx-auto mt-8 w-auto max-w-6xl">

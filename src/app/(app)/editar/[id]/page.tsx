@@ -21,20 +21,11 @@ type EstadoVeiculoOption = NonNullable<VeiculoUI["estado_veiculo"]>;
 type CaracteristicaFormValue = { id: string; nome: string };
 
 const ESTADO_VENDA_OPTIONS: EstadoVendaOption[] = [
-  "disponivel",
-  "reservado",
-  "vendido",
-  "repassado",
-  "restrito",
+  "disponivel", "reservado", "vendido", "repassado", "restrito",
 ];
 
 const ESTADO_VEICULO_OPTIONS: EstadoVeiculoOption[] = [
-  "novo",
-  "seminovo",
-  "usado",
-  "sucata",
-  "limpo",
-  "sujo",
+  "novo", "seminovo", "usado", "sucata", "limpo", "sujo",
 ];
 
 const formatEnumLabel = (value: string) =>
@@ -43,7 +34,6 @@ const formatEnumLabel = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-// 🔹 Form state
 interface VehicleFormState {
   placa: string;
   cor: string;
@@ -61,48 +51,34 @@ interface VehicleFormState {
   caracteristicas: CaracteristicaFormValue[];
 }
 
-// 🔹 Helpers
-const buildFormStateFromVeiculo = (veiculo: VeiculoUI): VehicleFormState => ({
-  placa: veiculo.placa ?? "",
-  cor: veiculo.cor ?? "",
-  chassi: veiculo.chassi ?? "",
-  ano_fabricacao:
-    veiculo.ano_fabricacao !== null && veiculo.ano_fabricacao !== undefined
-      ? veiculo.ano_fabricacao.toString()
-      : "",
-  ano_modelo:
-    veiculo.ano_modelo !== null && veiculo.ano_modelo !== undefined
-      ? veiculo.ano_modelo.toString()
-      : "",
-  hodometro:
-    veiculo.hodometro !== null && veiculo.hodometro !== undefined
-      ? veiculo.hodometro.toString()
-      : "",
-  estado_venda: veiculo.estado_venda,
-  estado_veiculo: veiculo.estado_veiculo ?? "",
-  preco_venal: veiculo.preco_venal != null ? veiculo.preco_venal.toString() : "",
-  observacao: veiculo.observacao ?? "",
-  modelo_id: veiculo.modelo_id ?? veiculo.modelo?.id ?? "",
-  local_id: veiculo.local_id ?? veiculo.local?.id ?? "",
-  estagio_documentacao: veiculo.estagio_documentacao ?? "",
+const buildFormStateFromVeiculo = (v: VeiculoUI): VehicleFormState => ({
+  placa: v.placa ?? "",
+  cor: v.cor ?? "",
+  chassi: v.chassi ?? "",
+  ano_fabricacao: v.ano_fabricacao?.toString() ?? "",
+  ano_modelo: v.ano_modelo?.toString() ?? "",
+  hodometro: v.hodometro?.toString() ?? "",
+  estado_venda: v.estado_venda,
+  estado_veiculo: v.estado_veiculo ?? "",
+  preco_venal: v.preco_venal?.toString() ?? "",
+  observacao: v.observacao ?? "",
+  modelo_id: v.modelo_id ?? v.modelo?.id ?? "",
+  local_id: v.local_id ?? v.local?.id ?? "",
+  estagio_documentacao: v.estagio_documentacao ?? "",
   caracteristicas:
-    veiculo.caracteristicas?.map((caracteristica) => ({
-      id: caracteristica.id,
-      nome: caracteristica.nome,
-    })) ?? [],
+    v.caracteristicas?.map((c) => ({ id: c.id, nome: c.nome })) ?? [],
 });
 
 function isVeiculoUI(value: unknown): value is VeiculoUI {
   if (typeof value !== "object" || value === null) return false;
-  const veiculo = value as Partial<VeiculoUI>;
-  return typeof veiculo.id === "string" && typeof veiculo.placa === "string";
+  const v = value as Partial<VeiculoUI>;
+  return typeof v.id === "string" && typeof v.placa === "string";
 }
 
 export default function EditarVeiculoPage() {
   const params = useParams<{ id: string }>();
   const veiculoId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? "";
 
-  // 🔹 Todos os hooks sempre no topo!
   const { data: veiculoData, isLoading: isVeiculoLoading } = useVeiculosUI(veiculoId);
   const { data: modelos = [] } = useModelos();
   const { data: locais = [] } = useLocais();
@@ -110,161 +86,110 @@ export default function EditarVeiculoPage() {
   const { data: caracteristicasDisponiveis = [] } =
     useCaracteristicas() as { data: CaracteristicaFormValue[] };
   const queryClient = useQueryClient();
-  const lojaSelecionadaId = useLojaStore((state) => state.lojaSelecionada?.id ?? null);
-
+  const lojaSelecionadaId = useLojaStore((s) => s.lojaSelecionada?.id ?? null);
 
   const [formState, setFormState] = useState<VehicleFormState | null>(null);
-  const [feedback, setFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
+    null
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
 
   const lojaNomePorId = useMemo(() => {
-    const mapa = new Map<string, string>();
-    lojas.forEach((loja) => {
-      if (loja.id) {
-        mapa.set(loja.id, loja.nome);
-      }
-    });
-    return mapa;
+    const map = new Map<string, string>();
+    lojas.forEach((l) => l.id && map.set(l.id, l.nome));
+    return map;
   }, [lojas]);
 
-  const localLojaId = veiculo?.localLojaId ?? null;
-  const alvoPreferencialId = lojaSelecionadaId ?? localLojaId;
-
+  const alvoPreferencialId = lojaSelecionadaId ?? veiculo?.localLojaId ?? null;
   const localOptions = useMemo(() => {
     return locais
       .map((local) => {
-        const pertenceAoAlvo = alvoPreferencialId ? local.loja_id === alvoPreferencialId : false;
+        const pertence = alvoPreferencialId ? local.loja_id === alvoPreferencialId : false;
         const lojaNome = local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null;
         const label = lojaNome ? `${lojaNome} • ${local.nome}` : local.nome;
-        const prioridade = pertenceAoAlvo ? 0 : local.loja_id ? 1 : 2;
-        return {
-          value: local.id,
-          label,
-          pertenceAoAlvo,
-          prioridade,
-        } as const;
+        const prioridade = pertence ? 0 : local.loja_id ? 1 : 2;
+        return { value: local.id, label, pertence, prioridade } as const;
       })
-      .sort((a, b) => {
-        if (a.prioridade !== b.prioridade) return a.prioridade - b.prioridade;
-        return a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" });
-      });
+      .sort((a, b) => a.prioridade - b.prioridade || a.label.localeCompare(b.label, "pt-BR"));
   }, [locais, lojaNomePorId, alvoPreferencialId]);
 
-  const possuiUnidadePreferencial = alvoPreferencialId
-    ? localOptions.some((option) => option.pertenceAoAlvo)
-    : localOptions.length > 0;
-  const nomePreferencial = alvoPreferencialId ? lojaNomePorId.get(alvoPreferencialId) : null;
-
-  type ModeloComNomeCompleto = Modelo & { nomeCompleto: string };
-
-  const modelosComNomeCompleto = useMemo<ModeloComNomeCompleto[]>(
-    () =>
-      modelos.map((modelo) => ({
-        ...modelo,
-        nomeCompleto: buildModeloNomeCompletoOrDefault(modelo),
-      })),
-    [modelos],
+  const modelosComNomeCompleto = useMemo(
+    () => modelos.map((m) => ({ ...m, nomeCompleto: buildModeloNomeCompletoOrDefault(m) })),
+    [modelos]
   );
 
-  const modeloSelecionado = useMemo(() => {
-    if (!formState?.modelo_id) return null;
-    return (
-      modelosComNomeCompleto.find((modelo) => modelo.id === formState.modelo_id) ?? null
-    );
-  }, [formState?.modelo_id, modelosComNomeCompleto]);
+  const modeloSelecionado = useMemo(
+    () => modelosComNomeCompleto.find((m) => m.id === formState?.modelo_id) ?? null,
+    [formState?.modelo_id, modelosComNomeCompleto]
+  );
 
-  // inicializa o formulário
   useEffect(() => {
-    if (veiculo && !formState) {
-      setFormState(buildFormStateFromVeiculo(veiculo));
-    }
+    if (veiculo && !formState) setFormState(buildFormStateFromVeiculo(veiculo));
   }, [veiculo, formState]);
 
-  // 🔹 agora só condições de renderização, hooks já foram todos chamados
   if (!veiculoId) return <p className="p-6 text-red-600">Veículo inválido</p>;
-  if (isVeiculoLoading || !formState) return <p className="p-6 text-zinc-600">Carregando...</p>;
-  if (!veiculo) {
-    return <p className="p-6 text-zinc-600">Veículo não encontrado</p>;
-  }
+  if (isVeiculoLoading || !formState)
+    return <p className="p-6 text-zinc-600">Carregando...</p>;
+  if (!veiculo) return <p className="p-6 text-zinc-600">Veículo não encontrado</p>;
 
-  // Handlers
   const handleChange =
-    (field: keyof VehicleFormState): React.ChangeEventHandler<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    > =>
-    (event) => {
-      setFormState((prev) =>
-        prev ? { ...prev, [field]: event.target.value } : prev,
-      );
-    };
+    (field: keyof VehicleFormState) =>
+      (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+        setFormState((prev) => (prev ? { ...prev, [field]: e.target.value } : prev));
 
-  const handleToggleCaracteristica = (caracteristica: CaracteristicaFormValue) => {
+  const handleToggleCaracteristica = (c: CaracteristicaFormValue) =>
     setFormState((prev) =>
       prev
         ? {
-            ...prev,
-            caracteristicas: prev.caracteristicas.some((c) => c.id === caracteristica.id)
-              ? prev.caracteristicas.filter((c) => c.id !== caracteristica.id)
-              : [...prev.caracteristicas, caracteristica],
-          }
-        : prev,
+          ...prev,
+          caracteristicas: prev.caracteristicas.some((x) => x.id === c.id)
+            ? prev.caracteristicas.filter((x) => x.id !== c.id)
+            : [...prev.caracteristicas, c],
+        }
+        : prev
     );
-  };
 
-  const handleSubmit: React.FormEventHandler = async (event) => {
-    event.preventDefault();
-    if (!formState) return;
+  const handleSubmit: React.FormEventHandler = async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    if (!form.reportValidity() || !formState) {
+      setFeedback({ type: "error", message: "Preencha todos os campos obrigatórios." });
+      return;
+    }
+
+    const possuiUnidadePreferencial = alvoPreferencialId
+      ? localOptions.some((option) => option.pertence)
+      : localOptions.length > 0;
+    const nomePreferencial = alvoPreferencialId ? lojaNomePorId.get(alvoPreferencialId) : null;
 
     try {
       setIsSaving(true);
-      const toNumberOrNull = (value: string) => {
-        const trimmed = value.trim();
-        if (trimmed === "") return null;
-        const parsed = Number(trimmed);
-        return Number.isNaN(parsed) ? null : parsed;
-      };
-      const toValueOrNull = (value: string) => {
-        const trimmed = value.trim();
-        return trimmed === "" ? null : value;
-      };
-      const estadoVeiculo =
-        formState.estado_veiculo === "" ? null : formState.estado_veiculo;
-      const caracteristicasSelecionadas = formState.caracteristicas.map((item) => ({
-        id: item.id,
-        nome: item.nome,
-      }));
-      const caracteristicasOriginais = (veiculo.caracteristicas ?? []).map((item) => ({
-        id: item.id,
-        nome: item.nome,
-      }));
+      const toNumberOrNull = (v: string) =>
+        v.trim() === "" ? null : isNaN(Number(v)) ? null : Number(v);
+      const toValueOrNull = (v: string) => (v.trim() === "" ? null : v);
+      const hodometro = Number(formState.hodometro.trim());
+      if (isNaN(hodometro)) throw new Error("Informe um valor numérico válido para o hodômetro.");
+
       const { adicionar, remover } = calcularDiffCaracteristicas(
-        caracteristicasOriginais,
-        caracteristicasSelecionadas,
+        veiculo.caracteristicas ?? [],
+        formState.caracteristicas
       );
-      const modeloId = formState.modelo_id.trim();
-      const localId = formState.local_id.trim();
-      const hodometroValue = Number(formState.hodometro.trim());
-      if (Number.isNaN(hodometroValue)) {
-        throw new Error("Informe um valor numérico válido para o hodômetro.");
-      }
+
       const payload: Parameters<typeof atualizarVeiculo>[1] = {
         placa: formState.placa,
         cor: formState.cor,
         chassi: toValueOrNull(formState.chassi),
         ano_fabricacao: toNumberOrNull(formState.ano_fabricacao),
         ano_modelo: toNumberOrNull(formState.ano_modelo),
-        hodometro: hodometroValue,
+        hodometro,
         estado_venda: formState.estado_venda,
-        estado_veiculo: estadoVeiculo,
+        estado_veiculo: formState.estado_veiculo || null,
         preco_venal: toNumberOrNull(formState.preco_venal),
         observacao: toValueOrNull(formState.observacao),
-        modelo_id: modeloId === "" ? null : modeloId,
-        local_id: localId === "" ? null : localId,
+        modelo_id: formState.modelo_id || null,
+        local_id: formState.local_id || null,
         estagio_documentacao: toValueOrNull(formState.estagio_documentacao),
         adicionar_caracteristicas: adicionar,
         remover_caracteristicas: remover,
@@ -272,10 +197,7 @@ export default function EditarVeiculoPage() {
 
       await atualizarVeiculo(veiculo.id, payload);
       invalidateVeiculos(queryClient);
-      setFeedback({
-        type: "success",
-        message: "Dados atualizados com sucesso!",
-      });
+      setFeedback({ type: "success", message: "✅ Dados atualizados com sucesso!" });
     } catch (err) {
       setFeedback({
         type: "error",
@@ -287,21 +209,20 @@ export default function EditarVeiculoPage() {
   };
 
   return (
-    <div className="bg-white px-6 py-10">
-      <div className="mx-auto w-full max-w-5xl space-y-8">
+    <div className="relative bg-zinc-50 min-h-screen pb-24">
+      <div className="mx-auto w-full max-w-5xl px-6 py-10 space-y-10">
         <header className="border-b border-zinc-200 pb-6">
           <h1 className="text-2xl font-semibold text-zinc-900">Editar veículo</h1>
-          <p className="text-sm text-zinc-500">Placa {veiculo.placa}</p>
+          <p className="text-sm text-zinc-500 mt-1">Placa {veiculo.placa}</p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form id="form-editar-veiculo" onSubmit={handleSubmit} className="space-y-8">
           {feedback && (
             <div
-              className={`rounded-md px-4 py-3 text-sm ${
-                feedback.type === "success"
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
-              }`}
+              className={`rounded-md px-4 py-3 text-sm shadow-sm ${feedback.type === "success"
+                  ? "bg-green-50 text-green-700 border border-green-200"
+                  : "bg-red-50 text-red-700 border border-red-200"
+                }`}
             >
               {feedback.message}
             </div>
@@ -477,11 +398,6 @@ export default function EditarVeiculoPage() {
                     </option>
                   ))}
                 </select>
-                {alvoPreferencialId && !possuiUnidadePreferencial ? (
-                  <span className="text-xs text-zinc-500">
-                    Nenhuma unidade cadastrada para {nomePreferencial ?? "a loja selecionada"}. Cadastre uma em configurações.
-                  </span>
-                ) : null}
               </label>
             </div>
           </section>
@@ -525,15 +441,44 @@ export default function EditarVeiculoPage() {
               Cancelar
             </Link>
           </div>
+
         </form>
-        <div className="mt-4">
-            <LojaSelector />
-          </div>
-        <PhotoGallery 
-        veiculoId={veiculo.id}
-        supabase={supabase} // Ajuste conforme necessário
-        empresaId={veiculo.empresa_id}
-        />
+
+        <div className="mt-8 space-y-8">
+          <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:shadow-md transition">
+            <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
+              <span className="text-blue-600">•</span> Loja e fotos
+            </h2>
+            <div className="mt-4 space-y-6">
+              <LojaSelector />
+              <PhotoGallery
+                veiculoId={veiculo.id}
+                supabase={supabase}
+                empresaId={veiculo.empresa_id}
+              />
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* Botões flutuantes */}
+      <div className="fixed bottom-6 right-6 flex flex-col items-center gap-3 z-50">
+        <button
+          type="submit"
+          form="form-editar-veiculo"
+          disabled={isSaving}
+          className="h-14 w-14 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 active:scale-95 transition disabled:opacity-60"
+          title="Salvar"
+        >
+          💾
+        </button>
+        <Link
+          href="/estoque"
+          className="h-14 w-14 rounded-full border border-zinc-300 bg-white text-zinc-700 shadow-lg flex items-center justify-center hover:bg-zinc-100 active:scale-95 transition"
+          title="Cancelar"
+        >
+          ✖
+        </Link>
       </div>
     </div>
   );

@@ -123,7 +123,7 @@ const LS_KEYS = {
   localScope: "estoque:localScope",          // "todos" | "showroom" | "fora"
   localFiltro: "estoque:localFiltro",        // string (local id / __sem_local__)
   modeloFiltro: "estoque:modeloFiltro",      // string (modeloCompleto)
-  sortConfig: "estoque:sortConfig",  
+  sortConfig: "estoque:sortConfig",
   searchOpen: "estoque:searchOpen",
   // {key, direction}
 } as const;
@@ -290,6 +290,18 @@ export default function EstoquePage() {
     } catch { }
   }, [sortConfig]);
 
+  const temFiltrosAtivos = useMemo(() => {
+    return (
+      searchTerm.trim() !== "" ||
+      localScope !== "todos" ||
+      localFiltro !== "" ||
+      modeloFiltro !== ""
+      // precoMin != null ||
+      // precoMax != null
+    );
+  }, [searchTerm, estadoFiltro, localFiltro, modeloFiltro]);
+
+
   /* =========================
    * Dados derivados e filtros
    * ========================= */
@@ -430,27 +442,55 @@ export default function EstoquePage() {
   /* =========================
    * Handlers
    * ========================= */
-  const handleSearchSubmit = useCallback(
-    (event?: React.FormEvent<HTMLFormElement>) => {
-      event?.preventDefault();
-      const normalizedTerm = normalizeText(searchTerm);
+  // Adicione acima do handleSearchSubmit
+const [searchMatches, setSearchMatches] = useState<string[]>([]);
+const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
-      if (!normalizedTerm) {
-        searchInputRef.current?.focus();
-        return;
-      }
+// Substitua o handleSearchSubmit existente
+const handleSearchSubmit = useCallback(
+  (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    const normalizedTerm = normalizeText(searchTerm);
 
-      const match = veiculosOrdenados.find((veiculo) => matchesSearchTerm(veiculo, normalizedTerm));
-      if (!match) return;
+    if (!normalizedTerm) {
+      searchInputRef.current?.focus();
+      return;
+    }
 
-      const element = itemRefs.current.get(match.id);
+    // 1️⃣ Filtra todos os veículos que combinam com o termo
+    const matches = veiculosOrdenados
+      .filter((v) => matchesSearchTerm(v, normalizedTerm))
+      .map((v) => v.id);
+
+    if (matches.length === 0) {
+      console.log("Nenhum resultado encontrado para:", normalizedTerm);
+      return;
+    }
+
+    // 2️⃣ Atualiza lista de correspondências e índice atual
+    setSearchMatches(matches);
+
+    // Se é a primeira busca, começa do primeiro; senão vai para o próximo
+    setCurrentMatchIndex((prev) => {
+      const nextIndex = (prev + 1) % matches.length;
+      const targetId = matches[nextIndex];
+      const element = itemRefs.current.get(targetId);
+
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "center" });
-        setHighlightedId(match.id);
+        setHighlightedId(targetId);
       }
-    },
-    [veiculosOrdenados, searchTerm],
-  );
+
+      return nextIndex;
+    });
+  },
+  [veiculosOrdenados, searchTerm],
+);
+
+useEffect(() => {
+  setSearchMatches([]);
+  setCurrentMatchIndex(0);
+}, [searchTerm]);
 
   const handleViewToggle = useCallback(() => {
     setViewMode((prev) => (prev === "cards" ? "table" : "cards"));
@@ -708,7 +748,7 @@ export default function EstoquePage() {
                 <button
                   type="submit"
                   className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto"
-                  aria-label="Buscar veículo"
+                  aria-label="Buscar"
                 >
                   <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -771,10 +811,32 @@ export default function EstoquePage() {
               </p>
             </div>
           </section>
+
           <main
             style={{ marginTop: `${barHeight}px` }}
             className="mx-auto mt-6 w-full max-w-5xl">
-            <div />
+              
+            {temFiltrosAtivos && (
+            <div className="mt-3 flex items-center gap-3 text-sm">
+              <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
+                <span className="text-base">🔎</span>
+                <span>Filtrando resultados</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  setLocalFiltro("");
+                  setLocalScope("todos");
+                  setModeloFiltro("");
+                }}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800"
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
+
             {isLoading ? (
               <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50 py-16 text-center">
                 <p className="text-base font-medium text-zinc-600">Carregando veículos do estoque...</p>
@@ -819,8 +881,8 @@ export default function EstoquePage() {
               <Link
                 href={pathname ?? "/estoque"}
                 className={`rounded-full border px-3 py-1.5 transition ${!estadoFiltro
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-800"
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-800"
                   }`}
               >
                 Todos
@@ -834,8 +896,8 @@ export default function EstoquePage() {
                     key={estado}
                     href={href}
                     className={`rounded-full border px-3 py-1.5 transition ${active
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-800"
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-800"
                       }`}
                   >
                     {formatEstadoLabel(estado)}
@@ -847,6 +909,27 @@ export default function EstoquePage() {
               })}
             </nav>
           </header>
+
+          {temFiltrosAtivos && (
+            <div className="mt-3 flex items-center gap-3 text-sm">
+              <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
+                <span className="text-base">🔎</span>
+                <span>Filtrando resultados</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  setLocalFiltro("");
+                  setLocalScope("todos");
+                  setModeloFiltro("");
+                }}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800"
+              >
+                Limpar filtros
+              </button>
+            </div>
+          )}
 
           {/* CONTEÚDO */}
           <main className="mx-auto mt-6 w-full max-w-5xl">
