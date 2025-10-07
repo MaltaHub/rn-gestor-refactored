@@ -45,7 +45,7 @@ type FotoItem = {
   nome_original?: string | null;
 };
 type Props = {
-  supabase: any;
+  supabase: SupabaseClient;
   empresaId: string;
   veiculoId: string;
   bucket?: string;
@@ -254,10 +254,13 @@ export function PhotoGallery({
       // 4) remove do pending e revalida lista
       setPending((prev) => prev.filter((it) => it.tempId !== p.tempId));
       await qc.invalidateQueries({ queryKey: qKey });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Erro inesperado no upload";
       setPending((prev) =>
         prev.map((it) =>
-          it.tempId === p.tempId ? { ...it, status: "error", message: e?.message ?? "Erro no upload" } : it,
+          it.tempId === p.tempId
+            ? { ...it, status: "error", message }
+            : it,
         ),
       );
     }
