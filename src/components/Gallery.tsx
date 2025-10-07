@@ -306,13 +306,19 @@ export function PhotoGallery({
         <div className="relative aspect-square w-full">
           {displayUrl ? (
             <Image
-              src={displayUrl}
-              alt={foto.nome_original ?? ""}
-              fill
-              className="object-cover"
-              sizes="200px"
-              draggable={false}
-            />
+  src={displayUrl}
+  alt={foto.nome_original ?? ""}
+  fill
+  className="object-cover"
+  sizes="200px"
+  draggable={true}
+  onDragStart={(e) => {
+    // Permite arrastar a imagem para fora
+    e.dataTransfer.setData("text/uri-list", displayUrl);
+    e.dataTransfer.setData("text/plain", displayUrl);
+  }}
+/>
+
           ) : (
             <div className="flex h-full w-full animate-pulse items-center justify-center bg-zinc-100 text-xs text-zinc-400">
               Carregando…

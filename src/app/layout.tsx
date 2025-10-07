@@ -50,7 +50,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased theme-surface`}>
-        <ThemeScheduler />
+        {
+        //<ThemeScheduler />
+        }
         <ReactQueryProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
