@@ -79,7 +79,7 @@ export class VeiculoRepository extends BaseRepository<Veiculo> {
   async deleteWithRPC(id: string): Promise<any> {
     try {
       const result = await callRpc(RPC_FUNCTIONS.VEICULOS, {
-        operacao: 'deletar',
+        operacao: 'excluir',
         id,
       });
       return result;
