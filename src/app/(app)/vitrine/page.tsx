@@ -339,16 +339,16 @@ export default function VitrinePage() {
 
 
   return (
-    <div className="bg-white px-6 py-10 text-zinc-900">
+    <div className="bg-[var(--bg-primary)] px-6 py-10 text-[var(--text-primary)]">
       <header className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Vitrine de veículos</h1>
-            <p className="text-sm text-zinc-500">
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Vitrine de veículos</h1>
+            <p className="text-sm text-[var(--text-secondary)]">
               Explore e compartilhe os veículos disponíveis na loja selecionada.
             </p>
           </div>
-          <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] p-4 shadow-sm">
             <LojaSelector />
           </div>
         </div>
@@ -358,20 +358,20 @@ export default function VitrinePage() {
           ref={barRef}
           className="
     fixed inset-x-0 top-0 z-50
-    border-b border-zinc-200
-    bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75
+    border-b border-[var(--border)]
+    bg-[var(--bg-primary)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-primary)]/75
   "
         >
           {/* Conteúdo centralizado no mesmo grid da página */}
           <div className="mx-auto w-full max-w-6xl px-6 pt-4 pb-3">
             {/* Cabeçalho de controle */}
             <div className="flex items-center justify-between">
-              <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-lg">
-                <span className="text-xs font-semibold uppercase text-zinc-400">Pesq.:</span>
+              <label className="flex w-full items-center gap-3 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] focus-within:border-[var(--purple-dark)] focus-within:ring-2 focus-within:ring-[var(--purple-pale)] sm:max-w-lg">
+                <span className="text-xs font-semibold uppercase text-[var(--text-tertiary)]">Pesq.:</span>
                 <input
                   type="search"
                   placeholder="Modelo, placa, local..."
-                  className="h-8 w-full border-none bg-transparent text-sm text-zinc-700 outline-none"
+                  className="h-8 w-full border-none bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                 />
@@ -381,7 +381,7 @@ export default function VitrinePage() {
                 <button
                   type="button"
                   onClick={() => setFiltersOpen((prev) => !prev)}
-                  className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                  className="rounded-md border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--purple-dark)] hover:text-[var(--text-primary)]"
                 >
                   {filtersOpen ? "Ocultar filtros ▲" : "Mostrar filtros ▼"}
                 </button>
@@ -392,8 +392,8 @@ export default function VitrinePage() {
                     onClick={handleToggleManage}
                     disabled={!lojaSelecionada}
                     className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+                        ? "border-[var(--purple-dark)] bg-[var(--purple-pale)] text-[var(--purple-darker)]"
+                        : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--purple-dark)] hover:text-[var(--text-primary)]"
                       } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
                     {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
@@ -406,7 +406,7 @@ export default function VitrinePage() {
                     <button
                       type="button"
                       onClick={handleCycleViewMode}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm transition hover:bg-blue-700"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-[var(--purple-dark)] text-[var(--white-pure)] shadow-sm transition hover:bg-[var(--purple-darker)]"
                     >
                       <Icon className="h-5 w-5" />
                     </button>
@@ -421,7 +421,7 @@ export default function VitrinePage() {
                 <select
                   value={estadoFiltro}
                   onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
-                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)]"
                 >
                   <option value="">Todos os status</option>
                   {ESTADOS_VENDA.map((estado) => (
@@ -434,7 +434,7 @@ export default function VitrinePage() {
                 <select
                   value={caracteristicaFiltro}
                   onChange={(event) => setCaracteristicaFiltro(event.target.value)}
-                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)]"
                 >
                   <option value="">Todas as características</option>
                   {caracteristicas.map((caracteristica) => (
@@ -451,7 +451,7 @@ export default function VitrinePage() {
                   placeholder="Preço mínimo"
                   value={precoMin}
                   onChange={(event) => setPrecoMin(event.target.value)}
-                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)] placeholder:text-[var(--text-tertiary)]"
                 />
 
                 <input
@@ -461,13 +461,13 @@ export default function VitrinePage() {
                   placeholder="Preço máximo"
                   value={precoMax}
                   onChange={(event) => setPrecoMax(event.target.value)}
-                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)] placeholder:text-[var(--text-tertiary)]"
                 />
 
                 <select
                   value={ordenacao}
                   onChange={(event) => setOrdenacao(event.target.value as Ordenacao)}
-                  className="h-10 w-full rounded-md border border-zinc-200 px-3 text-sm text-zinc-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)]"
                 >
                   {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -487,8 +487,8 @@ export default function VitrinePage() {
     fixed bottom-6 right-6 z-50
     flex items-center justify-center
     h-14 w-14 rounded-full
-    bg-blue-600 text-white shadow-lg
-    transition hover:bg-blue-700 active:scale-95
+    bg-[var(--purple-dark)] text-[var(--white-pure)] shadow-lg
+    transition hover:bg-[var(--purple-darker)] active:scale-95
   "
           aria-label="Alternar pesquisa"
         >
@@ -498,18 +498,18 @@ export default function VitrinePage() {
         {/* ⛳️ Spacer para não sobrepor o conteúdo (altura da barra fixa) */}
 
         {lojaSelecionada ? (
-          <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-500">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]">
             <span>
-              Loja selecionada: <strong className="text-zinc-800">{lojaSelecionada.nome}</strong>
+              Loja selecionada: <strong className="text-[var(--text-primary)]">{lojaSelecionada.nome}</strong>
             </span>
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+            <span className="inline-flex items-center rounded-full bg-[var(--purple-pale)] px-3 py-1 text-xs font-medium text-[var(--purple-darker)]">
               {total} veículos encontrados
             </span>
           </div>
         ) : null}
         {temFiltrosAtivos && (
   <div className="mt-3 flex items-center gap-3 text-sm">
-    <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
+    <span className="inline-flex items-center gap-2 rounded-md border border-[var(--warning-pale)] bg-[var(--warning-pale)] px-3 py-1.5 text-[var(--warning)] shadow-sm">
       <span className="text-base">🔎</span>
       <span>Filtrando resultados</span>
     </span>
@@ -522,7 +522,7 @@ export default function VitrinePage() {
         setPrecoMin("");
         setPrecoMax("");
       }}
-      className="text-xs font-medium text-blue-600 hover:text-blue-800"
+      className="text-xs font-medium text-[var(--purple-dark)] hover:text-[var(--purple-darker)]"
     >
       Limpar filtros
     </button>
@@ -534,59 +534,59 @@ export default function VitrinePage() {
       <main className="mx-auto mt-8 w-auto max-w-6xl">
         {renderConteudo()}
         {isManaging && (
-          <section className="mt-10 space-y-4 rounded-lg border border-dashed border-zinc-200 bg-zinc-50 p-6">
+          <section className="mt-10 space-y-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)] p-6">
             <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-800">Gerenciar vitrine</h2>
-                <p className="text-sm text-zinc-500">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Gerenciar vitrine</h2>
+                <p className="text-sm text-[var(--text-secondary)]">
                   Adicione veículos do estoque para esta loja diariamente.
                 </p>
               </div>
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+              <span className="inline-flex items-center rounded-full bg-[var(--purple-pale)] px-3 py-1 text-xs font-semibold text-[var(--purple-darker)]">
                 {veiculosDisponiveis.length} disponíveis
               </span>
             </header>
             {!lojaSelecionada ? (
-              <div className="rounded-md border border-dashed border-zinc-200 bg-white p-6 text-sm text-zinc-500">
+              <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-primary)] p-6 text-sm text-[var(--text-secondary)]">
                 Selecione uma loja para gerenciar a vitrine.
               </div>
             ) : isEstoqueLoading ? (
-              <div className="rounded-md border border-dashed border-zinc-200 bg-white p-6 text-sm text-zinc-500">
+              <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-primary)] p-6 text-sm text-[var(--text-secondary)]">
                 Carregando veículos do estoque...
               </div>
             ) : veiculosDisponiveis.length === 0 ? (
-              <div className="rounded-md border border-dashed border-zinc-200 bg-white p-6 text-sm text-zinc-500">
+              <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-primary)] p-6 text-sm text-[var(--text-secondary)]">
                 Todos os veículos do estoque já estão nesta vitrine.
               </div>
             ) : (
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {veiculosDisponiveis.map((veiculo) => (
                   <li key={veiculo.id}>
-                    <article className="flex h-full flex-col gap-4 rounded-lg border border-dashed border-zinc-300 bg-white/80 p-5 text-sm text-zinc-600 shadow-sm opacity-75">
+                    <article className="flex h-full flex-col gap-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-primary)]/80 p-5 text-sm text-[var(--text-secondary)] shadow-sm opacity-75">
                       <div className="space-y-1">
-                        <h3 className="text-base font-semibold text-zinc-800">
+                        <h3 className="text-base font-semibold text-[var(--text-primary)]">
                           {veiculo.veiculoDisplay}
                         </h3>
-                        <p className="text-xs uppercase text-zinc-400">Placa {veiculo.placa}</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs uppercase text-[var(--text-tertiary)]">Placa {veiculo.placa}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">
                           Local atual: {veiculo.localDisplay ?? "Sem local"}
                         </p>
                       </div>
-                      <dl className="grid gap-3 text-xs text-zinc-500 sm:grid-cols-2">
+                      <dl className="grid gap-3 text-xs text-[var(--text-secondary)] sm:grid-cols-2">
                         <div>
-                          <dt className="font-medium text-zinc-700">Ano</dt>
+                          <dt className="font-medium text-[var(--text-primary)]">Ano</dt>
                           <dd>{veiculo.anoPrincipal ?? "—"}</dd>
                         </div>
                         <div>
-                          <dt className="font-medium text-zinc-700">Hodômetro</dt>
+                          <dt className="font-medium text-[var(--text-primary)]">Hodômetro</dt>
                           <dd>{veiculo.hodometroFormatado ?? "—"}</dd>
                         </div>
                         <div>
-                          <dt className="font-medium text-zinc-700">Status</dt>
+                          <dt className="font-medium text-[var(--text-primary)]">Status</dt>
                           <dd>{veiculo.estadoVendaLabel}</dd>
                         </div>
                         <div>
-                          <dt className="font-medium text-zinc-700">Preço base</dt>
+                          <dt className="font-medium text-[var(--text-primary)]">Preço base</dt>
                           <dd>{veiculo.precoFormatado ?? "Não informado"}</dd>
                         </div>
                       </dl>
