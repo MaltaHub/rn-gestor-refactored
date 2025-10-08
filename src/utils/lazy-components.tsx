@@ -13,14 +13,6 @@ const LoadingFallback = () => (
 );
 
 export const LazyPhotoGallery = dynamic(
-  () => import('@/components/PhotoGallery').then((mod) => ({ default: mod.PhotoGallery })),
-  {
-    loading: LoadingFallback,
-    ssr: false,
-  }
-);
-
-export const LazyGallery = dynamic(
   () => import('@/components/Gallery').then((mod) => ({ default: mod.PhotoGallery })),
   {
     loading: LoadingFallback,
