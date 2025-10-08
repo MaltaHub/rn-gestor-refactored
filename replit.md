@@ -6,6 +6,26 @@ The system supports multi-store operations with role-based access control, where
 
 # Recent Changes
 
+**October 8, 2025** - Phase 2: Dynamic Theme System ✅
+- Implemented ThemeProvider with Context API for global theme management
+- Created comprehensive theme system supporting 4 modes: light, dark, auto (scheduler), custom
+- Built token system mapping existing CSS variables for dynamic theming
+- Added ThemeToggle component in navbar for quick theme switching
+- Created ThemeSelector with visual mode picker in settings page
+- Implemented custom theme editor allowing users to customize colors
+- Fixed critical bug: theme switching now properly clears custom CSS overrides
+- Integrated with localStorage for theme persistence
+- Auto mode uses time-based scheduling (18:00-06:00 for dark theme)
+
+**October 8, 2025** - Phase 1: Configuration Centralization ✅
+- Created centralized config structure: config/{constants.ts, cache.ts, storage.ts, theme.ts}
+- Extracted all hardcoded values (MAX_FOTOS, NIGHT_START/END, bucket names, RPC names, staleTime)
+- Created useLocalStorage hook for SSR-safe storage access
+- Migrated 20+ files to use centralized configuration
+- Eliminated hardcoded localStorage keys across entire codebase
+- Added SPECIAL_VALUES for semantic constants (SEM_LOCAL, etc.)
+- Centralized ESTADOS_VENDA and all business logic constants
+
 **October 8, 2025** - Vitrine Page Refactoring with RenderCards Component
 - Created flexible RenderCards component with configurable props (mode: popup/inline, focusMode, domain: vitrine/estoque)
 - Refactored Vitrine page to use RenderCards, eliminating duplicate rendering functions (renderGridCards, renderInfoCards, renderTabela)
@@ -52,7 +72,9 @@ Preferred communication style: Simple, everyday language.
 **State Management**:
 - **Zustand** for client-side global state (store selection persistence)
 - **TanStack React Query** for server state management and caching
-- LocalStorage persistence for user preferences (view modes, filters, selected store)
+- **ThemeContext** for global theme state with localStorage persistence
+- Centralized configuration system (config/) for all app constants
+- Custom useLocalStorage hook for SSR-safe storage access
 
 **UI Patterns**:
 - Responsive design with mobile-first approach
@@ -63,7 +85,11 @@ Preferred communication style: Simple, everyday language.
 - Progressive Web App with service worker for offline support
 - Accessible components with ARIA labels and keyboard navigation
 
-**Styling**: Tailwind CSS v4 with custom theme variables for dynamic theming
+**Styling**: Tailwind CSS v4 with custom CSS variables and dynamic theme system
+- ThemeProvider with Context API for centralized theme management
+- Support for light, dark, auto (time-based), and custom color themes
+- Token system mapping CSS variables for consistent theming
+- localStorage persistence for user theme preferences
 
 **Key Design Decisions**:
 - Component library pattern with consistent variants (primary, secondary, outline, ghost, danger)
@@ -72,6 +98,8 @@ Preferred communication style: Simple, everyday language.
 - Separation of concerns between services (API calls), hooks (data management), and components (presentation)
 - Global logout event system to coordinate auth state across the app
 - Layout composition: separate layouts for app vs auth pages
+- Centralized configuration system to eliminate hardcoded values
+- Dynamic theme system with custom color support and persistence
 
 ## Backend Architecture
 
