@@ -1,26 +1,38 @@
-import { HTMLAttributes, forwardRef } from 'react';
+import { HTMLAttributes, forwardRef, ReactNode, CSSProperties } from 'react';
+import { SPACING, BORDER_RADIUS } from '@/config';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated' | 'outlined';
-  hoverable?: boolean;
+  padding?: keyof typeof SPACING;
+  customColors?: {
+    bg?: string;
+    border?: string;
+  };
 }
 
-export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ variant = 'default', hoverable = false, className = '', children, ...props }, ref) => {
-    const baseStyles = 'rounded-xl transition-all duration-200';
-    
+const CardRoot = forwardRef<HTMLDivElement, CardProps>(
+  ({ variant = 'default', padding = 'xl', customColors, className = '', children, style, ...props }, ref) => {
     const variants = {
       default: 'bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] border border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30',
       elevated: 'bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] shadow-lg shadow-[var(--purple-magic)]/5',
       outlined: 'border-2 border-[var(--purple-magic)]/30 dark:border-[var(--purple-light)]/30',
     };
 
-    const hoverStyles = hoverable ? 'hover:shadow-xl hover:shadow-[var(--purple-magic)]/10 hover:scale-[1.02] cursor-pointer hover:border-[var(--purple-magic)]/50' : '';
+    const cardStyle: CSSProperties = {
+      padding: SPACING[padding],
+      borderRadius: BORDER_RADIUS.xl,
+      ...(customColors && {
+        backgroundColor: customColors.bg,
+        borderColor: customColors.border,
+      }),
+      ...style,
+    };
 
     return (
       <div
         ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${hoverStyles} ${className}`}
+        className={`${customColors ? 'border' : variants[variant]} ${className}`}
+        style={cardStyle}
         {...props}
       >
         {children}
@@ -29,34 +41,88 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
   }
 );
 
-Card.displayName = 'Card';
+CardRoot.displayName = 'Card';
 
-export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className = '', children, ...props }, ref) => (
-    <div ref={ref} className={`p-6 pb-4 ${className}`} {...props}>
-      {children}
-    </div>
-  )
+interface CardHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  action?: ReactNode;
+}
+
+const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
+  ({ title, subtitle, action, className = '', children, style, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={`flex items-start justify-between gap-4 ${className}`}
+        style={{ marginBottom: SPACING.lg, ...style }}
+        {...props}
+      >
+        <div className="flex-1">
+          {title && (
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">
+              {title}
+            </h3>
+          )}
+          {subtitle && (
+            <p className="text-sm text-[var(--foreground)]/60 mt-1">
+              {subtitle}
+            </p>
+          )}
+          {children}
+        </div>
+        {action && <div className="flex-shrink-0">{action}</div>}
+      </div>
+    );
+  }
 );
 
-CardHeader.displayName = 'CardHeader';
+CardHeader.displayName = 'Card.Header';
 
-export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
-  ({ className = '', children, ...props }, ref) => (
-    <h3 ref={ref} className={`text-xl font-semibold text-[var(--foreground)] ${className}`} {...props}>
-      {children}
-    </h3>
-  )
+interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {}
+
+const CardBody = forwardRef<HTMLDivElement, CardBodyProps>(
+  ({ className = '', children, ...props }, ref) => {
+    return (
+      <div ref={ref} className={className} {...props}>
+        {children}
+      </div>
+    );
+  }
 );
 
-CardTitle.displayName = 'CardTitle';
+CardBody.displayName = 'Card.Body';
 
-export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className = '', children, ...props }, ref) => (
-    <div ref={ref} className={`px-6 pb-6 ${className}`} {...props}>
-      {children}
-    </div>
-  )
+interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
+  align?: 'left' | 'center' | 'right' | 'between';
+}
+
+const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
+  ({ align = 'right', className = '', children, style, ...props }, ref) => {
+    const alignments = {
+      left: 'justify-start',
+      center: 'justify-center',
+      right: 'justify-end',
+      between: 'justify-between',
+    };
+
+    return (
+      <div
+        ref={ref}
+        className={`flex items-center gap-3 ${alignments[align]} ${className}`}
+        style={{ marginTop: SPACING.lg, ...style }}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
 );
 
-CardContent.displayName = 'CardContent';
+CardFooter.displayName = 'Card.Footer';
+
+export const Card = Object.assign(CardRoot, {
+  Header: CardHeader,
+  Body: CardBody,
+  Footer: CardFooter,
+});
