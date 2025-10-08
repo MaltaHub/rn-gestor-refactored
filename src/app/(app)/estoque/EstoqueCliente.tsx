@@ -8,19 +8,14 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useLocais } from "@/hooks/use-configuracoes";
 import { Search, X } from "lucide-react";
+import { ESTADOS_VENDA as ESTADOS_VENDA_CONFIG, SPECIAL_VALUES, STORAGE_KEYS } from "@/config";
 
 /* =========================
  * Constantes / Utils
  * ========================= */
-const ESTADOS_VENDA: VeiculoUI["estado_venda"][] = [
-  "disponivel",
-  "reservado",
-  "vendido",
-  "repassado",
-  "restrito",
-];
+const ESTADOS_VENDA: VeiculoUI["estado_venda"][] = ESTADOS_VENDA_CONFIG as VeiculoUI["estado_venda"][];
 
-const SEM_LOCAL_VALUE = "__sem_local__";
+const SEM_LOCAL_VALUE = SPECIAL_VALUES.SEM_LOCAL;
 
 type SortKey =
   | "veiculoDisplay"
@@ -118,16 +113,7 @@ const matchesSearchTerm = (veiculo: VeiculoUI, normalizedTerm: string) => {
 /* =========================
  * Persistência (localStorage)
  * ========================= */
-const LS_KEYS = {
-  viewMode: "estoque:viewMode",              // "cards" | "table"
-  searchTerm: "estoque:searchTerm",          // string
-  localScope: "estoque:localScope",          // "todos" | "showroom" | "fora"
-  localFiltro: "estoque:localFiltro",        // string (local id / __sem_local__)
-  modeloFiltro: "estoque:modeloFiltro",      // string (modeloCompleto)
-  sortConfig: "estoque:sortConfig",
-  searchOpen: "estoque:searchOpen",
-  // {key, direction}
-} as const;
+const LS_KEYS = STORAGE_KEYS.estoque;
 
 const isValidView = (v: string | null): v is "cards" | "table" =>
   v === "cards" || v === "table";

@@ -22,6 +22,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import { useLojaStore } from "@/stores/useLojaStore";
+import { LIMITS, STORAGE_BUCKETS } from "@/config";
 
 type FotoItem = {
   id: string;
@@ -39,9 +40,6 @@ type Props = {
   bucket?: string; // default 'fotos_veiculos_loja'
   isPrivateBucket?: boolean; // se true, usa signedUrl para exibir
 };
-
-const MAX_FOTOS = 30;
-const DEFAULT_BUCKET = "fotos_veiculos_loja";
 
 const generateUuid = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -70,7 +68,7 @@ export function PhotoGallery({
   supabase,
   empresaId,
   veiculoId,
-  bucket = DEFAULT_BUCKET,
+  bucket = STORAGE_BUCKETS.FOTOS_VEICULOS_LOJA,
   isPrivateBucket = false,
 }: Props) {
   const loja = useLojaStore((s) => s.lojaSelecionada);
@@ -101,7 +99,7 @@ export function PhotoGallery({
     enabled: Boolean(lojaId),
   });
 
-  const canAdd = lojaId ? fotos.length < MAX_FOTOS : false;
+  const canAdd = lojaId ? fotos.length < LIMITS.MAX_FOTOS : false;
   useEffect(() => {
     if (!canAdd) {
       setIsDragActive(false);
@@ -120,7 +118,7 @@ export function PhotoGallery({
   const mAdd = useMutation({
     mutationFn: async (files: File[]) => {
       // 1) upload ao Storage
-      const remaining = MAX_FOTOS - fotos.length;
+      const remaining = LIMITS.MAX_FOTOS - fotos.length;
       const filesToUpload = files.slice(0, remaining);
 
       const uploadedPaths: {
@@ -388,7 +386,7 @@ export function PhotoGallery({
           </p>
         </div>
         <div className="text-sm">
-          {fotos.length}/{MAX_FOTOS}
+          {fotos.length}/{LIMITS.MAX_FOTOS}
         </div>
       </div>
 
@@ -411,7 +409,7 @@ export function PhotoGallery({
           >
             Selecionar arquivos
           </button>
-          {!canAdd && <span className="text-sm text-red-600">limite de {MAX_FOTOS} atingido</span>}
+          {!canAdd && <span className="text-sm text-red-600">limite de {LIMITS.MAX_FOTOS} atingido</span>}
         </div>
         <input
           ref={fileInputRef}

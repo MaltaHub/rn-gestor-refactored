@@ -1,5 +1,6 @@
 import { Database } from "@/types/supabase";
 import { callRpc } from "@/lib/supabase";
+import { RPC_FUNCTIONS } from "@/config";
 
 type Veiculo = Database["public"]["Tables"]["veiculos"]["Row"];
 export type CaracteristicaPayload = { id: string; nome: string };
@@ -12,8 +13,6 @@ export type VeiculoUpdatePayload = Partial<Veiculo> & {
   adicionar_caracteristicas?: CaracteristicaPayload[];
   remover_caracteristicas?: CaracteristicaPayload[];
 };
-
-const RPC_VEICULOS = "rpc_veiculos";
 
 const uniqueById = (items: CaracteristicaPayload[] = []) => {
   const map = new Map<string, CaracteristicaPayload>();
@@ -46,7 +45,7 @@ export function calcularDiffCaracteristicas(
 }
 
 export async function criarVeiculo(dados: VeiculoCreatePayload) {
-  return callRpc(RPC_VEICULOS, { operacao: "criar", dados });
+  return callRpc(RPC_FUNCTIONS.VEICULOS, { operacao: "criar", dados });
 }
 
 export async function atualizarVeiculo(id: string, dados: VeiculoUpdatePayload) {
@@ -58,7 +57,7 @@ export async function atualizarVeiculo(id: string, dados: VeiculoUpdatePayload) 
     remover_caracteristicas: remover_caracteristicas ?? [],
   } satisfies VeiculoUpdatePayload;
 
-  return callRpc(RPC_VEICULOS, {
+  return callRpc(RPC_FUNCTIONS.VEICULOS, {
     operacao: "atualizar",
     dados: payload,
     id,
@@ -66,5 +65,5 @@ export async function atualizarVeiculo(id: string, dados: VeiculoUpdatePayload) 
 }
 
 export async function deletarVeiculo(id: string) {
-  return callRpc(RPC_VEICULOS, { operacao: "excluir", id });
+  return callRpc(RPC_FUNCTIONS.VEICULOS, { operacao: "excluir", id });
 }

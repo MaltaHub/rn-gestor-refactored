@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 import type { Caracteristica } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";
+import { QUERY_CONFIG } from "@/config";
 
 type CaracteristicaPivot = {
   caracteristica: Caracteristica | null;
@@ -80,6 +81,6 @@ export function useVeiculos(id?: string) {
       return fetchVeiculos();
     },
     enabled: id ? Boolean(id) : true,
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.veiculos,
   });
 }

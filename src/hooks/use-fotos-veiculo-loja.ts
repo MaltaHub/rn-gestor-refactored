@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
-
-const FOTOS_BUCKET = "fotos_veiculos_loja";
+import { STORAGE_BUCKETS } from "@/config";
 
 export type FotoVeiculoLoja = {
   id: string;
@@ -19,7 +18,7 @@ type Params = {
 };
 
 const buildPublicUrl = (path: string) => {
-  const { data } = supabase.storage.from(FOTOS_BUCKET).getPublicUrl(path);
+  const { data } = supabase.storage.from(STORAGE_BUCKETS.FOTOS_VEICULOS_LOJA).getPublicUrl(path);
   return data.publicUrl ?? "";
 };
 

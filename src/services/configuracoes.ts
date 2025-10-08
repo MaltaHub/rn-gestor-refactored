@@ -1,4 +1,5 @@
 import { callRpc } from "@/lib/supabase";
+import { RPC_FUNCTIONS } from "@/config";
 
 type ConfiguracaoArea =
   | "loja"
@@ -10,8 +11,6 @@ type ConfiguracaoArea =
 
 type ConfiguracaoPayload = Record<string, unknown>;
 
-const RPC_CONFIGURACOES = "rpc_configuracoes";
-
 const extractId = (dados: ConfiguracaoPayload): string | undefined => {
   if (!("id" in dados)) return undefined;
   const value = (dados as { id?: unknown }).id;
@@ -22,7 +21,7 @@ export async function salvarConfiguracao(area: ConfiguracaoArea, dados: Configur
   const id = extractId(dados);
   const operacao = `${area}/${id ? "atualizar" : "criar"}`;
 
-  const response = await callRpc(RPC_CONFIGURACOES, {
+  const response = await callRpc(RPC_FUNCTIONS.CONFIGURACOES, {
     operacao,
     dados,
     id,
@@ -33,7 +32,7 @@ export async function salvarConfiguracao(area: ConfiguracaoArea, dados: Configur
 
 export async function remove(area: ConfiguracaoArea, id: string) {
   const operacao = `${area}/excluir`;
-  const response = await callRpc(RPC_CONFIGURACOES, { operacao, id });
+  const response = await callRpc(RPC_FUNCTIONS.CONFIGURACOES, { operacao, id });
 
   return { success: response.status === "success" };
 }

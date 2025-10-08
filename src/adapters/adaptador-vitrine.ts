@@ -13,8 +13,7 @@ import type {
   VeiculoLoja,
 } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";
-
-const FOTOS_BUCKET = "fotos_veiculos_loja";
+import { STORAGE_BUCKETS } from "@/config";
 
 type CaracteristicaPivot = {
   caracteristica: Caracteristica | null;
@@ -65,7 +64,7 @@ const toVeiculoResumo = (raw: RawVeiculo): VeiculoResumo | null => {
 
 const getPublicUrl = (path: string | null): string | null => {
   if (!path) return null;
-  const result = supabase.storage.from(FOTOS_BUCKET).getPublicUrl(path);
+  const result = supabase.storage.from(STORAGE_BUCKETS.FOTOS_VEICULOS_LOJA).getPublicUrl(path);
   return result.data?.publicUrl ?? null;
 };
 

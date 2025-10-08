@@ -11,6 +11,7 @@ import {
   listarUsuarios,
   type UsuarioListado,
 } from "@/services/admin";
+import { QUERY_CONFIG } from "@/config";
 
 export const adminKeys = {
   empresas: ["admin", "empresas"] as const,
@@ -22,7 +23,7 @@ export function useAdminEmpresas() {
   return useQuery<Empresa[]>({
     queryKey: adminKeys.empresas,
     queryFn: listarEmpresasAdmin,
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.admin.empresas,
   });
 }
 
@@ -30,7 +31,7 @@ export function useAdminMembros() {
   return useQuery<MembroEmpresa[]>({
     queryKey: adminKeys.membros,
     queryFn: listarMembrosEmpresaAdmin,
-    staleTime: 1000 * 60,
+    ...QUERY_CONFIG.admin.membros,
   });
 }
 
@@ -38,7 +39,7 @@ export function useAdminUsuarios() {
   return useQuery<UsuarioListado[]>({
     queryKey: adminKeys.usuarios,
     queryFn: listarUsuarios,
-    staleTime: 1000 * 30,
+    ...QUERY_CONFIG.admin.usuarios,
   });
 }
 

@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSensors, useSensor, PointerSensor } from "@dnd-kit/core";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { LIMITS, STORAGE_BUCKETS } from "@/config";
 
 /**
  * Retorna a URL pública (sem expiração) de um arquivo do bucket.
@@ -51,8 +52,6 @@ type Props = {
   bucket?: string;
   isPrivateBucket?: boolean;
 };
-const DEFAULT_BUCKET = "fotos_veiculos_loja";
-const MAX_FOTOS = 30;
 
 // ——— tipos internos auxiliares ———
 type PendingItem = {
@@ -67,7 +66,7 @@ export function PhotoGallery({
   supabase,
   empresaId,
   veiculoId,
-  bucket = DEFAULT_BUCKET,
+  bucket = STORAGE_BUCKETS.FOTOS_VEICULOS_LOJA,
   isPrivateBucket = false,
 }: Props) {
   const loja = useLojaStore((s) => s.lojaSelecionada);
@@ -105,7 +104,7 @@ export function PhotoGallery({
   // pode adicionar?
   const canAdd = useMemo(() => {
     const countLive = fotos.length + pending.filter(p => p.status !== "canceled" && p.status !== "error").length;
-    return lojaId ? countLive < MAX_FOTOS : false;
+    return lojaId ? countLive < LIMITS.MAX_FOTOS : false;
   }, [lojaId, fotos.length, pending]);
 
   useEffect(() => {
@@ -192,7 +191,7 @@ export function PhotoGallery({
   // enfileirar arquivos (upload paralelo)
   const enqueueFiles = (files: File[]) => {
     if (!lojaId) return;
-    const remaining = Math.max(0, MAX_FOTOS - (fotos.length + pending.length));
+    const remaining = Math.max(0, LIMITS.MAX_FOTOS - (fotos.length + pending.length));
     const filesToUpload = files.slice(0, remaining);
 
     const newPendings: PendingItem[] = filesToUpload.map((file) => ({
@@ -418,7 +417,7 @@ export function PhotoGallery({
           </p>
         </div>
         <div className="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">
-          {fotos.length + pending.filter(p => p.status !== "canceled" && p.status !== "error").length}/{MAX_FOTOS}
+          {fotos.length + pending.filter(p => p.status !== "canceled" && p.status !== "error").length}/{LIMITS.MAX_FOTOS}
         </div>
       </div>
 
@@ -445,7 +444,7 @@ export function PhotoGallery({
           </button>
           {!canAdd && (
             <span className="text-xs font-medium text-red-600">
-              Limite de {MAX_FOTOS} atingido
+              Limite de {LIMITS.MAX_FOTOS} atingido
             </span>
           )}
         </div>

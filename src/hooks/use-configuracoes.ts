@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Loja, Plataforma, Caracteristica, Modelo, Local, UnidadeLoja } from "@/types";
 import { listar_tabela } from "@/services";
+import { QUERY_CONFIG } from "@/config";
 
 const configuracoesKeys = {
   lojas: ["configuracoes", "loja"] as const,
@@ -17,7 +18,7 @@ export function useLojas() {
   return useQuery<Loja[]>({
     queryKey: configuracoesKeys.lojas,
     queryFn: () => listar_tabela("lojas"),
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.configuracoes,
   });
 }
 
@@ -25,7 +26,7 @@ export function usePlataformas() {
   return useQuery<Plataforma[]>({
     queryKey: configuracoesKeys.plataformas,
     queryFn: () => listar_tabela("plataformas"),
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.configuracoes,
   });
 }
 
@@ -33,7 +34,7 @@ export function useCaracteristicas() {
   return useQuery<Caracteristica[]>({
     queryKey: configuracoesKeys.caracteristicas,
     queryFn: () => listar_tabela("caracteristicas"),
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.configuracoes,
   });
 }
 
@@ -41,7 +42,7 @@ export function useModelos() {
   return useQuery<Modelo[]>({
     queryKey: configuracoesKeys.modelos,
     queryFn: () => listar_tabela("modelos"),
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.configuracoes,
   });
 }
 
@@ -114,7 +115,7 @@ export function useLocais() {
       // ✅ Garante retorno (corrige o erro TS2355)
       return todos;
     },
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.configuracoes,
   });
 }
 
@@ -153,7 +154,7 @@ export function useUnidadesLoja() {
 
       return resposta;
     },
-    staleTime: 1000 * 60 * 5,
+    ...QUERY_CONFIG.configuracoes,
   });
 }
 

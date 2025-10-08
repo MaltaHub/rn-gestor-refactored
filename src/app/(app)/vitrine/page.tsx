@@ -14,6 +14,7 @@ import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { AddVehicleToStoreButton } from "./loja-actions";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useCaracteristicas } from "@/hooks/use-configuracoes";
+import { ESTADOS_VENDA as ESTADOS_VENDA_CONFIG, STORAGE_KEYS } from "@/config";
 
 import { Grid, Rows, Table } from "lucide-react";
 type ViewMode = "cards-photo" | "cards-info" | "table";
@@ -27,14 +28,14 @@ const VIEW_MODE_ICON: Record<ViewMode, React.ElementType> = {
 
 const VIEW_MODE_ORDER: ViewMode[] = ["cards-photo", "cards-info", "table"];
 
-const VIEW_MODE_STORAGE_KEY = "vitrine:view-mode";
-const FILTERS_OPEN_STORAGE_KEY = "vitrine:filters-open";
-const SEARCH_OPEN_STORAGE_KEY = "vitrine:search-open";
-const STATUS_VALUE_STORAGE_KEY = "vitrine:status-value";
-const CHARACTERISTIC_VALUE_STORAGE_KEY = "vitrine:characteristic-value";
-const PRICE_MIN_VALUE_STORAGE_KEY = "vitrine:price-min-value";
-const PRICE_MAX_VALUE_STORAGE_KEY = "vitrine:price-max-value";
-const SORT_VALUE_STORAGE_KEY = "vitrine:sort-value";
+const VIEW_MODE_STORAGE_KEY = STORAGE_KEYS.vitrine.viewMode;
+const FILTERS_OPEN_STORAGE_KEY = STORAGE_KEYS.vitrine.filtersOpen;
+const SEARCH_OPEN_STORAGE_KEY = STORAGE_KEYS.vitrine.searchOpen;
+const STATUS_VALUE_STORAGE_KEY = STORAGE_KEYS.vitrine.statusValue;
+const CHARACTERISTIC_VALUE_STORAGE_KEY = STORAGE_KEYS.vitrine.characteristicValue;
+const PRICE_MIN_VALUE_STORAGE_KEY = STORAGE_KEYS.vitrine.priceMin;
+const PRICE_MAX_VALUE_STORAGE_KEY = STORAGE_KEYS.vitrine.priceMax;
+const SORT_VALUE_STORAGE_KEY = STORAGE_KEYS.vitrine.sortValue;
 
 const isValidViewMode = (value: string): value is ViewMode =>
   VIEW_MODE_ORDER.includes(value as ViewMode);
@@ -46,13 +47,7 @@ const ORDENACAO_LABEL: Record<Ordenacao, string> = {
   modelo: "Modelo (A-Z)",
 };
 
-const ESTADOS_VENDA = [
-  "disponivel",
-  "reservado",
-  "vendido",
-  "repassado",
-  "restrito",
-] as const;
+const ESTADOS_VENDA = ESTADOS_VENDA_CONFIG;
 
 type EstadoVendaFiltro = (typeof ESTADOS_VENDA)[number];
 

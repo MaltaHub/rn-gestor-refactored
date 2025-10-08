@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage, type PersistStorage } from "zustand/middleware";
 import { Loja } from "@/types";
+import { STORAGE_KEYS } from "@/config";
 
 interface LojaState {
   lojaSelecionada: Loja | null;
@@ -31,7 +32,7 @@ export const useLojaStore = create<LojaState>()(
       setLojaSelecionada: (loja) => set({ lojaSelecionada: loja }),
     }),
     {
-      name: "vitrine:loja-selecionada",
+      name: STORAGE_KEYS.lojaSelecionada,
       storage,
       partialize: (state) => ({ lojaSelecionada: state.lojaSelecionada }),
     }
