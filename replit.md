@@ -6,6 +6,17 @@ The system supports multi-store operations with role-based access control, where
 
 # Recent Changes
 
+**October 8, 2025** - Phase 4: Architecture Abstraction with Repository Pattern and RBAC ✅
+- Implemented Repository Pattern for data access abstraction (BaseRepository, VeiculoRepository, LojaRepository, PermissionRepository)
+- Created comprehensive RBAC system with role-based permissions (proprietario, administrador, gerente, consultor, usuario)
+- Built PermissionService for centralized permission checking and validation
+- Implemented usePermissions hook for React components to check user permissions
+- Created PermissionGuard component for UI protection based on roles and permissions
+- Developed new service layer (EstoqueService, LojaService) using repository pattern
+- Added centralized error handling with custom error classes (AppError, AuthenticationError, AuthorizationError, etc.)
+- Maintained backward compatibility with existing services while introducing new architecture
+- Fixed critical bug: VeiculoRepository RPC operation aligned with existing contract
+
 **October 8, 2025** - Phase 3: UI Components Refactoring with Design Tokens ✅
 - Created comprehensive design token system (SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS, TRANSITIONS)
 - Refactored Button with icon support, loading states, and custom color theming (bg, text, hover, focus)
@@ -85,6 +96,13 @@ Preferred communication style: Simple, everyday language.
 - **ThemeContext** for global theme state with localStorage persistence
 - Centralized configuration system (config/) for all app constants
 - Custom useLocalStorage hook for SSR-safe storage access
+
+**Architecture Patterns**:
+- **Repository Pattern**: Data access abstraction layer isolating business logic from database operations
+- **Service Layer**: Business logic encapsulation using repositories for data access
+- **RBAC (Role-Based Access Control)**: Comprehensive permission system with 5 user roles and granular permissions
+- **Error Handling**: Centralized error classes with structured error propagation
+- **Separation of Concerns**: Clear boundaries between repositories, services, hooks, and components
 
 **UI Patterns**:
 - Responsive design with mobile-first approach
