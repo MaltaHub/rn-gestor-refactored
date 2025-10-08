@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactQueryProvider } from "../components/react-query-provider";
-import { Navbar } from "../components/navbar";  // <-- importa aqui
 import { PWARegister } from "../components/pwa-register";
 import { ThemeScheduler } from "../components/theme-scheduler";
 
@@ -54,17 +53,7 @@ export default function RootLayout({
         //<ThemeScheduler />
         }
         <ReactQueryProvider>
-          <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-grow theme-surface">{/* Conteúdo principal */}
-              {children}
-            </main>
-            <footer className="mx-auto w-full border-t theme-border theme-surface py-6">
-              <div className="mx-auto max-w-6xl px-4 text-center text-sm">
-                © {new Date().getFullYear()} Gestor de Veículos
-              </div>
-            </footer>
-          </div>
+          {children}
           <PWARegister />
         </ReactQueryProvider>
       </body>
