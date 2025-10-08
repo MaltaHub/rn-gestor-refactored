@@ -11,11 +11,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
     
     const variants = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 active:bg-blue-800',
-      secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500 active:bg-gray-800',
-      outline: 'border-2 border-gray-300 hover:bg-gray-50 focus:ring-gray-500 dark:border-gray-600 dark:hover:bg-gray-800',
-      ghost: 'hover:bg-gray-100 focus:ring-gray-500 dark:hover:bg-gray-800',
-      danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800',
+      primary: 'bg-[var(--purple-dark)] text-[var(--white-pure)] hover:bg-[var(--purple-darker)] focus:ring-[var(--purple-light)] active:bg-[var(--purple-darker)] shadow-sm',
+      secondary: 'bg-[var(--jungle-dark)] text-[var(--white-pure)] hover:bg-[var(--jungle-dark)]/90 focus:ring-[var(--jungle-light)] active:bg-[var(--jungle-dark)]/80 shadow-sm',
+      outline: 'border-2 border-[var(--purple-dark)] text-[var(--purple-dark)] hover:bg-[var(--purple-pale)] focus:ring-[var(--purple-light)] dark:border-[var(--purple-light)] dark:text-[var(--purple-light)] dark:hover:bg-[var(--purple-dark)]/20',
+      ghost: 'hover:bg-[var(--purple-pale)] text-[var(--purple-darker)] focus:ring-[var(--purple-light)] dark:text-[var(--purple-light)] dark:hover:bg-[var(--purple-dark)]/20',
+      danger: 'bg-[var(--danger-dark)] text-[var(--white-pure)] hover:bg-[var(--danger)] focus:ring-[var(--danger-light)] active:bg-[var(--danger)] shadow-sm',
     };
 
     const sizes = {

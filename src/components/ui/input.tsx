@@ -16,13 +16,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+          <label htmlFor={inputId} className="block text-sm font-medium text-[var(--foreground)] mb-1.5">
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
               {leftIcon}
             </div>
           )}
@@ -36,12 +36,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               ${leftIcon ? 'pl-10' : ''}
               ${rightIcon ? 'pr-10' : ''}
               ${error 
-                ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                ? 'border-[var(--danger)] focus:ring-[var(--danger)] focus:border-[var(--danger)]' 
+                : 'border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 focus:ring-[var(--purple-magic)] focus:border-[var(--purple-magic)]'
               }
-              bg-white dark:bg-gray-800 
-              text-gray-900 dark:text-gray-100
-              placeholder:text-gray-400
+              bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] 
+              text-[var(--foreground)]
+              placeholder:text-[var(--foreground)]/40
               focus:outline-none focus:ring-2
               disabled:opacity-50 disabled:cursor-not-allowed
               ${className}
@@ -49,13 +49,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground)]/40">
               {rightIcon}
             </div>
           )}
         </div>
         {error && (
-          <p id={errorId} className="mt-1.5 text-sm text-red-600 dark:text-red-400" role="alert">
+          <p id={errorId} className="mt-1.5 text-sm text-[var(--danger)] dark:text-[var(--danger-light)]" role="alert">
             {error}
           </p>
         )}

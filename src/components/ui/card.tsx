@@ -10,12 +10,12 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     const baseStyles = 'rounded-xl transition-all duration-200';
     
     const variants = {
-      default: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
-      elevated: 'bg-white dark:bg-gray-800 shadow-lg',
-      outlined: 'border-2 border-gray-300 dark:border-gray-600',
+      default: 'bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] border border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30',
+      elevated: 'bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] shadow-lg shadow-[var(--purple-magic)]/5',
+      outlined: 'border-2 border-[var(--purple-magic)]/30 dark:border-[var(--purple-light)]/30',
     };
 
-    const hoverStyles = hoverable ? 'hover:shadow-xl hover:scale-[1.02] cursor-pointer' : '';
+    const hoverStyles = hoverable ? 'hover:shadow-xl hover:shadow-[var(--purple-magic)]/10 hover:scale-[1.02] cursor-pointer hover:border-[var(--purple-magic)]/50' : '';
 
     return (
       <div
@@ -43,7 +43,7 @@ CardHeader.displayName = 'CardHeader';
 
 export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
   ({ className = '', children, ...props }, ref) => (
-    <h3 ref={ref} className={`text-xl font-semibold text-gray-900 dark:text-gray-100 ${className}`} {...props}>
+    <h3 ref={ref} className={`text-xl font-semibold text-[var(--foreground)] ${className}`} {...props}>
       {children}
     </h3>
   )

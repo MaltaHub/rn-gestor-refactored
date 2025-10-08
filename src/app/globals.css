@@ -1,24 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --background-light: #ffffff; /* Cor de fundo para tema claro */
-  --background-dark: #121212; /* Cor de fundo para tema escuro */
-  --text-light: #000000; /* Cor do texto para tema claro */
-  --text-dark: #ffffff; /* Cor do texto para tema escuro */
-  --foreground-light: #000000; /* Texto preto para tema claro */
-  --foreground-dark: #000000; /* Texto preto para tema escuro */
+  --purple-magic: #8B5CF6;
+  --purple-dark: #6D28D9;
+  --purple-darker: #5B21B6;
+  --purple-light: #A78BFA;
+  --purple-lighter: #C4B5FD;
+  --purple-pale: #EDE9FE;
+  
+  --white-delicate: #FAFAFA;
+  --white-soft: #F5F5F5;
+  --white-pure: #FFFFFF;
+  --gray-whisper: #E5E5E5;
+  --gray-light: #D4D4D4;
+  
+  --jungle-green: #059669;
+  --jungle-dark: #047857;
+  --jungle-light: #10B981;
+  --jungle-pale: #D1FAE5;
+  
+  --danger: #DC2626;
+  --danger-dark: #B91C1C;
+  --danger-light: #FCA5A5;
+  --danger-pale: #FEE2E2;
+  --warning: #D97706;
+  --warning-light: #FCD34D;
+  --warning-pale: #FEF3C7;
+  
+  --background: var(--white-delicate);
+  --foreground: #1F2937;
+  --background-light: var(--white-delicate);
+  --background-dark: #0F0A1F;
+  --surface-dark: #1a0f2e;
+  --text-light: #1F2937;
+  --text-dark: #F9FAFB;
+  --foreground-light: #1F2937;
+  --foreground-dark: #F9FAFB;
 }
 
 [data-theme="light"] {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--white-delicate);
+  --foreground: #1F2937;
 }
 
 [data-theme="dark"] {
-  --background: #050505;
-  --foreground: #f4f4f5;
+  --background: #0F0A1F;
+  --foreground: #F9FAFB;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -42,7 +69,7 @@ html[data-theme='light'] {
 
 html[data-theme='dark'] {
   background-color: var(--background-dark);
-  color: #000000; /* Força o texto a preto */
+  color: var(--text-dark);
   --foreground: var(--foreground-dark);
 }
 

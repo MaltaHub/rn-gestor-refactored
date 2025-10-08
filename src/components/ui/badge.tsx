@@ -10,11 +10,11 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
     const baseStyles = 'inline-flex items-center font-medium rounded-full';
     
     const variants = {
-      default: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-      success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-      warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-      danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-      info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+      default: 'bg-[var(--gray-whisper)] text-[var(--foreground)] dark:bg-[var(--purple-dark)]/20 dark:text-[var(--foreground)]',
+      success: 'bg-[var(--jungle-pale)] text-[var(--jungle-dark)] dark:bg-[var(--jungle-dark)] dark:text-[var(--jungle-pale)]',
+      warning: 'bg-[var(--warning-pale)] text-[var(--warning)] dark:bg-[var(--warning)]/30 dark:text-[var(--warning-light)]',
+      danger: 'bg-[var(--danger-pale)] text-[var(--danger)] dark:bg-[var(--danger)]/30 dark:text-[var(--danger-light)]',
+      info: 'bg-[var(--purple-pale)] text-[var(--purple-dark)] dark:bg-[var(--purple-dark)] dark:text-[var(--purple-pale)]',
     };
 
     const sizes = {

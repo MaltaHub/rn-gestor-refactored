@@ -88,16 +88,16 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700"
+        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] shadow-lg border border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30 hover:bg-[var(--purple-pale)] dark:hover:bg-[var(--purple-dark)]/20"
         aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'}
       >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {isOpen ? <X className="w-6 h-6 text-[var(--purple-magic)] dark:text-[var(--purple-light)]" /> : <Menu className="w-6 h-6 text-[var(--purple-magic)] dark:text-[var(--purple-light)]" />}
       </button>
 
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-[var(--foreground)]/50 z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -105,7 +105,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-40
+          fixed top-0 left-0 h-full bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] border-r border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30 z-40 shadow-sm
           transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
@@ -114,7 +114,7 @@ export function Sidebar() {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className={`flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800 ${isCollapsed ? 'lg:justify-center lg:p-4' : ''}`}>
+          <div className={`flex items-center justify-between p-6 border-b border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30 ${isCollapsed ? 'lg:justify-center lg:p-4' : ''}`}>
             <Link href="/" className={`flex items-center gap-3 ${isCollapsed ? 'lg:hidden' : ''}`}>
               <div className="relative h-10 w-10 flex-shrink-0">
                 <Image
@@ -126,7 +126,7 @@ export function Sidebar() {
                   priority
                 />
               </div>
-              <span className="font-bold text-lg text-gray-900 dark:text-gray-100">
+              <span className="font-bold text-lg bg-gradient-to-r from-[var(--purple-magic)] to-[var(--jungle-green)] bg-clip-text text-transparent">
                 RN Gestor
               </span>
             </Link>
@@ -144,7 +144,7 @@ export function Sidebar() {
             </Link>
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:block p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="hidden lg:block p-1.5 rounded-lg hover:bg-[var(--purple-pale)] dark:hover:bg-[var(--purple-dark)]/20 transition-colors text-[var(--purple-magic)]"
               aria-label={isCollapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
             >
               {isCollapsed ? (
@@ -170,13 +170,13 @@ export function Sidebar() {
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
                         ${isActive 
-                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' 
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-gradient-to-r from-[var(--purple-pale)] to-[var(--jungle-pale)]/30 text-[var(--purple-dark)] dark:bg-gradient-to-r dark:from-[var(--purple-dark)]/30 dark:to-[var(--jungle-dark)]/20 dark:text-[var(--purple-light)] font-medium shadow-sm' 
+                          : 'text-[var(--foreground)] hover:bg-[var(--purple-pale)]/50 dark:hover:bg-[var(--purple-dark)]/10'
                         }
                         ${isCollapsed ? 'lg:justify-center lg:px-3' : ''}
                       `}
                     >
-                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`} aria-hidden="true" />
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-[var(--purple-magic)] dark:text-[var(--purple-light)]' : 'text-[var(--foreground)]'}`} aria-hidden="true" />
                       <span className={`${isCollapsed ? 'lg:hidden' : ''}`}>
                         {item.label}
                       </span>
@@ -189,8 +189,8 @@ export function Sidebar() {
 
           {/* Footer Info */}
           {!isCollapsed && (
-            <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            <div className="p-4 border-t border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30">
+              <div className="text-xs text-[var(--foreground)]/60 text-center">
                 Sistema de Gestão de Veículos
               </div>
             </div>
