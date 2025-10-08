@@ -70,7 +70,7 @@ const GridCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
       const data = getVehicleData(item, domain);
       return (
         <li key={data.id} className="flex flex-col h-full w-full">
-          <Card variant="default" hoverable className="flex h-full w-full flex-col overflow-hidden">
+          <Card variant="default" className="flex h-full w-full flex-col overflow-hidden">
             <Link href={data.detailUrl} className="block h-full w-full">
               <div className="relative aspect-video w-full bg-[var(--white-soft)] overflow-hidden">
                 {data.capaUrl ? (
@@ -154,7 +154,7 @@ const InfoCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
       const data = getVehicleData(item, domain);
       return (
         <li key={data.id}>
-          <Card variant="default" hoverable className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+          <Card variant="default" className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
             <Link href={data.detailUrl}>
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center gap-3">
