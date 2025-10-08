@@ -1,0 +1,81 @@
+import { ThemeColors } from './types';
+
+export const defaultThemeColors: ThemeColors = {
+  purple: {
+    magic: '#8B5CF6',
+    dark: '#6D28D9',
+    darker: '#5B21B6',
+    light: '#A78BFA',
+    lighter: '#C4B5FD',
+    pale: '#EDE9FE',
+  },
+  neutral: {
+    whiteDelicate: '#FAFAFA',
+    whiteSoft: '#F5F5F5',
+    whitePure: '#FFFFFF',
+    grayWhisper: '#E5E5E5',
+    grayLight: '#D4D4D4',
+  },
+  semantic: {
+    jungle: '#059669',
+    jungleDark: '#047857',
+    jungleLight: '#10B981',
+    junglePale: '#D1FAE5',
+    danger: '#DC2626',
+    dangerDark: '#B91C1C',
+    dangerLight: '#FCA5A5',
+    dangerPale: '#FEE2E2',
+    warning: '#D97706',
+    warningLight: '#FCD34D',
+    warningPale: '#FEF3C7',
+  },
+  theme: {
+    background: '#FAFAFA',
+    foreground: '#1F2937',
+    backgroundLight: '#FAFAFA',
+    backgroundDark: '#0F0A1F',
+    surfaceDark: '#1a0f2e',
+    textLight: '#1F2937',
+    textDark: '#F9FAFB',
+  },
+};
+
+export const cssVariableMap: Record<keyof ThemeColors, Record<string, string>> = {
+  purple: {
+    magic: '--purple-magic',
+    dark: '--purple-dark',
+    darker: '--purple-darker',
+    light: '--purple-light',
+    lighter: '--purple-lighter',
+    pale: '--purple-pale',
+  },
+  neutral: {
+    whiteDelicate: '--white-delicate',
+    whiteSoft: '--white-soft',
+    whitePure: '--white-pure',
+    grayWhisper: '--gray-whisper',
+    grayLight: '--gray-light',
+  },
+  semantic: {
+    jungle: '--jungle-green',
+    jungleDark: '--jungle-dark',
+    jungleLight: '--jungle-light',
+    junglePale: '--jungle-pale',
+    danger: '--danger',
+    dangerDark: '--danger-dark',
+    dangerLight: '--danger-light',
+    dangerPale: '--danger-pale',
+    warning: '--warning',
+    warningLight: '--warning-light',
+    warningPale: '--warning-pale',
+  },
+  theme: {
+    background: '--background',
+    foreground: '--foreground',
+    backgroundLight: '--background-light',
+    backgroundDark: '--background-dark',
+    surfaceDark: '--surface-dark',
+    textLight: '--text-light',
+    textDark: '--text-dark',
+  },
+};

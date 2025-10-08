@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useAuth } from "@/hooks/use-auth";
+import { ThemeToggle } from "./ui/theme-toggle";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
@@ -87,10 +88,14 @@ export function Navbar() {
             ))}
         </nav>
 
+        <div className="ml-4 hidden sm:block">
+          <ThemeToggle />
+        </div>
+
         {/* Botão mobile (fica à direita também) */}
         <button
           aria-label="Abrir menu"
-          className="ml-4 rounded-md p-2 hover:bg-zinc-100 sm:hidden"
+          className="ml-4 rounded-md p-2 hover:bg-zinc-100 dark:hover:bg-[var(--purple-dark)]/20 sm:hidden"
           onClick={() => setOpen(!open)}
         >
           {open ? "✕" : "☰"}
@@ -114,6 +119,9 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+          <div className="mt-2 pt-2 border-t theme-border">
+            <ThemeToggle />
+          </div>
         </nav>
       )}
     </header>

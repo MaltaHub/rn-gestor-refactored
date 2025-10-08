@@ -26,7 +26,7 @@ import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
  * Tipos e fábricas de estado
  * ========================= */
 import type { SimpleFormState, ModeloFormState, UnidadeLojaFormState } from "@/types/configuracoes";
-import { SectionCard, FeedbackBadge, SimpleForm, EntityList, ModeloForm } from "@/components/configuracoes";
+import { SectionCard, FeedbackBadge, SimpleForm, EntityList, ModeloForm, TemaSection } from "@/components/configuracoes";
 
 const createSimpleForm = (): SimpleFormState => ({ nome: "" });
 const createModeloForm = (): ModeloFormState => ({
@@ -459,7 +459,17 @@ async function handleDeleteEntity<T extends { id?: string }>(
     <div className="bg-white px-6 py-10 text-zinc-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
         <header className="flex flex-col gap-3">
-          <h1 className="text-3xl font-semibold text-zinc-900">Configurações do catálogo</h1>
+          <h1 className="text-3xl font-semibold text-zinc-900">Configurações</h1>
+          <p className="max-w-3xl text-sm text-zinc-600">
+            Personalize a aparência e gerencie as configurações do sistema
+          </p>
+        </header>
+
+        {/* TEMA */}
+        <TemaSection />
+
+        <header className="flex flex-col gap-3 mt-10">
+          <h1 className="text-2xl font-semibold text-zinc-900">Configurações do catálogo</h1>
           <p className="max-w-3xl text-sm text-zinc-600">
             Gerencie as tabelas auxiliares que alimentam o cadastro de veículos. As alterações refletirão nos formulários de edição imediatamente.
           </p>

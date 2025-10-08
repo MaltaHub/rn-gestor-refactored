@@ -309,3 +309,5 @@ export function ModeloForm({
     </form>
   );
 }
+
+export { TemaSection } from './TemaSection';
