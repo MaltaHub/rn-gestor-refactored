@@ -6,6 +6,13 @@ The system supports multi-store operations with role-based access control, where
 
 # Recent Changes
 
+**October 8, 2025** - Vitrine Page Refactoring with RenderCards Component
+- Created flexible RenderCards component with configurable props (mode: popup/inline, focusMode, domain: vitrine/estoque)
+- Refactored Vitrine page to use RenderCards, eliminating duplicate rendering functions (renderGridCards, renderInfoCards, renderTabela)
+- Applied Magic Purple theme to all Vitrine components (filters, search bar, buttons, badges)
+- Unified card rendering logic across different view modes (cards-photo, cards-info, table)
+- Component supports future expansion to Estoque page with same rendering logic
+
 **October 8, 2025** - Magic Purple Theme Implementation
 - Implemented complete color theme: Roxo Mágico (Magic Purple) + Branco Delicado (Delicate White) + Verde Selva (Jungle Green)
 - Created comprehensive CSS variable system for centralized color management
