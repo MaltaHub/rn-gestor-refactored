@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { Search, X } from "lucide-react";
 
 import { LojaSelector } from "@/components/LojaSelector";
+import { RenderCards } from "@/components/render-cards";
 import { useLojaStore } from "@/stores/useLojaStore";
 import {
   useVeiculosLojaUI,
@@ -63,244 +62,8 @@ const normalizeText = (value: string | null | undefined) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-const getDisplayPrice = (veiculo: VeiculoLojaUI) =>
-  veiculo.precoLojaFormatado ?? veiculo.veiculo?.precoFormatado ?? "—";
-
-const renderEstadoBadge = (veiculo: VeiculoLojaUI) => {
-  const label = veiculo.veiculo?.estadoVendaLabel ?? "Sem status";
-  return (
-    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-blue-600">
-      {label}
-    </span>
-  );
-};
-
-const renderGridCards = (veiculos: VeiculoLojaUI[]) => (
-  <ul className="grid max-w-screen-xl grid-cols-1 gap-6 px-4 mx-auto sm:grid-cols-2 lg:grid-cols-3 sm:px-6">
-    {veiculos.map((item) => (
-      <li key={item.id} className="flex flex-col h-full w-full">
-        <article className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md">
-          <Link href={`/vitrine/${item.id}`} className="block h-full w-full">
-            {/* Imagem */}
-            <div className="relative aspect-video w-full bg-zinc-100 overflow-hidden">
-              {item.capaUrl ? (
-                <Image
-                  src={item.capaUrl}
-                  alt={item.veiculo?.veiculoDisplay ?? "Veículo sem foto"}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover"
-                  priority={false}
-                />
-              ) : (
-                <span className="flex h-full items-center justify-center text-xs sm:text-sm font-medium text-zinc-500">
-                  Sem foto de capa
-                </span>
-              )}
-            </div>
-
-            {/* Conteúdo */}
-            <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5 min-h-0 break-words">
-              {/* Badge + Preço */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="flex-shrink-0">{renderEstadoBadge(item)}</div>
-                <span className="flex-shrink-0 text-sm sm:text-base lg:text-lg font-semibold text-zinc-800 truncate">
-                  {getDisplayPrice(item)}
-                </span>
-              </div>
-
-              {/* Título + Placa */}
-              <div>
-                <h4 className="text-sm sm:text-base lg:text-lg font-bold text-zinc-800 clamp-2 leading-tight">
-                  {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
-                </h4>
-                <p className="text-xs sm:text-sm lg:text-base text-zinc-500">
-                  Placa {item.veiculo?.placa ?? "—"}
-                </p>
-              </div>
-
-              {/* Informações */}
-              <dl className="grid gap-3 text-xs sm:text-sm lg:text-base text-zinc-500 sm:grid-cols-2">
-                <div>
-                  <dt className="font-semibold text-zinc-700">Local</dt>
-                  <dd>{item.veiculo?.localDisplay ?? "Sem local"}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-zinc-700">Ano</dt>
-                  <dd>{item.veiculo?.anoPrincipal ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-zinc-700">Disponível desde</dt>
-                  <dd>{item.dataEntradaFormatada ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-zinc-700">Hodômetro</dt>
-                  <dd>{item.veiculo?.hodometroFormatado ?? "—"}</dd>
-                </div>
-              </dl>
-
-              {item.veiculo?.caracteristicasPrincipais?.length ? (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {item.veiculo.caracteristicasPrincipais.slice(0, 3).map((caracteristica: string) => (
-                    <span
-                      key={caracteristica}
-                      className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-700"
-                    >
-                      {caracteristica}
-                    </span>
-                  ))}
-                  {item.veiculo.caracteristicasPrincipais.length > 3 && (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-blue-500">
-                      +{item.veiculo.caracteristicasPrincipais.length - 3} mais
-                    </span>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          </Link>
-        </article>
-      </li>
-    ))}
-  </ul>
-);
-
-const renderInfoCards = (veiculos: VeiculoLojaUI[]) => (
-  <ul className="flex flex-col gap-4">
-    {veiculos.map((item) => (
-      <li key={item.id}>
-        <article className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-zinc-300 hover:shadow-md md:flex-row md:items-center md:justify-between">
-          <Link href={`/vitrine/${item.id}`}>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-lg font-medium text-zinc-800">
-                  {item.veiculo?.veiculoDisplay ?? "Veículo sem modelo"}
-                </h2>
-                {renderEstadoBadge(item)}
-              </div>
-              <div className="flex flex-wrap gap-6 text-sm text-zinc-500">
-                <span>
-                  <span className="font-medium text-zinc-700">Placa:</span> {item.veiculo?.placa ?? "—"}
-                </span>
-                <span>
-                  <span className="font-medium text-zinc-700">Local:</span> {item.veiculo?.localDisplay ?? "Sem local"}
-                </span>
-                <span>
-                  <span className="font-medium text-zinc-700">Ano:</span> {item.veiculo?.anoPrincipal ?? "—"}
-                </span>
-                <span>
-                  <span className="font-medium text-zinc-700">Entrada:</span> {item.dataEntradaFormatada ?? "—"}
-                </span>
-                <span>
-                  <span className="font-medium text-zinc-700">Preço:</span> {getDisplayPrice(item)}
-                </span>
-              </div>
-              {item.veiculo?.caracteristicasPrincipais?.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {item.veiculo.caracteristicasPrincipais.slice(0, 4).map((caracteristica: string) => (
-                    <span
-                      key={caracteristica}
-                      className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
-                    >
-                      {caracteristica}
-                    </span>
-                  ))}
-                  {item.veiculo.caracteristicasPrincipais.length > 4 && (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-500">
-                      +{item.veiculo.caracteristicasPrincipais.length - 4} mais
-                    </span>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          </Link>
-        </article>
-      </li>
-    ))}
-  </ul>
-);
-
-import { useRouter } from "next/navigation"; // ⬅️ adicione no topo
-import { type AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-
-const renderTabela = (veiculos: VeiculoLojaUI[], router: AppRouterInstance) => {
-
-  return (
-    <div className="rounded-lg border border-zinc-200">
-      <div className="overflow-x-auto">
-        <table className="min-w-full table-fixed divide-y divide-zinc-200">
-          <colgroup>
-            <col style={{ width: "34%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "16%" }} />
-            <col style={{ width: "16%" }} />
-            <col style={{ width: "10%" }} />
-          </colgroup>
-
-          <thead className="bg-zinc-50 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
-            <tr>
-              <th className="px-4 py-3">Veículo</th>
-              <th className="px-4 py-3">Placa</th>
-              <th className="px-4 py-3">Preço</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Local</th>
-              <th className="px-4 py-3">Fotos</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-zinc-100 bg-white text-sm text-zinc-600">
-            {veiculos.map((item) => (
-              <tr
-                key={item.id}
-                onClick={() => router.push(`/vitrine/${item.id}`)}
-                className="cursor-pointer select-none transition-colors hover:bg-blue-50/40 active:bg-blue-100 focus:bg-blue-100"
-              >
-                <td className="px-4 py-3 whitespace-nowrap align-middle">
-                  <span className="block overflow-hidden text-ellipsis font-medium text-zinc-800">
-                    {item.veiculo?.veiculoDisplay ?? "Veículo"}
-                  </span>
-                </td>
-
-                <td className="px-4 py-3 whitespace-nowrap align-middle">
-                  <span className="block overflow-hidden text-ellipsis">
-                    {item.veiculo?.placa ?? "—"}
-                  </span>
-                </td>
-
-                <td className="px-4 py-3 whitespace-nowrap align-middle">
-                  <span className="block overflow-hidden text-ellipsis">
-                    {getDisplayPrice(item)}
-                  </span>
-                </td>
-
-                <td className="px-4 py-3 whitespace-nowrap align-middle">
-                  <span className="block overflow-hidden text-ellipsis">
-                    {item.veiculo?.estadoVendaLabel ?? "Sem status"}
-                  </span>
-                </td>
-
-                <td className="px-4 py-3 whitespace-nowrap align-middle">
-                  <span className="block overflow-hidden text-ellipsis">
-                    {item.veiculo?.localDisplay ?? "Sem local"}
-                  </span>
-                </td>
-
-                <td className="px-4 py-3 whitespace-nowrap align-middle">
-                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] text-zinc-700">
-                    {item.temFotos ? "Sim" : "Não"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
 
 export default function VitrinePage() {
-  const router = useRouter(); // ⬅️ adicione no topo do componente
   const lojaSelecionada = useLojaStore((state) => state.lojaSelecionada);
   const lojaId = lojaSelecionada?.id;
 
@@ -547,31 +310,20 @@ export default function VitrinePage() {
   const renderConteudo = () => {
     if (!lojaId) {
       return (
-        <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 py-16 text-center text-sm text-zinc-500">
+        <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)] py-16 text-center text-sm text-[var(--text-secondary)]">
           Seleciona uma loja para visualizar a vitrine de veículos.
         </div>
       );
     }
 
-    if (isLoading) {
-      return (
-        <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 py-16 text-center text-sm text-zinc-500">
-          Carregando veículos desta loja…
-        </div>
-      );
-    }
-
-    if (filtrados.length === 0) {
-      return (
-        <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 py-16 text-center text-sm text-zinc-500">
-          Nenhum veículo encontrado com os filtros aplicados.
-        </div>
-      );
-    }
-
-    if (viewMode === "table") return renderTabela(filtrados, router);
-    if (viewMode === "cards-info") return renderInfoCards(filtrados);
-    return renderGridCards(filtrados);
+    return (
+      <RenderCards
+        vehicles={filtrados}
+        viewMode={viewMode}
+        domain="vitrine"
+        isLoading={isLoading}
+      />
+    );
   };
 
   // Barra fixa: medir altura p/ criar um spacer e evitar sobreposição
