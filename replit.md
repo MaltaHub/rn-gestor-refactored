@@ -6,6 +6,14 @@ The system supports multi-store operations with role-based access control, where
 
 # Recent Changes
 
+**October 8, 2025** - UI/UX Modernization
+- Created comprehensive design system with reusable UI components (Button, Card, Input, Badge, Modal, EmptyState, Skeleton)
+- Implemented modern sidebar navigation with collapsible/expandable functionality
+- Added mobile-responsive navigation with overlay and hamburger menu
+- Improved accessibility with proper ARIA labels and keyboard navigation support
+- Restructured layouts: separate layouts for app pages vs authentication pages
+- Root page now redirects to /vitrine for better UX
+
 **October 8, 2025** - Migrated from Vercel to Replit
 - Configured Next.js dev and production servers to bind to port 5000 and 0.0.0.0 for Replit compatibility
 - Set up Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) in Replit Secrets
@@ -33,17 +41,22 @@ Preferred communication style: Simple, everyday language.
 
 **UI Patterns**:
 - Responsive design with mobile-first approach
+- Modern sidebar navigation with icon-based menu and active state highlighting
+- Reusable design system with Button, Card, Input, Badge, Modal components
 - Theme system with automatic dark/light mode based on time of day (18:00-06:00)
 - Drag-and-drop photo gallery using @dnd-kit for reordering images
 - Progressive Web App with service worker for offline support
+- Accessible components with ARIA labels and keyboard navigation
 
 **Styling**: Tailwind CSS v4 with custom theme variables for dynamic theming
 
 **Key Design Decisions**:
+- Component library pattern with consistent variants (primary, secondary, outline, ghost, danger)
 - Adapters pattern to transform database entities into UI-friendly formats
 - Custom hooks for data fetching that encapsulate query logic
 - Separation of concerns between services (API calls), hooks (data management), and components (presentation)
 - Global logout event system to coordinate auth state across the app
+- Layout composition: separate layouts for app vs auth pages
 
 ## Backend Architecture
 
