@@ -27,6 +27,9 @@ export const STORAGE_KEYS = {
     searchOpen: 'estoque:searchOpen',
   },
   
+  // Estoque State (Zustand)
+  estoqueState: 'estoque:state',
+  
   // Loja selecionada (Zustand)
   lojaSelecionada: 'vitrine:loja-selecionada',
   
