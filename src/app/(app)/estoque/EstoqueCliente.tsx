@@ -13,7 +13,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { RenderTables, type Column } from '@/components/RenderTables';
 import { useEstoqueStore } from '@/stores/useEstoqueStore';
-import { VeiculoFormModal } from '@/components/VeiculoFormModal';
 
 const ESTADOS_VENDA: VeiculoUI['estado_venda'][] = ESTADOS_VENDA_CONFIG as VeiculoUI['estado_venda'][];
 const SEM_LOCAL_VALUE = SPECIAL_VALUES.SEM_LOCAL;
@@ -36,7 +35,6 @@ export default function EstoquePage() {
 
   const { filters, setFilters, resetFilters } = useEstoqueStore();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const estadoFiltroParam = searchParams.get('estado');
   const estadoFiltro =
@@ -266,9 +264,9 @@ export default function EstoquePage() {
             <Button
               variant="primary"
               leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => setCreateModalOpen(true)}
+              asChild
             >
-              Cadastrar veículo
+              <Link href="/criar">Cadastrar veículo</Link>
             </Button>
           </div>
         </header>
@@ -376,14 +374,6 @@ export default function EstoquePage() {
           className="mt-6"
         />
       </div>
-
-      <VeiculoFormModal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSuccess={() => {
-          setCreateModalOpen(false);
-        }}
-      />
     </div>
   );
 }
