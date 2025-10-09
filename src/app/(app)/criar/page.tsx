@@ -12,6 +12,7 @@ import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Plus, Car, Settings, MapPin, List, FileText } from "lucide-react";
 import { QuickAddModal, QuickAddField } from "@/components/QuickAddModal";
+import { ModeloTableModal } from "@/components/ModeloTableModal";
 import type { VeiculoResumo } from "@/types/estoque";
 
 type EstadoVendaOption = VeiculoResumo["estado_venda"];
@@ -141,18 +142,6 @@ export default function CriarVeiculoPage() {
         ? prev.caracteristicas.filter((x) => x.id !== c.id)
         : [...prev.caracteristicas, c],
     }));
-
-  const handleSaveModelo = async (data: Record<string, string>) => {
-    await salvarConfiguracao('modelo', { marca: data.marca, nome: data.nome });
-    await queryClient.refetchQueries({ queryKey: ['configuracoes', 'modelo'] });
-    const updatedModelos = queryClient.getQueryData<Array<{ id: string; marca: string; nome: string }>>(['configuracoes', 'modelo']) || [];
-    const newModelo = updatedModelos.find(m => m.marca === data.marca && m.nome === data.nome);
-    if (newModelo?.id) {
-      setFormState(prev => ({ ...prev, modelo_id: newModelo.id }));
-      setFeedback({ type: 'success', message: `✅ Modelo "${data.marca} ${data.nome}" criado e selecionado!` });
-      setTimeout(() => setFeedback(null), 3000);
-    }
-  };
 
   const handleSaveCaracteristica = async (data: Record<string, string>) => {
     await salvarConfiguracao('caracteristica', { nome: data.nome });
@@ -565,15 +554,14 @@ export default function CriarVeiculoPage() {
           </div>
         </form>
 
-        <QuickAddModal
+        <ModeloTableModal
           isOpen={isModeloModalOpen}
           onClose={() => setIsModeloModalOpen(false)}
-          title="Adicionar Novo Modelo"
-          fields={[
-            { type: 'text', name: 'marca', label: 'Marca', required: true, placeholder: 'Ex: Toyota' },
-            { type: 'text', name: 'nome', label: 'Nome', required: true, placeholder: 'Ex: Corolla' }
-          ]}
-          onSave={handleSaveModelo}
+          onModeloCreated={(modeloId) => {
+            setFormState(prev => ({ ...prev, modelo_id: modeloId }));
+            setFeedback({ type: 'success', message: '✅ Modelo criado e selecionado!' });
+            setTimeout(() => setFeedback(null), 3000);
+          }}
         />
 
         <QuickAddModal
