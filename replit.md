@@ -10,13 +10,14 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 - **Secure Password Change**: Implemented proper reauthentication flow - validates current password via signInWithPassword before allowing update
 - **Profile Editing**: Form sections for personal information (full name, email, avatar URL) and password change (current, new, confirm)
 - **Avatar Preview**: Live preview of avatar image when URL is provided
+- **Logout Button**: Added logout button at bottom of profile page with confirmation dialog, red danger styling, and error handling
 - **Navigation Updates**: Added "Perfil" link to both sidebar (all authenticated users) and navbar (proprietários)
 - **User Icon**: Imported and added User icon from lucide-react for profile navigation
 - **Validation**: Password minimum 6 characters, confirmation match check, clear error messages
 - **Feedback System**: Success/error alerts with color-coded messages, loading states on buttons
 - **Dark Mode Support**: Full theme compatibility consistent with design system
 - **Security**: Current password validation prevents unauthorized changes, fresh session created via signInWithPassword
-- **Architect Validated**: Approved after security fix for reauthentication flow
+- **Architect Validated**: Approved after security fix for reauthentication flow and logout implementation
 
 # User Preferences
 
