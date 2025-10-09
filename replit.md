@@ -4,6 +4,19 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Complete State Persistence Implementation ✅
+- **Vitrine Store Created**: New `useVitrineStore` (Zustand + persist) manages all Vitrine page state
+- **State Persistence**: Filters, sorting, view mode, scroll position, and UI visibility all persist across page reloads
+- **Estoque Migration**: EstoqueCliente migrated from local useState to existing useEstoqueStore for complete persistence
+- **Controlled Components**: RenderTables and RenderCards now support controlled props (initialSort, onSortChange, initialScroll, onScrollChange, initialColumnWidths, onColumnWidthChange)
+- **Backward Compatibility**: Components work as controlled or uncontrolled - no breaking changes
+- **Storage Keys**: 
+  - Estoque: `estoque:state` (filters, viewConfig with scrollPosition/sortKey/sortDirection/columnWidths)
+  - Vitrine: `vitrine:state` (filters with searchTerm/estadoFiltro/caracteristicaFiltro/prices/visibility, viewConfig with viewMode/ordenacao/scrollPosition)
+- **Performance**: Debounced scroll tracking (300ms) prevents excessive localStorage writes
+- **SSR-Safe**: createJSONStorage with browser checks prevents hydration mismatches
+- **Architect Validated**: Approved - clean architecture, no regressions, meets all objectives
+
 **October 9, 2025** - Type Safety Build Fixes ✅
 - **Badge Component Corrections**: Fixed invalid Badge variants ('primary'/'outline' → 'info'/'default' per component spec)
 - **Badge Props Cleanup**: Removed unsupported `leftIcon` prop from Badge components (Badge only accepts variant, size, className, children)
