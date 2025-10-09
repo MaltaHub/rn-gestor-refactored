@@ -4,6 +4,16 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Phase 11: UX Enhancements - Floating Buttons & Inline Creation ✅
+- **Floating Action Buttons**: Transformed Save/Cancel buttons into fixed bottom-right floating action buttons (position fixed, z-50, shadow-2xl)
+- **QuickAddModal Component**: Created reusable modal for inline item creation with dynamic fields (text, select), validation, loading states, and error handling
+- **Inline Model Creation**: Added "+" button next to Model select to create new models (marca, nome) directly from the form
+- **Inline Feature Creation**: Added "Adicionar" button in Features section to create new características without leaving the page
+- **Inline Location Creation**: Added "+" button next to Location select to create new locais with optional store association
+- **Auto-Selection**: Implemented refetchQueries with await to ensure newly created items are immediately selected/added to form
+- **Visual Feedback**: Success messages display created item names with 3-second auto-dismiss
+- **Cache Management**: Fixed cache invalidation bug using refetchQueries instead of invalidateQueries for synchronous updates
+
 **October 9, 2025** - Phase 10: Architecture Corrections & UI Improvements ✅
 - **Page /criar Restored**: Recreated full form page for complete vehicle creation workflow (previously deleted by mistake)
 - **Navigation Fixed**: Removed VeiculoFormModal from Estoque page, restored link to /criar for creation
