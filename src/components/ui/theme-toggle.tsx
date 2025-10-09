@@ -20,7 +20,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className="
         p-2 rounded-lg transition-all duration-200
-        hover:bg-[var(--purple-pale)] dark:hover:bg-[var(--purple-dark)]/20
+        hover:bg-gray-100 dark:hover:bg-zinc-700
         text-[var(--foreground)]
       "
       title={`Tema: ${mode === 'light' ? 'Claro' : mode === 'dark' ? 'Escuro' : mode === 'auto' ? 'Automático' : 'Personalizado'}`}

@@ -36,12 +36,6 @@ export const CSS_VARIABLES = {
   grayWhisper: '--gray-whisper',
   grayLight: '--gray-light',
   
-  // Green palette
-  jungleGreen: '--jungle-green',
-  jungleDark: '--jungle-dark',
-  jungleLight: '--jungle-light',
-  junglePale: '--jungle-pale',
-  
   // Status colors
   danger: '--danger',
   dangerDark: '--danger-dark',

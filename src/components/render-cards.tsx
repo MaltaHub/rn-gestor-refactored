@@ -237,7 +237,7 @@ const TableView = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
                 <tr
                   key={data.id}
                   onClick={() => router.push(data.detailUrl)}
-                  className="cursor-pointer select-none transition-colors hover:bg-[var(--purple-pale)] active:bg-[var(--purple-pale)]/80"
+                  className="cursor-pointer select-none transition-colors hover:bg-gray-50 active:bg-gray-100"
                 >
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
                     <span className="block overflow-hidden text-ellipsis font-medium text-[var(--text-primary)]">

@@ -18,10 +18,6 @@ export interface ThemeColors {
     grayLight: string;
   };
   semantic: {
-    jungle: string;
-    jungleDark: string;
-    jungleLight: string;
-    junglePale: string;
     danger: string;
     dangerDark: string;
     dangerLight: string;

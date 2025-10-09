@@ -17,10 +17,6 @@ export const defaultThemeColors: ThemeColors = {
     grayLight: '#D4D4D4',
   },
   semantic: {
-    jungle: '#059669',
-    jungleDark: '#047857',
-    jungleLight: '#10B981',
-    junglePale: '#D1FAE5',
     danger: '#DC2626',
     dangerDark: '#B91C1C',
     dangerLight: '#FCA5A5',
@@ -57,10 +53,6 @@ export const cssVariableMap: Record<keyof ThemeColors, Record<string, string>> =
     grayLight: '--gray-light',
   },
   semantic: {
-    jungle: '--jungle-green',
-    jungleDark: '--jungle-dark',
-    jungleLight: '--jungle-light',
-    junglePale: '--jungle-pale',
     danger: '--danger',
     dangerDark: '--danger-dark',
     dangerLight: '--danger-light',

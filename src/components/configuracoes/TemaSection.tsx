@@ -47,7 +47,7 @@ export function TemaSection() {
       <ThemeSelector />
 
       {mode === 'custom' && (
-        <div className="mt-6 p-4 rounded-lg border-2 border-[var(--purple-magic)]/20 bg-[var(--purple-pale)]/30 dark:bg-[var(--purple-dark)]/10">
+        <div className="mt-6 p-4 rounded-lg border-2 border-[var(--purple-magic)]/20 bg-white dark:bg-[var(--surface-dark)]">
           <h3 className="text-sm font-medium text-[var(--foreground)] mb-3">
             Cores personalizadas
           </h3>

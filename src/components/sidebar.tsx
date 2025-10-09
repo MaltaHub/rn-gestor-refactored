@@ -88,7 +88,7 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] shadow-lg border border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30 hover:bg-[var(--purple-pale)] dark:hover:bg-[var(--purple-dark)]/20"
+        className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] shadow-lg border border-[var(--gray-whisper)] dark:border-[var(--purple-dark)]/30 hover:bg-gray-100 dark:hover:bg-zinc-700"
         aria-label={isOpen ? 'Fechar menu' : 'Abrir menu'}
       >
         {isOpen ? <X className="w-6 h-6 text-[var(--purple-magic)] dark:text-[var(--purple-light)]" /> : <Menu className="w-6 h-6 text-[var(--purple-magic)] dark:text-[var(--purple-light)]" />}
@@ -126,7 +126,7 @@ export function Sidebar() {
                   priority
                 />
               </div>
-              <span className="font-bold text-lg bg-gradient-to-r from-[var(--purple-magic)] to-[var(--jungle-green)] bg-clip-text text-transparent">
+              <span className="font-bold text-lg text-[var(--purple-magic)] dark:text-[var(--purple-light)]">
                 RN Gestor
               </span>
             </Link>
@@ -144,7 +144,7 @@ export function Sidebar() {
             </Link>
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:block p-1.5 rounded-lg hover:bg-[var(--purple-pale)] dark:hover:bg-[var(--purple-dark)]/20 transition-colors text-[var(--purple-magic)]"
+              className="hidden lg:block p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors text-[var(--purple-magic)]"
               aria-label={isCollapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
             >
               {isCollapsed ? (
@@ -170,8 +170,8 @@ export function Sidebar() {
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
                         ${isActive 
-                          ? 'bg-gradient-to-r from-[var(--purple-pale)] to-[var(--jungle-pale)]/30 text-[var(--purple-dark)] dark:bg-gradient-to-r dark:from-[var(--purple-dark)]/30 dark:to-[var(--jungle-dark)]/20 dark:text-[var(--purple-light)] font-medium shadow-sm' 
-                          : 'text-[var(--foreground)] hover:bg-[var(--purple-pale)]/50 dark:hover:bg-[var(--purple-dark)]/10'
+                          ? 'bg-gray-50 text-[var(--purple-dark)] dark:bg-zinc-800 dark:text-[var(--purple-light)] font-medium shadow-sm' 
+                          : 'text-[var(--foreground)] hover:bg-gray-50 dark:hover:bg-zinc-700'
                         }
                         ${isCollapsed ? 'lg:justify-center lg:px-3' : ''}
                       `}

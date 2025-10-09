@@ -95,7 +95,7 @@ export function Navbar() {
         {/* Botão mobile (fica à direita também) */}
         <button
           aria-label="Abrir menu"
-          className="ml-4 rounded-md p-2 hover:bg-zinc-100 dark:hover:bg-[var(--purple-dark)]/20 sm:hidden"
+          className="ml-4 rounded-md p-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 sm:hidden"
           onClick={() => setOpen(!open)}
         >
           {open ? "✕" : "☰"}

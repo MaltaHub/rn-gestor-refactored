@@ -55,8 +55,8 @@ export function ThemeSelector({ compact = false, className = '' }: ThemeSelector
               p-2 rounded-lg transition-all duration-200
               ${
                 mode === themeMode
-                  ? 'bg-[var(--purple-magic)] text-white'
-                  : 'bg-[var(--gray-whisper)] text-[var(--foreground)] hover:bg-[var(--purple-pale)] dark:bg-[var(--surface-dark)] dark:hover:bg-[var(--purple-dark)]'
+                  ? 'bg-white border-2 border-[var(--purple-magic)] text-[var(--purple-magic)] dark:bg-zinc-800 dark:border-[var(--purple-light)] dark:text-[var(--purple-light)]'
+                  : 'bg-[var(--gray-whisper)] text-[var(--foreground)] hover:bg-gray-100 dark:bg-[var(--surface-dark)] dark:hover:bg-zinc-700'
               }
             `}
             title={label}
@@ -77,11 +77,11 @@ export function ThemeSelector({ compact = false, className = '' }: ThemeSelector
             key={themeMode}
             onClick={() => setTheme(themeMode)}
             className={`
-              flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-200
+              flex flex-col items-center gap-2 p-4 rounded-lg transition-all duration-200
               ${
                 mode === themeMode
-                  ? 'border-[var(--purple-magic)] bg-[var(--purple-pale)] dark:bg-[var(--purple-dark)]/20'
-                  : 'border-[var(--gray-whisper)] hover:border-[var(--purple-light)] dark:border-[var(--purple-dark)]/30'
+                  ? 'bg-white border-2 border-[var(--purple-magic)] dark:bg-zinc-800 dark:border-[var(--purple-light)]'
+                  : 'bg-white border border-gray-200 hover:bg-gray-50 dark:bg-zinc-800 dark:border-zinc-700 dark:hover:bg-zinc-700'
               }
             `}
           >

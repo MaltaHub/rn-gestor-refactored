@@ -32,7 +32,6 @@ function applyThemeToDOM(theme: AppliedTheme, customOverride: CustomThemeOverrid
   root.style.removeProperty('--background');
   root.style.removeProperty('--foreground');
   root.style.removeProperty('--purple-magic');
-  root.style.removeProperty('--jungle-green');
   
   if (customOverride) {
     if (customOverride.background) {
@@ -43,9 +42,6 @@ function applyThemeToDOM(theme: AppliedTheme, customOverride: CustomThemeOverrid
     }
     if (customOverride.primary) {
       root.style.setProperty('--purple-magic', customOverride.primary);
-    }
-    if (customOverride.secondary) {
-      root.style.setProperty('--jungle-green', customOverride.secondary);
     }
   }
 }

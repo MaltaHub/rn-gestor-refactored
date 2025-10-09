@@ -41,9 +41,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     
     const variants = {
       primary: 'bg-[var(--purple-dark)] text-[var(--white-pure)] hover:bg-[var(--purple-darker)] focus:ring-[var(--purple-light)] active:bg-[var(--purple-darker)] shadow-sm',
-      secondary: 'bg-[var(--jungle-dark)] text-[var(--white-pure)] hover:bg-[var(--jungle-dark)]/90 focus:ring-[var(--jungle-light)] active:bg-[var(--jungle-dark)]/80 shadow-sm',
-      outline: 'border-2 border-[var(--purple-dark)] text-[var(--purple-dark)] hover:bg-[var(--purple-pale)] focus:ring-[var(--purple-light)] dark:border-[var(--purple-light)] dark:text-[var(--purple-light)] dark:hover:bg-[var(--purple-dark)]/20',
-      ghost: 'hover:bg-[var(--purple-pale)] text-[var(--purple-darker)] focus:ring-[var(--purple-light)] dark:text-[var(--purple-light)] dark:hover:bg-[var(--purple-dark)]/20',
+      secondary: 'bg-zinc-600 text-white hover:bg-zinc-700 focus:ring-zinc-400 active:bg-zinc-700 shadow-sm',
+      outline: 'border-2 border-[var(--purple-dark)] text-[var(--purple-dark)] hover:bg-gray-50 focus:ring-[var(--purple-light)] dark:border-[var(--purple-light)] dark:text-[var(--purple-light)] dark:hover:bg-zinc-800',
+      ghost: 'hover:bg-gray-100 text-[var(--purple-darker)] focus:ring-[var(--purple-light)] dark:text-[var(--purple-light)] dark:hover:bg-zinc-700',
       danger: 'bg-[var(--danger-dark)] text-[var(--white-pure)] hover:bg-[var(--danger)] focus:ring-[var(--danger-light)] active:bg-[var(--danger)] shadow-sm',
     };
 
