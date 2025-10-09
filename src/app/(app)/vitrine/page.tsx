@@ -307,7 +307,7 @@ export default function VitrinePage() {
   const renderConteudo = () => {
     if (!lojaId) {
       return (
-        <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)] py-16 text-center text-sm text-[var(--text-secondary)]">
+        <div className="rounded-lg border border-dashed border-[var(--border)] bg-white py-16 text-center text-sm text-[var(--text-secondary)]">
           Seleciona uma loja para visualizar a vitrine de veículos.
         </div>
       );
@@ -336,7 +336,7 @@ export default function VitrinePage() {
 
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+    <div className="min-h-screen bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <header 
         className="mx-auto flex w-full max-w-7xl flex-col gap-6 transition-all"
         style={{ paddingTop: searchOpen && barH > 0 ? `${barH}px` : '0px' }}
@@ -371,7 +371,7 @@ export default function VitrinePage() {
           className="
     fixed inset-x-0 top-0 z-50
     border-b border-[var(--border)]
-    bg-[var(--bg-primary)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-primary)]/75
+    bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75
   "
         >
           {/* Conteúdo centralizado no mesmo grid da página */}
@@ -574,22 +574,22 @@ export default function VitrinePage() {
             </Card.Header>
             <Card.Body>
             {!lojaSelecionada ? (
-              <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-primary)] p-6 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-md border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--text-secondary)]">
                 Selecione uma loja para gerenciar a vitrine.
               </div>
             ) : isEstoqueLoading ? (
-              <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-primary)] p-6 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-md border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--text-secondary)]">
                 Carregando veículos do estoque...
               </div>
             ) : veiculosDisponiveis.length === 0 ? (
-              <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-primary)] p-6 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-md border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--text-secondary)]">
                 Todos os veículos do estoque já estão nesta vitrine.
               </div>
             ) : (
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {veiculosDisponiveis.map((veiculo) => (
                   <li key={veiculo.id}>
-                    <article className="flex h-full flex-col gap-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-primary)]/80 p-5 text-sm text-[var(--text-secondary)] shadow-sm opacity-75">
+                    <article className="flex h-full flex-col gap-4 rounded-lg border border-dashed border-[var(--border)] bg-white/80 p-5 text-sm text-[var(--text-secondary)] shadow-sm opacity-75">
                       <div className="space-y-1">
                         <h3 className="text-base font-semibold text-[var(--text-primary)]">
                           {veiculo.veiculoDisplay}

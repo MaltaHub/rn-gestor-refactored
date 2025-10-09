@@ -219,7 +219,7 @@ const TableView = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
             <col style={{ width: "10%" }} />
           </colgroup>
 
-          <thead className="bg-[var(--bg-secondary)] text-left text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
+          <thead className="bg-white text-left text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
             <tr>
               <th className="px-4 py-3">Veículo</th>
               <th className="px-4 py-3">Placa</th>
@@ -230,7 +230,7 @@ const TableView = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[var(--border-subtle)] bg-[var(--bg-primary)] text-sm text-[var(--text-secondary)]">
+          <tbody className="divide-y divide-[var(--border-subtle)] bg-white text-sm text-[var(--text-secondary)]">
             {vehicles.map((item) => {
               const data = getVehicleData(item, domain);
               return (
@@ -295,7 +295,7 @@ export function RenderCards({
 }: RenderCardsProps) {
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)] py-16 text-center text-sm text-[var(--text-secondary)]">
+      <div className="rounded-lg border border-dashed border-[var(--border)] bg-white py-16 text-center text-sm text-[var(--text-secondary)]">
         Carregando veículos…
       </div>
     );
@@ -303,7 +303,7 @@ export function RenderCards({
 
   if (vehicles.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)] py-16 text-center text-sm text-[var(--text-secondary)]">
+      <div className="rounded-lg border border-dashed border-[var(--border)] bg-white py-16 text-center text-sm text-[var(--text-secondary)]">
         Nenhum veículo encontrado.
       </div>
     );
@@ -334,7 +334,7 @@ export function RenderCards({
           {onClose && (
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 rounded-full bg-[var(--bg-primary)] p-2 shadow-lg hover:bg-[var(--bg-secondary)] transition-colors"
+              className="absolute top-4 right-4 z-10 rounded-full bg-white p-2 shadow-lg hover:bg-gray-100 transition-colors"
               aria-label="Fechar"
             >
               <X className="h-5 w-5 text-[var(--text-primary)]" />

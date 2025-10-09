@@ -220,11 +220,11 @@ export function RenderTables<T extends Record<string, any>>({
 
       <div
         ref={tableRef}
-        className="overflow-auto border border-[var(--border-default)] rounded-lg bg-[var(--bg-primary)]"
+        className="overflow-auto border border-[var(--border-default)] rounded-lg bg-white"
         style={{ maxHeight: '70vh' }}
       >
         <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-[var(--bg-secondary)] border-b border-[var(--border-default)]">
+            <thead className="sticky top-0 z-10 bg-white border-b border-[var(--border-default)]">
               <tr>
                 {columns.map((column) => (
                   <th
