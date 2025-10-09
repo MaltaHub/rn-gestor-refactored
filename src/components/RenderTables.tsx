@@ -314,8 +314,8 @@ export function RenderTables<T extends Record<string, any>>({
                             textAlign: column.align || 'left',
                           }}
                           onClick={(e) => {
-                            e.stopPropagation();
                             if (mode === 'edit' && column.editable) {
+                              e.stopPropagation();
                               setEditingCell({ rowKey: rKey, columnKey: column.key });
                             }
                           }}
