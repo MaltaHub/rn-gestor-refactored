@@ -79,9 +79,7 @@ const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
 
 CardHeader.displayName = 'Card.Header';
 
-interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {}
-
-const CardBody = forwardRef<HTMLDivElement, CardBodyProps>(
+const CardBody = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', children, ...props }, ref) => {
     return (
       <div ref={ref} className={className} {...props}>

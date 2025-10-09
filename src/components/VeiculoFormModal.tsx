@@ -406,7 +406,7 @@ export function VeiculoFormModal({ isOpen, onClose, onSuccess }: VeiculoFormModa
         </Button>
         <Button
           variant="primary"
-          onClick={(e: any) => {
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             const form = document.getElementById('form-criar-veiculo') as HTMLFormElement;
             if (form) form.requestSubmit();
           }}

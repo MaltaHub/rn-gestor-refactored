@@ -4,7 +4,7 @@
 
 export interface IRepository<T> {
   findById(id: string): Promise<T | null>;
-  findAll(filters?: Record<string, any>): Promise<T[]>;
+  findAll(filters?: QueryFilter[]): Promise<T[]>;
   create(data: Partial<T>): Promise<T>;
   update(id: string, data: Partial<T>): Promise<T>;
   delete(id: string): Promise<void>;
@@ -13,7 +13,7 @@ export interface IRepository<T> {
 export interface QueryFilter {
   column: string;
   operator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in';
-  value: any;
+  value: unknown;
 }
 
 export interface PaginationOptions {
@@ -33,7 +33,7 @@ export class RepositoryError extends Error {
   constructor(
     message: string,
     public code: string,
-    public originalError?: any
+    public originalError?: unknown
   ) {
     super(message);
     this.name = 'RepositoryError';

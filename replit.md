@@ -4,6 +4,15 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Type Safety Build Fixes ✅
+- **Badge Component Corrections**: Fixed invalid Badge variants ('primary'/'outline' → 'info'/'default' per component spec)
+- **Badge Props Cleanup**: Removed unsupported `leftIcon` prop from Badge components (Badge only accepts variant, size, className, children)
+- **RenderTables Type Casts**: Added proper type assertions for generic Record<string, unknown> constraint in RenderTables component
+- **Null Safety**: Fixed dataEntradaFormatada type conversion (null → undefined) for VehicleInfo component compatibility
+- **Build Status**: ✅ Production build successful - all TypeScript/ESLint errors resolved
+- **Files Updated**: EstoqueCliente.tsx, vitrine/[id]/page.tsx
+- **Result**: Clean build with zero errors, application fully functional
+
 **October 9, 2025** - Phase 19: Vitrine Detail Page Refactoring ✅
 - **Complete Modularization**: Refactored 1021-line monolithic page into 8 modular, reusable components
 - **New Components Created**:

@@ -16,7 +16,7 @@ export abstract class BaseRepository<T> implements IRepository<T> {
   async findById(id: string): Promise<T | null> {
     try {
       const { data, error } = await this.supabase
-        .from(this.tableName as any)
+        .from(this.tableName as never)
         .select('*')
         .eq('id', id)
         .single();
@@ -43,7 +43,7 @@ export abstract class BaseRepository<T> implements IRepository<T> {
 
   async findAll(filters?: QueryFilter[]): Promise<T[]> {
     try {
-      let query = this.supabase.from(this.tableName as any).select('*');
+      let query = this.supabase.from(this.tableName as never).select('*');
 
       if (filters) {
         filters.forEach(filter => {
@@ -79,8 +79,8 @@ export abstract class BaseRepository<T> implements IRepository<T> {
   async create(data: Partial<T>): Promise<T> {
     try {
       const { data: created, error } = await this.supabase
-        .from(this.tableName as any)
-        .insert(data as any)
+        .from(this.tableName as never)
+        .insert(data as never)
         .select()
         .single();
 
@@ -106,8 +106,8 @@ export abstract class BaseRepository<T> implements IRepository<T> {
   async update(id: string, data: Partial<T>): Promise<T> {
     try {
       const { data: updated, error } = await this.supabase
-        .from(this.tableName as any)
-        .update(data as any)
+        .from(this.tableName as never)
+        .update(data as never)
         .eq('id', id)
         .select()
         .single();
@@ -134,7 +134,7 @@ export abstract class BaseRepository<T> implements IRepository<T> {
   async delete(id: string): Promise<void> {
     try {
       const { error } = await this.supabase
-        .from(this.tableName as any)
+        .from(this.tableName as never)
         .delete()
         .eq('id', id);
 
@@ -155,7 +155,7 @@ export abstract class BaseRepository<T> implements IRepository<T> {
     }
   }
 
-  protected handleError(operation: string, error: any): never {
+  protected handleError(operation: string, error: unknown): never {
     if (error instanceof RepositoryError) throw error;
     throw new RepositoryError(
       `Erro ao executar ${operation} em ${this.tableName}`,

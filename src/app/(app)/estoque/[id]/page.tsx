@@ -325,7 +325,7 @@ export default function VeiculoDetalhePage() {
                   variant="primary"
                   size="md"
                   leftIcon={<Save className="w-4 h-4" />}
-                  onClick={(e: any) => {
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                     const form = document.getElementById('form-editar-veiculo') as HTMLFormElement;
                     if (form) form.requestSubmit();
                   }}
@@ -492,9 +492,9 @@ function EditMode({
   handleToggleCaracteristica: (c: CaracteristicaFormValue) => void;
   handleSubmit: React.FormEventHandler;
   isSaving: boolean;
-  modelosComNomeCompleto: any[];
-  modeloSelecionado: any;
-  localOptions: any[];
+  modelosComNomeCompleto: Array<{ id?: string; marca: string; nome: string; nomeCompleto: string }>;
+  modeloSelecionado: { id?: string; marca: string; nome: string; nomeCompleto: string } | null;
+  localOptions: Array<{ value: string; label: string; pertence: boolean; prioridade: number }>;
   caracteristicasDisponiveis: CaracteristicaFormValue[];
 }) {
   return (

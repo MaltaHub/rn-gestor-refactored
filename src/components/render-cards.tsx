@@ -23,48 +23,55 @@ interface RenderCardsProps {
   isLoading?: boolean;
 }
 
-const getDisplayPrice = (veiculo: any) => {
+const getDisplayPrice = (veiculo: VeiculoLojaUI | VeiculoUI) => {
   if ('precoLojaFormatado' in veiculo) {
     return veiculo.precoLojaFormatado ?? veiculo.veiculo?.precoFormatado ?? "—";
   }
   return veiculo.precoFormatado ?? "—";
 };
 
-const getVehicleData = (item: any, domain: Domain) => {
-  if (domain === "vitrine") {
+const getVehicleData = (item: VeiculoLojaUI | VeiculoUI, domain: Domain) => {
+  if (domain === "vitrine" && 'veiculo' in item) {
+    const vitrineItem = item as VeiculoLojaUI;
     return {
-      id: item.id,
-      display: item.veiculo?.veiculoDisplay ?? "Veículo sem modelo",
-      placa: item.veiculo?.placa ?? "—",
-      local: item.veiculo?.localDisplay ?? "Sem local",
-      ano: item.veiculo?.anoPrincipal ?? "—",
-      hodometro: item.veiculo?.hodometroFormatado ?? "—",
-      estado: item.veiculo?.estadoVendaLabel ?? "Sem status",
-      capaUrl: item.capaUrl,
-      dataEntrada: item.dataEntradaFormatada ?? "—",
-      caracteristicas: item.veiculo?.caracteristicasPrincipais ?? [],
-      temFotos: item.temFotos ?? false,
-      detailUrl: `/vitrine/${item.id}`,
+      id: vitrineItem.id,
+      display: vitrineItem.veiculo?.veiculoDisplay ?? "Veículo sem modelo",
+      placa: vitrineItem.veiculo?.placa ?? "—",
+      local: vitrineItem.veiculo?.localDisplay ?? "Sem local",
+      ano: vitrineItem.veiculo?.anoPrincipal ?? "—",
+      hodometro: vitrineItem.veiculo?.hodometroFormatado ?? "—",
+      estado: vitrineItem.veiculo?.estadoVendaLabel ?? "Sem status",
+      capaUrl: vitrineItem.capaUrl,
+      dataEntrada: vitrineItem.dataEntradaFormatada ?? "—",
+      caracteristicas: vitrineItem.veiculo?.caracteristicasPrincipais ?? [],
+      temFotos: vitrineItem.temFotos ?? false,
+      detailUrl: `/vitrine/${vitrineItem.id}`,
     };
   }
   
+  const estoqueItem = item as VeiculoUI;
+  const dateFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
+  const registradoEmFormatado = estoqueItem.registrado_em 
+    ? dateFormatter.format(new Date(estoqueItem.registrado_em)) 
+    : "—";
+    
   return {
-    id: item.id,
-    display: item.veiculoDisplay ?? "Veículo sem modelo",
-    placa: item.placa ?? "—",
-    local: item.localDisplay ?? "Sem local",
-    ano: item.anoPrincipal ?? "—",
-    hodometro: item.hodometroFormatado ?? "—",
-    estado: item.estadoVendaLabel ?? "Sem status",
-    capaUrl: item.capaUrl,
-    dataEntrada: item.registradoEmFormatado ?? "—",
-    caracteristicas: item.caracteristicasPrincipais ?? [],
-    temFotos: item.temFotos ?? false,
-    detailUrl: `/estoque/${item.id}`,
+    id: estoqueItem.id,
+    display: estoqueItem.veiculoDisplay ?? "Veículo sem modelo",
+    placa: estoqueItem.placa ?? "—",
+    local: estoqueItem.localDisplay ?? "Sem local",
+    ano: estoqueItem.anoPrincipal ?? "—",
+    hodometro: estoqueItem.hodometroFormatado ?? "—",
+    estado: estoqueItem.estadoVendaLabel ?? "Sem status",
+    capaUrl: null,
+    dataEntrada: registradoEmFormatado,
+    caracteristicas: estoqueItem.caracteristicasPrincipais ?? [],
+    temFotos: false,
+    detailUrl: `/estoque/${estoqueItem.id}`,
   };
 };
 
-const GridCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) => (
+const GridCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)[]; domain: Domain }) => (
   <ul className="grid max-w-screen-xl grid-cols-1 gap-6 px-4 mx-auto sm:grid-cols-2 lg:grid-cols-3 sm:px-6">
     {vehicles.map((item) => {
       const data = getVehicleData(item, domain);
@@ -150,7 +157,7 @@ const GridCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
   </ul>
 );
 
-const InfoCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) => (
+const InfoCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)[]; domain: Domain }) => (
   <ul className="flex flex-col gap-4">
     {vehicles.map((item) => {
       const data = getVehicleData(item, domain);
@@ -205,7 +212,7 @@ const InfoCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
   </ul>
 );
 
-const TableView = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) => {
+const TableView = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)[]; domain: Domain }) => {
   const router = useRouter();
   
   return (

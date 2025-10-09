@@ -13,10 +13,10 @@ export interface Column<T> {
   sortable?: boolean;
   editable?: boolean;
   align?: 'left' | 'center' | 'right';
-  accessor?: (row: T) => any;
+  accessor?: (row: T) => unknown;
   comparator?: (a: T, b: T, direction: 'asc' | 'desc') => number;
-  render?: (value: any, row: T, index: number) => React.ReactNode;
-  editRender?: (value: any, row: T, onChange: (value: any) => void) => React.ReactNode;
+  render?: (value: unknown, row: T, index: number) => React.ReactNode;
+  editRender?: (value: unknown, row: T, onChange: (value: unknown) => void) => React.ReactNode;
 }
 
 export interface RenderTablesProps<T> {
@@ -43,7 +43,7 @@ interface SortConfig {
   direction: 'asc' | 'desc';
 }
 
-export function RenderTables<T extends Record<string, any>>({
+export function RenderTables<T extends Record<string, unknown>>({
   data,
   columns,
   mode = 'view',
@@ -159,7 +159,7 @@ export function RenderTables<T extends Record<string, any>>({
     });
   };
 
-  const handleCellEdit = (rowKey: string, columnKey: string, value: any) => {
+  const handleCellEdit = (rowKey: string, columnKey: string, value: unknown) => {
     const row = sortedData.find((r) => getRowKey(r) === rowKey);
     if (!row || !onUpdate) return;
 
@@ -327,7 +327,7 @@ export function RenderTables<T extends Record<string, any>>({
                           ) : column.render ? (
                             column.render(value, row, index)
                           ) : (
-                            <span>{value ?? '—'}</span>
+                            <span>{String(value ?? '—')}</span>
                           )}
                         </td>
                       );

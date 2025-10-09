@@ -68,7 +68,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         borderColor: customColors.border,
         ...(customColors.focus && {
           '--custom-focus-ring': customColors.focus,
-        } as any),
+        } as React.CSSProperties),
       }),
       ...style,
     };

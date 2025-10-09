@@ -10,8 +10,8 @@ import { RepositoryError } from './types';
 type Loja = Database['public']['Tables']['lojas']['Row'];
 
 export class LojaRepository extends BaseRepository<Loja> {
-  constructor(supabase: any) {
-    super(supabase, 'lojas');
+  constructor(supabase: unknown) {
+    super(supabase as never, 'lojas');
   }
 
   async findByEmpresa(empresaId: string): Promise<Loja[]> {

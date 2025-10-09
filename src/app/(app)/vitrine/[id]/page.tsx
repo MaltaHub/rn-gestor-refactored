@@ -191,7 +191,7 @@ export default function VitrineDetalhePage() {
             </div>
 
             <div className="flex min-w-0 flex-col gap-6">
-              <VehicleInfo veiculo={veiculo} dataEntrada={veiculoLoja.dataEntradaFormatada} />
+              <VehicleInfo veiculo={veiculo} dataEntrada={veiculoLoja.dataEntradaFormatada ?? undefined} />
               <PriceInfo
                 precoLoja={veiculoLoja.precoLojaFormatado}
                 precoVeiculo={veiculo.precoFormatado}

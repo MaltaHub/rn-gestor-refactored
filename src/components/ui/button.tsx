@@ -82,10 +82,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         color: customColor.text,
         ...(customColor.hover && {
           '--custom-hover-bg': customColor.hover,
-        } as any),
+        } as React.CSSProperties),
         ...(customColor.focus && {
           '--custom-focus-ring': customColor.focus,
-        } as any),
+        } as React.CSSProperties),
       }),
       ...style,
     };
@@ -100,8 +100,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const customHoverClass = customColor?.hover ? '[&:hover]:bg-[var(--custom-hover-bg)]' : '';
     const customFocusClass = customColor?.focus ? '[&:focus]:ring-[var(--custom-focus-ring)]' : '';
 
-    const Comp = asChild && React.isValidElement(children) ? (children.type as any) : 'button';
-    const childProps = asChild && React.isValidElement(children) ? (children.props as any) : {};
+    const Comp = asChild && React.isValidElement(children) ? (children.type as React.ElementType) : 'button';
+    const childProps = asChild && React.isValidElement(children) ? (children.props as Record<string, unknown>) : {};
 
     return (
       <Comp
@@ -114,7 +114,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {!asChild && isLoading && <LoadingSpinner />}
         {!asChild && !isLoading && finalIcon && finalIconPosition === 'left' && <span className="mr-2">{finalIcon}</span>}
-        {asChild && React.isValidElement(children) ? (children.props as any).children : children}
+        {asChild && React.isValidElement(children) ? (children.props as Record<string, unknown>).children as React.ReactNode : children}
         {!asChild && !isLoading && finalIcon && finalIconPosition === 'right' && <span className="ml-2">{finalIcon}</span>}
       </Comp>
     );

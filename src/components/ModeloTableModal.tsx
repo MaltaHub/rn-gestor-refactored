@@ -89,7 +89,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       editRender: (value, row, onChange) => (
         <input
           type="text"
-          value={value || ''}
+          value={String(value || '')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
           autoFocus
@@ -105,7 +105,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       editRender: (value, row, onChange) => (
         <input
           type="text"
-          value={value || ''}
+          value={String(value || '')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
         />
@@ -118,11 +118,11 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       editable: true,
       render: (value) => {
         const option = combustivelOptions.find(o => o.value === value);
-        return option?.label || value || '-';
+        return String(option?.label || value || '-');
       },
       editRender: (value, row, onChange) => (
         <select
-          value={value || 'gasolina'}
+          value={String(value || 'gasolina')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
         >
@@ -139,11 +139,11 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       editable: true,
       render: (value) => {
         const option = tipoCambioOptions.find(o => o.value === value);
-        return option?.label || value || '-';
+        return String(option?.label || value || '-');
       },
       editRender: (value, row, onChange) => (
         <select
-          value={value || 'manual'}
+          value={String(value || 'manual')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
         >
@@ -158,11 +158,11 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       label: 'Motor',
       width: 100,
       editable: true,
-      render: (value) => value || '-',
+      render: (value) => String(value || '-'),
       editRender: (value, row, onChange) => (
         <input
           type="text"
-          value={value || ''}
+          value={String(value || '')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
         />
@@ -173,11 +173,11 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       label: 'Lugares',
       width: 100,
       editable: true,
-      render: (value) => value || '-',
+      render: (value) => String(value || '-'),
       editRender: (value, row, onChange) => (
         <input
           type="number"
-          value={value || ''}
+          value={String(value || '')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
         />
@@ -188,11 +188,11 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       label: 'Portas',
       width: 100,
       editable: true,
-      render: (value) => value || '-',
+      render: (value) => String(value || '-'),
       editRender: (value, row, onChange) => (
         <input
           type="number"
-          value={value || ''}
+          value={String(value || '')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
         />
@@ -205,11 +205,11 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       editable: true,
       render: (value) => {
         const option = carroceriaOptions.find(o => o.value === value);
-        return option?.label || value || '-';
+        return String(option?.label || value || '-');
       },
       editRender: (value, row, onChange) => (
         <select
-          value={value || 'hatch'}
+          value={String(value || 'hatch')}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-2 py-1 border rounded"
         >

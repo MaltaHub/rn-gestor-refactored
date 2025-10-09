@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { RenderTables, type Column } from '@/components/RenderTables';
 import { useEstoqueStore } from '@/stores/useEstoqueStore';
 
-const ESTADOS_VENDA: VeiculoUI['estado_venda'][] = ESTADOS_VENDA_CONFIG as VeiculoUI['estado_venda'][];
+const ESTADOS_VENDA = ESTADOS_VENDA_CONFIG;
 const SEM_LOCAL_VALUE = SPECIAL_VALUES.SEM_LOCAL;
 
 const formatEstadoLabel = (value: string) =>
@@ -153,7 +153,7 @@ export default function EstoquePage() {
     resetFilters();
   }, [resetFilters]);
 
-  const columns: Column<VeiculoUI>[] = useMemo(
+  const columns = useMemo<Column<VeiculoUI>[]>(
     () => [
       {
         key: 'veiculoDisplay',
@@ -161,7 +161,7 @@ export default function EstoquePage() {
         width: 300,
         minWidth: 200,
         sortable: true,
-        render: (value) => <span className="font-medium">{value}</span>,
+        render: (value) => <span className="font-medium">{value as string}</span>,
       },
       {
         key: 'placa',
@@ -176,7 +176,7 @@ export default function EstoquePage() {
         width: 100,
         minWidth: 80,
         sortable: true,
-        render: (value) => value ?? '—',
+        render: (value) => (value ?? '—') as React.ReactNode,
       },
       {
         key: 'hodometroFormatado',
@@ -185,7 +185,7 @@ export default function EstoquePage() {
         minWidth: 110,
         sortable: true,
         accessor: (row) => row.hodometro,
-        render: (value, row) => row.hodometroFormatado ?? '—',
+        render: (value, row) => (row.hodometroFormatado ?? '—') as React.ReactNode,
       },
       {
         key: 'estadoVendaLabel',
@@ -214,9 +214,9 @@ export default function EstoquePage() {
         width: 130,
         minWidth: 110,
         sortable: true,
-        align: 'right',
+        align: 'right' as const,
         accessor: (row) => row.preco_venal,
-        render: (value, row) => row.precoFormatado ?? '—',
+        render: (value, row) => (row.precoFormatado ?? '—') as React.ReactNode,
       },
       {
         key: 'estagio_documentacao',
@@ -224,7 +224,7 @@ export default function EstoquePage() {
         width: 150,
         minWidth: 130,
         sortable: true,
-        render: (value) => value ?? 'Sem informação',
+        render: (value) => (value ?? 'Sem informação') as React.ReactNode,
       },
       {
         key: 'cor',
@@ -232,7 +232,7 @@ export default function EstoquePage() {
         width: 120,
         minWidth: 100,
         sortable: true,
-        render: (value) => value ?? '—',
+        render: (value) => (value ?? '—') as React.ReactNode,
       },
     ],
     []
@@ -258,7 +258,7 @@ export default function EstoquePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Badge variant="neutral" size="lg">
+            <Badge variant="default" size="md">
               {totalVeiculos} de {totalVeiculos} veículos
             </Badge>
             <Button
@@ -275,7 +275,7 @@ export default function EstoquePage() {
           {ESTADOS_VENDA.map((estado) => (
             <Link key={estado} href={`/estoque?estado=${estado}`} scroll={false}>
               <Badge
-                variant={estadoFiltro === estado ? 'primary' : 'outline'}
+                variant={estadoFiltro === estado ? 'info' : 'default'}
                 className="cursor-pointer hover:ring-2 hover:ring-[var(--purple-magic)]/20 transition-all"
               >
                 {formatEstadoLabel(estado)} <span className="ml-1">({contagemPorEstado[estado] || 0})</span>
@@ -284,7 +284,7 @@ export default function EstoquePage() {
           ))}
           <Link href="/estoque" scroll={false}>
             <Badge
-              variant={!estadoFiltro ? 'primary' : 'outline'}
+              variant={!estadoFiltro ? 'info' : 'default'}
               className="cursor-pointer hover:ring-2 hover:ring-[var(--purple-magic)]/20 transition-all"
             >
               Todos
@@ -333,10 +333,7 @@ export default function EstoquePage() {
 
             {temFiltrosAtivos && (
               <div className="flex items-center gap-2">
-                <Badge
-                  variant="warning"
-                  leftIcon={<Search className="w-3 h-3" />}
-                >
+                <Badge variant="warning">
                   {totalFiltrados} resultado{totalFiltrados !== 1 ? 's' : ''} encontrado{totalFiltrados !== 1 ? 's' : ''}
                 </Badge>
                 <Button
@@ -364,8 +361,8 @@ export default function EstoquePage() {
         </div>
 
         <RenderTables
-          data={veiculosFiltrados}
-          columns={columns}
+          data={veiculosFiltrados as unknown as Record<string, unknown>[]}
+          columns={columns as unknown as Column<Record<string, unknown>>[]}
           mode="view"
           rowKey="id"
           onRowClick={(row) => router.push(`/estoque/${row.id}`)}

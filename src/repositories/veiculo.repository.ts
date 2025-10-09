@@ -31,11 +31,11 @@ export interface VeiculoUpdatePayload extends Partial<VeiculoCreatePayload> {
 }
 
 export class VeiculoRepository extends BaseRepository<Veiculo> {
-  constructor(supabase: any) {
-    super(supabase, 'veiculos');
+  constructor(supabase: unknown) {
+    super(supabase as never, 'veiculos');
   }
 
-  async createWithRPC(dados: VeiculoCreatePayload): Promise<any> {
+  async createWithRPC(dados: VeiculoCreatePayload): Promise<unknown> {
     try {
       const result = await callRpc(RPC_FUNCTIONS.VEICULOS, {
         operacao: 'criar',
@@ -51,7 +51,7 @@ export class VeiculoRepository extends BaseRepository<Veiculo> {
     }
   }
 
-  async updateWithRPC(id: string, dados: VeiculoUpdatePayload): Promise<any> {
+  async updateWithRPC(id: string, dados: VeiculoUpdatePayload): Promise<unknown> {
     try {
       const { adicionar_caracteristicas, remover_caracteristicas, ...resto } = dados;
 
@@ -76,7 +76,7 @@ export class VeiculoRepository extends BaseRepository<Veiculo> {
     }
   }
 
-  async deleteWithRPC(id: string): Promise<any> {
+  async deleteWithRPC(id: string): Promise<unknown> {
     try {
       const result = await callRpc(RPC_FUNCTIONS.VEICULOS, {
         operacao: 'excluir',

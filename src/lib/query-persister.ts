@@ -6,7 +6,7 @@
 interface PersistedClient {
   timestamp: number;
   buster: string;
-  clientState: any;
+  clientState: unknown;
 }
 
 interface Persister {
