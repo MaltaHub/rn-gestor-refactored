@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
 import { criarVeiculo } from "@/services/estoque";
+import { salvarConfiguracao } from "@/services/configuracoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Plus } from "lucide-react";
+import { QuickAddModal, QuickAddField } from "@/components/QuickAddModal";
 import type { VeiculoResumo } from "@/types/estoque";
 
 type EstadoVendaOption = VeiculoResumo["estado_venda"];
@@ -77,6 +79,10 @@ export default function CriarVeiculoPage() {
   const [formState, setFormState] = useState<VehicleFormState>({ ...INITIAL_FORM_STATE });
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  const [isModeloModalOpen, setIsModeloModalOpen] = useState(false);
+  const [isCaracteristicaModalOpen, setIsCaracteristicaModalOpen] = useState(false);
+  const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
 
   const lojaNomePorId = useMemo(() => {
     const map = new Map<string, string>();
@@ -113,6 +119,45 @@ export default function CriarVeiculoPage() {
         ? prev.caracteristicas.filter((x) => x.id !== c.id)
         : [...prev.caracteristicas, c],
     }));
+
+  const handleSaveModelo = async (data: Record<string, string>) => {
+    await salvarConfiguracao('modelo', { marca: data.marca, nome: data.nome });
+    await queryClient.refetchQueries({ queryKey: ['configuracoes', 'modelo'] });
+    const updatedModelos = queryClient.getQueryData<Array<{ id: string; marca: string; nome: string }>>(['configuracoes', 'modelo']) || [];
+    const newModelo = updatedModelos.find(m => m.marca === data.marca && m.nome === data.nome);
+    if (newModelo?.id) {
+      setFormState(prev => ({ ...prev, modelo_id: newModelo.id }));
+      setFeedback({ type: 'success', message: `✅ Modelo "${data.marca} ${data.nome}" criado e selecionado!` });
+      setTimeout(() => setFeedback(null), 3000);
+    }
+  };
+
+  const handleSaveCaracteristica = async (data: Record<string, string>) => {
+    await salvarConfiguracao('caracteristica', { nome: data.nome });
+    await queryClient.refetchQueries({ queryKey: ['configuracoes', 'caracteristica'] });
+    const updatedCaracteristicas = queryClient.getQueryData<CaracteristicaFormValue[]>(['configuracoes', 'caracteristica']) || [];
+    const newCaracteristica = updatedCaracteristicas.find(c => c.nome === data.nome);
+    if (newCaracteristica) {
+      setFormState(prev => ({ 
+        ...prev, 
+        caracteristicas: [...prev.caracteristicas, newCaracteristica] 
+      }));
+      setFeedback({ type: 'success', message: `✅ Característica "${data.nome}" criada e adicionada!` });
+      setTimeout(() => setFeedback(null), 3000);
+    }
+  };
+
+  const handleSaveLocal = async (data: Record<string, string>) => {
+    await salvarConfiguracao('local', { nome: data.nome, loja_id: data.loja_id || null });
+    await queryClient.refetchQueries({ queryKey: ['configuracoes', 'local'] });
+    const updatedLocais = queryClient.getQueryData<Array<{ id: string; nome: string; loja_id?: string | null }>>(['configuracoes', 'local']) || [];
+    const newLocal = updatedLocais.find(l => l.nome === data.nome);
+    if (newLocal?.id) {
+      setFormState(prev => ({ ...prev, local_id: newLocal.id }));
+      setFeedback({ type: 'success', message: `✅ Local "${data.nome}" criado e selecionado!` });
+      setTimeout(() => setFeedback(null), 3000);
+    }
+  };
 
   const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
@@ -184,7 +229,7 @@ export default function CriarVeiculoPage() {
         </header>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8 pb-24">
           {feedback && (
             <div
               className={`rounded-md px-4 py-3 text-sm shadow-sm ${feedback.type === "success"
@@ -323,42 +368,78 @@ export default function CriarVeiculoPage() {
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="font-medium text-[var(--text-secondary)]">Modelo</span>
-                <select
-                  value={formState.modelo_id}
-                  onChange={handleChange("modelo_id")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
-                >
-                  <option value="">Selecione um modelo</option>
-                  {modelosComNomeCompleto
-                    .filter((modelo) => Boolean(modelo.id))
-                    .map((modelo) => (
-                      <option key={modelo.id as string} value={modelo.id as string}>
-                        {modelo.nomeCompleto}
-                      </option>
-                    ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={formState.modelo_id}
+                    onChange={handleChange("modelo_id")}
+                    className="flex-1 rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  >
+                    <option value="">Selecione um modelo</option>
+                    {modelosComNomeCompleto
+                      .filter((modelo) => Boolean(modelo.id))
+                      .map((modelo) => (
+                        <option key={modelo.id as string} value={modelo.id as string}>
+                          {modelo.nomeCompleto}
+                        </option>
+                      ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsModeloModalOpen(true)}
+                    className="px-2"
+                    aria-label="Adicionar novo modelo"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="font-medium text-[var(--text-secondary)]">Local</span>
-                <select
-                  value={formState.local_id}
-                  onChange={handleChange("local_id")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
-                >
-                  <option value="">Selecione um local</option>
-                  {localOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={formState.local_id}
+                    onChange={handleChange("local_id")}
+                    className="flex-1 rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  >
+                    <option value="">Selecione um local</option>
+                    {localOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsLocalModalOpen(true)}
+                    className="px-2"
+                    aria-label="Adicionar novo local"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </label>
             </div>
           </section>
 
           {/* Características */}
           <section className="bg-white rounded-lg border border-[var(--border-default)] p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Características</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Características</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCaracteristicaModalOpen(true)}
+                leftIcon={<Plus className="w-4 h-4" />}
+                aria-label="Adicionar nova característica"
+              >
+                Adicionar
+              </Button>
+            </div>
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {caracteristicasDisponiveis.map((caracteristica) => (
                 <li key={caracteristica.id}>
@@ -395,13 +476,14 @@ export default function CriarVeiculoPage() {
             </label>
           </section>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 sticky bottom-0 bg-white py-4 border-t border-[var(--border-default)]">
+          {/* Floating Action Buttons */}
+          <div className="fixed bottom-6 right-6 z-50 flex gap-3 pointer-events-none">
             <Button
               type="button"
               variant="ghost"
               onClick={() => router.push('/estoque')}
               disabled={isSaving}
+              className="pointer-events-auto shadow-2xl bg-white"
             >
               Cancelar
             </Button>
@@ -410,11 +492,51 @@ export default function CriarVeiculoPage() {
               variant="primary"
               leftIcon={<Save className="w-4 h-4" />}
               disabled={isSaving}
+              className="pointer-events-auto shadow-2xl"
             >
               {isSaving ? "Salvando..." : "Criar veículo"}
             </Button>
           </div>
         </form>
+
+        {/* Modals for Inline Creation */}
+        <QuickAddModal
+          isOpen={isModeloModalOpen}
+          onClose={() => setIsModeloModalOpen(false)}
+          title="Adicionar Novo Modelo"
+          fields={[
+            { type: 'text', name: 'marca', label: 'Marca', required: true, placeholder: 'Ex: Toyota' },
+            { type: 'text', name: 'nome', label: 'Nome', required: true, placeholder: 'Ex: Corolla' }
+          ]}
+          onSave={handleSaveModelo}
+        />
+
+        <QuickAddModal
+          isOpen={isCaracteristicaModalOpen}
+          onClose={() => setIsCaracteristicaModalOpen(false)}
+          title="Adicionar Nova Característica"
+          fields={[
+            { type: 'text', name: 'nome', label: 'Nome', required: true, placeholder: 'Ex: Ar condicionado' }
+          ]}
+          onSave={handleSaveCaracteristica}
+        />
+
+        <QuickAddModal
+          isOpen={isLocalModalOpen}
+          onClose={() => setIsLocalModalOpen(false)}
+          title="Adicionar Novo Local"
+          fields={[
+            { type: 'text', name: 'nome', label: 'Nome', required: true, placeholder: 'Ex: Estacionamento A' },
+            { 
+              type: 'select', 
+              name: 'loja_id', 
+              label: 'Loja (opcional)', 
+              required: false,
+              options: lojas.map(loja => ({ value: loja.id || '', label: loja.nome }))
+            }
+          ]}
+          onSave={handleSaveLocal}
+        />
       </div>
     </div>
   );
