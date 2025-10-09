@@ -386,7 +386,7 @@ export default function CriarVeiculoPage() {
               <MapPin className="w-5 h-5" />
               Status e localização
             </h3>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-1">
                 <span className="font-medium text-[var(--text-secondary)] text-xs">
                   Estado de venda <span className="text-red-500">*</span>
