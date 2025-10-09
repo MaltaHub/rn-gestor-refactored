@@ -24,6 +24,7 @@ export function Navbar() {
     { href: "/admin", label: "Admin" },
     { href: "/estoque", label: "Estoque" },
     { href: "/configuracoes", label: "Configurações" },
+    { href: "/perfil", label: "Perfil" },
   ];
 
 

@@ -12,7 +12,8 @@ import {
   Menu, 
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  User
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useEmpresaDoUsuario } from '@/hooks/use-empresa';
@@ -58,6 +59,12 @@ export function Sidebar() {
       icon: Settings,
       requiresAuth: true,
       requiresProprietario: true
+    },
+    { 
+      href: '/perfil', 
+      label: 'Perfil', 
+      icon: User,
+      requiresAuth: true
     },
   ];
 
