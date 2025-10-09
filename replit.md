@@ -4,6 +4,13 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Card Image Edge-to-Edge Fix ✅
+- **Problem**: Card images had unwanted spacing/borders from default Card padding
+- **Solution**: Added SPACING.none = '0' token and applied padding="none" to Card component
+- **Result**: Images now perfectly aligned with card edges (top, left, right) with zero gaps
+- **Architecture**: Content padding (p-6) moved to inner div only, Card wrapper has zero padding
+- **Architect Validated**: Approved - clean integration with existing tokens, no regressions
+
 **October 9, 2025** - Phase 18: User Profile Page Implementation ✅
 - **Profile Page Created**: New `/perfil` route with complete user profile management
 - **Profile Service**: Created `src/services/perfil.ts` with functions for getProfile(), updateProfile(), updateEmail(), updatePassword()
