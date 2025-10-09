@@ -70,58 +70,58 @@ const GridCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
       const data = getVehicleData(item, domain);
       return (
         <li key={data.id} className="flex flex-col h-full w-full">
-          <Card variant="default" className="flex h-full w-full flex-col overflow-hidden">
-            <Link href={data.detailUrl} className="block h-full w-full">
-              <div className="relative aspect-video w-full bg-[var(--white-soft)] overflow-hidden">
+          <Card variant="default" className="flex h-full w-full flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <Link href={data.detailUrl} className="block h-full w-full group">
+              <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                 {data.capaUrl ? (
                   <Image
                     src={data.capaUrl}
                     alt={data.display}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                     priority={false}
                   />
                 ) : (
-                  <span className="flex h-full items-center justify-center text-xs sm:text-sm font-medium text-[var(--text-secondary)]">
+                  <span className="flex h-full items-center justify-center text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                     Sem foto de capa
                   </span>
                 )}
               </div>
 
-              <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5 min-h-0 break-words">
+              <div className="flex flex-1 flex-col gap-4 p-6 min-h-0 break-words">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <Badge variant="info">{data.estado}</Badge>
-                  <span className="flex-shrink-0 text-sm sm:text-base lg:text-lg font-semibold text-[var(--text-primary)] truncate">
+                  <Badge variant="info" className="font-semibold">{data.estado}</Badge>
+                  <span className="flex-shrink-0 text-xl font-bold text-purple-600 dark:text-purple-400 truncate">
                     {getDisplayPrice(item)}
                   </span>
                 </div>
 
                 <div>
-                  <h4 className="text-sm sm:text-base lg:text-lg font-bold text-[var(--text-primary)] clamp-2 leading-tight">
+                  <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100 clamp-2 leading-tight">
                     {data.display}
                   </h4>
-                  <p className="text-xs sm:text-sm lg:text-base text-[var(--text-secondary)]">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Placa {data.placa}
                   </p>
                 </div>
 
-                <dl className="grid gap-3 text-xs sm:text-sm lg:text-base text-[var(--text-secondary)] sm:grid-cols-2">
+                <dl className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <dt className="font-semibold text-[var(--text-primary)]">Local</dt>
-                    <dd>{data.local}</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Local</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{data.local}</dd>
                   </div>
                   <div>
-                    <dt className="font-semibold text-[var(--text-primary)]">Ano</dt>
-                    <dd>{data.ano}</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Ano</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{data.ano}</dd>
                   </div>
                   <div>
-                    <dt className="font-semibold text-[var(--text-primary)]">Disponível desde</dt>
-                    <dd>{data.dataEntrada}</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Disponível desde</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{data.dataEntrada}</dd>
                   </div>
                   <div>
-                    <dt className="font-semibold text-[var(--text-primary)]">Hodômetro</dt>
-                    <dd>{data.hodometro}</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Hodômetro</dt>
+                    <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">{data.hodometro}</dd>
                   </div>
                 </dl>
 
@@ -154,30 +154,30 @@ const InfoCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
       const data = getVehicleData(item, domain);
       return (
         <li key={data.id}>
-          <Card variant="default" className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+          <Card variant="default" className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between hover:shadow-lg transition-shadow duration-300">
             <Link href={data.detailUrl}>
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-lg font-medium text-[var(--text-primary)]">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {data.display}
                   </h2>
-                  <Badge variant="info">{data.estado}</Badge>
+                  <Badge variant="info" className="font-semibold">{data.estado}</Badge>
                 </div>
-                <div className="flex flex-wrap gap-6 text-sm text-[var(--text-secondary)]">
+                <div className="flex flex-wrap gap-6 text-sm text-gray-600 dark:text-gray-400">
                   <span>
-                    <span className="font-medium text-[var(--text-primary)]">Placa:</span> {data.placa}
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">Placa:</span> {data.placa}
                   </span>
                   <span>
-                    <span className="font-medium text-[var(--text-primary)]">Local:</span> {data.local}
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">Local:</span> {data.local}
                   </span>
                   <span>
-                    <span className="font-medium text-[var(--text-primary)]">Ano:</span> {data.ano}
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">Ano:</span> {data.ano}
                   </span>
                   <span>
-                    <span className="font-medium text-[var(--text-primary)]">Entrada:</span> {data.dataEntrada}
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">Entrada:</span> {data.dataEntrada}
                   </span>
                   <span>
-                    <span className="font-medium text-[var(--text-primary)]">Preço:</span> {getDisplayPrice(item)}
+                    <span className="font-semibold text-purple-600 dark:text-purple-400">Preço:</span> <span className="font-bold text-purple-600 dark:text-purple-400">{getDisplayPrice(item)}</span>
                   </span>
                 </div>
                 {data.caracteristicas?.length > 0 && (
@@ -219,7 +219,7 @@ const TableView = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
             <col style={{ width: "10%" }} />
           </colgroup>
 
-          <thead className="bg-white text-left text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
+          <thead className="bg-gray-50 dark:bg-gray-800 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             <tr>
               <th className="px-4 py-3">Veículo</th>
               <th className="px-4 py-3">Placa</th>
@@ -230,41 +230,41 @@ const TableView = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[var(--border-subtle)] bg-white text-sm text-[var(--text-secondary)]">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-400">
             {vehicles.map((item) => {
               const data = getVehicleData(item, domain);
               return (
                 <tr
                   key={data.id}
                   onClick={() => router.push(data.detailUrl)}
-                  className="cursor-pointer select-none transition-colors hover:bg-gray-50 active:bg-gray-100"
+                  className="cursor-pointer select-none transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700"
                 >
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
-                    <span className="block overflow-hidden text-ellipsis font-medium text-[var(--text-primary)]">
+                    <span className="block overflow-hidden text-ellipsis font-semibold text-gray-900 dark:text-gray-100">
                       {data.display}
                     </span>
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
-                    <span className="block overflow-hidden text-ellipsis">
+                    <span className="block overflow-hidden text-ellipsis text-gray-700 dark:text-gray-300">
                       {data.placa}
                     </span>
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
-                    <span className="block overflow-hidden text-ellipsis">
+                    <span className="block overflow-hidden text-ellipsis font-semibold text-purple-600 dark:text-purple-400">
                       {getDisplayPrice(item)}
                     </span>
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
-                    <span className="block overflow-hidden text-ellipsis">
+                    <span className="block overflow-hidden text-ellipsis text-gray-700 dark:text-gray-300">
                       {data.estado}
                     </span>
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
-                    <span className="block overflow-hidden text-ellipsis">
+                    <span className="block overflow-hidden text-ellipsis text-gray-700 dark:text-gray-300">
                       {data.local}
                     </span>
                   </td>
@@ -295,7 +295,7 @@ export function RenderCards({
 }: RenderCardsProps) {
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] bg-white py-16 text-center text-sm text-[var(--text-secondary)]">
+      <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 py-16 text-center text-sm text-gray-600 dark:text-gray-400">
         Carregando veículos…
       </div>
     );
@@ -303,7 +303,7 @@ export function RenderCards({
 
   if (vehicles.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] bg-white py-16 text-center text-sm text-[var(--text-secondary)]">
+      <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 py-16 text-center text-sm text-gray-600 dark:text-gray-400">
         Nenhum veículo encontrado.
       </div>
     );
@@ -334,10 +334,10 @@ export function RenderCards({
           {onClose && (
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 rounded-full bg-white p-2 shadow-lg hover:bg-gray-100 transition-colors"
+              className="absolute top-4 right-4 z-10 rounded-full bg-white dark:bg-gray-800 p-2 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="Fechar"
             >
-              <X className="h-5 w-5 text-[var(--text-primary)]" />
+              <X className="h-5 w-5 text-gray-900 dark:text-gray-100" />
             </button>
           )}
           <div className={focusMode ? 'container mx-auto py-12' : ''}>

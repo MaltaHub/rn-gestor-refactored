@@ -307,7 +307,7 @@ export default function VitrinePage() {
   const renderConteudo = () => {
     if (!lojaId) {
       return (
-        <div className="rounded-lg border border-dashed border-[var(--border)] bg-white py-16 text-center text-sm text-[var(--text-secondary)]">
+        <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 py-16 text-center text-sm text-gray-600 dark:text-gray-400">
           Seleciona uma loja para visualizar a vitrine de veículos.
         </div>
       );
@@ -336,15 +336,15 @@ export default function VitrinePage() {
 
 
   return (
-    <div className="min-h-screen bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+    <div className="min-h-screen bg-white dark:bg-gray-950 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <header 
         className="mx-auto flex w-full max-w-7xl flex-col gap-6 transition-all"
         style={{ paddingTop: searchOpen && barH > 0 ? `${barH}px` : '0px' }}
       >
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">Vitrine de veículos</h1>
-            <p className="text-sm text-[var(--text-secondary)]">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Vitrine de veículos</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Explore e compartilhe os veículos disponíveis na loja selecionada
             </p>
           </div>
@@ -370,8 +370,8 @@ export default function VitrinePage() {
           ref={barRef}
           className="
     fixed inset-x-0 top-0 z-50
-    border-b border-[var(--border)]
-    bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75
+    border-b border-gray-200 dark:border-gray-700
+    bg-white/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/75 dark:supports-[backdrop-filter]:bg-gray-900/75
   "
         >
           {/* Conteúdo centralizado no mesmo grid da página */}
@@ -432,7 +432,7 @@ export default function VitrinePage() {
                 <select
                   value={estadoFiltro}
                   onChange={(e) => setEstadoFiltro(e.target.value as EstadoVendaFiltro | "")}
-                  className="h-10 w-full rounded-lg border border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] px-3 text-sm text-[var(--foreground)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]/20 focus:outline-none transition-all"
+                  className="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 focus:outline-none transition-all"
                 >
                   <option value="">Todos os status</option>
                   {ESTADOS_VENDA.map((estado) => (
@@ -445,7 +445,7 @@ export default function VitrinePage() {
                 <select
                   value={caracteristicaFiltro}
                   onChange={(e) => setCaracteristicaFiltro(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] px-3 text-sm text-[var(--foreground)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]/20 focus:outline-none transition-all"
+                  className="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 focus:outline-none transition-all"
                 >
                   <option value="">Todas as características</option>
                   {caracteristicas.map((caracteristica) => (
@@ -478,7 +478,7 @@ export default function VitrinePage() {
                 <select
                   value={ordenacao}
                   onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
-                  className="h-10 w-full rounded-lg border border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] px-3 text-sm text-[var(--foreground)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]/20 focus:outline-none transition-all"
+                  className="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 focus:outline-none transition-all"
                 >
                   {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -504,8 +504,8 @@ export default function VitrinePage() {
 
         {lojaSelecionada ? (
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-[var(--text-secondary)]">
-              Loja selecionada: <strong className="text-[var(--text-primary)]">{lojaSelecionada.nome}</strong>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Loja selecionada: <strong className="font-bold text-gray-900 dark:text-gray-100">{lojaSelecionada.nome}</strong>
             </span>
             <Badge 
               variant="info"
@@ -556,8 +556,8 @@ export default function VitrinePage() {
             <Card.Header>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Gerenciar vitrine</h2>
-                  <p className="text-sm text-[var(--text-secondary)]">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Gerenciar vitrine</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Adicione veículos do estoque para esta loja
                   </p>
                 </div>
@@ -574,47 +574,47 @@ export default function VitrinePage() {
             </Card.Header>
             <Card.Body>
             {!lojaSelecionada ? (
-              <div className="rounded-md border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
                 Selecione uma loja para gerenciar a vitrine.
               </div>
             ) : isEstoqueLoading ? (
-              <div className="rounded-md border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
                 Carregando veículos do estoque...
               </div>
             ) : veiculosDisponiveis.length === 0 ? (
-              <div className="rounded-md border border-dashed border-[var(--border)] bg-white p-6 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
                 Todos os veículos do estoque já estão nesta vitrine.
               </div>
             ) : (
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {veiculosDisponiveis.map((veiculo) => (
                   <li key={veiculo.id}>
-                    <article className="flex h-full flex-col gap-4 rounded-lg border border-dashed border-[var(--border)] bg-white/80 p-5 text-sm text-[var(--text-secondary)] shadow-sm opacity-75">
+                    <article className="flex h-full flex-col gap-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 p-5 text-sm shadow-sm opacity-75 hover:opacity-100 transition-opacity duration-300">
                       <div className="space-y-1">
-                        <h3 className="text-base font-semibold text-[var(--text-primary)]">
+                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">
                           {veiculo.veiculoDisplay}
                         </h3>
-                        <p className="text-xs uppercase text-[var(--text-tertiary)]">Placa {veiculo.placa}</p>
-                        <p className="text-xs text-[var(--text-secondary)]">
+                        <p className="text-xs uppercase font-semibold text-gray-500 dark:text-gray-400">Placa {veiculo.placa}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
                           Local atual: {veiculo.localDisplay ?? "Sem local"}
                         </p>
                       </div>
-                      <dl className="grid gap-3 text-xs text-[var(--text-secondary)] sm:grid-cols-2">
+                      <dl className="grid gap-3 text-xs sm:grid-cols-2">
                         <div>
-                          <dt className="font-medium text-[var(--text-primary)]">Ano</dt>
-                          <dd>{veiculo.anoPrincipal ?? "—"}</dd>
+                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Ano</dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.anoPrincipal ?? "—"}</dd>
                         </div>
                         <div>
-                          <dt className="font-medium text-[var(--text-primary)]">Hodômetro</dt>
-                          <dd>{veiculo.hodometroFormatado ?? "—"}</dd>
+                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Hodômetro</dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.hodometroFormatado ?? "—"}</dd>
                         </div>
                         <div>
-                          <dt className="font-medium text-[var(--text-primary)]">Status</dt>
-                          <dd>{veiculo.estadoVendaLabel}</dd>
+                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Status</dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.estadoVendaLabel}</dd>
                         </div>
                         <div>
-                          <dt className="font-medium text-[var(--text-primary)]">Preço base</dt>
-                          <dd>{veiculo.precoFormatado ?? "Não informado"}</dd>
+                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Preço base</dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.precoFormatado ?? "Não informado"}</dd>
                         </div>
                       </dl>
                       <div className="mt-auto">

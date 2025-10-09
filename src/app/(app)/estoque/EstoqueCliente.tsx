@@ -240,14 +240,14 @@ export default function EstoquePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white px-4 py-6 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-950 px-4 py-6 flex items-center justify-center">
         <p className="text-[var(--text-secondary)]">Carregando estoque...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+    <div className="min-h-screen bg-white dark:bg-gray-950 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <div className="mx-auto w-full max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -293,7 +293,7 @@ export default function EstoquePage() {
         </div>
 
         {searchOpen && (
-          <div className="rounded-lg border border-[var(--border-default)] bg-white p-4 space-y-4">
+          <div className="rounded-lg border border-[var(--border-default)] bg-white dark:bg-gray-800 p-4 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Input
                 leftIcon={<Search className="w-4 h-4" />}
@@ -303,7 +303,7 @@ export default function EstoquePage() {
               />
 
               <select
-                className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+                className="rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
                 value={filters.localIdFiltro}
                 onChange={(e) => setFilters({ localIdFiltro: e.target.value })}
               >
@@ -316,7 +316,7 @@ export default function EstoquePage() {
               </select>
 
               <select
-                className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+                className="rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
                 value={filters.modelosFiltro[0] || ''}
                 onChange={(e) =>
                   setFilters({ modelosFiltro: e.target.value ? [e.target.value] : [] })
