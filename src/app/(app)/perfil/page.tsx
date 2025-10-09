@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { updateProfile, updateEmail, updatePassword } from '@/services/perfil';
+import { signOut } from '@/services/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { User as UserIcon, Lock, Camera } from 'lucide-react';
+import { User as UserIcon, Lock, Camera, LogOut } from 'lucide-react';
 
 export default function PerfilPage() {
   const { user } = useAuth();
@@ -108,6 +109,19 @@ export default function PerfilPage() {
       });
     } finally {
       setLoadingPassword(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!window.confirm('Deseja realmente sair?')) return;
+    
+    try {
+      await signOut();
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: 'Erro ao sair. Tente novamente.'
+      });
     }
   };
 
@@ -258,6 +272,21 @@ export default function PerfilPage() {
             </div>
           </form>
         </Card>
+        
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            Deseja encerrar sua sessão no sistema?
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleLogout}
+            className="w-full sm:w-auto flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair da conta
+          </Button>
+        </div>
       </div>
     </div>
   );
