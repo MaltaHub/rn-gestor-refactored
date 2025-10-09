@@ -72,7 +72,7 @@ const GridCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
         <li key={data.id} className="flex flex-col h-full w-full">
           <Card variant="default" className="flex h-full w-full flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <Link href={data.detailUrl} className="block h-full w-full group">
-              <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <div className="relative aspect-video w-full overflow-hidden">
                 {data.capaUrl ? (
                   <Image
                     src={data.capaUrl}
@@ -83,16 +83,18 @@ const GridCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
                     priority={false}
                   />
                 ) : (
-                  <span className="flex h-full items-center justify-center text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Sem foto de capa
-                  </span>
+                  <div className="flex h-full items-center justify-center bg-gray-100 dark:bg-gray-800">
+                    <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Sem foto de capa
+                    </span>
+                  </div>
                 )}
               </div>
 
               <div className="flex flex-1 flex-col gap-4 p-6 min-h-0 break-words">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <Badge variant="info" className="font-semibold">{data.estado}</Badge>
-                  <span className="flex-shrink-0 text-xl font-bold text-purple-600 dark:text-purple-400 truncate">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <Badge variant="info" className="font-semibold shrink-0">{data.estado}</Badge>
+                  <span className="text-xl font-bold text-purple-600 dark:text-purple-400 break-words text-right sm:text-left min-w-0">
                     {getDisplayPrice(item)}
                   </span>
                 </div>
