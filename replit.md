@@ -4,6 +4,15 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Share Images Feature in Vitrine Detail Page ✅
+- **ShareImagesButton Component**: New component with dropdown menu for image sharing
+- **Download All Images**: Sequential download of all vehicle photos with proper naming (vehicleName_foto_N.jpg)
+- **WhatsApp Sharing**: Share all photo URLs via WhatsApp with formatted message including vehicle name
+- **UX Features**: Loading feedback during download, menu closes on outside click or action completion, error handling
+- **Integration**: Button positioned in Vitrine detail page header, only visible when photos exist
+- **Design System**: Uses Button and Card components, full dark mode support with purple/gray theme
+- **Architect Validated**: Approved - clean implementation, meets requirements, good UX
+
 **October 9, 2025** - Complete State Persistence Implementation ✅
 - **Vitrine Store Created**: New `useVitrineStore` (Zustand + persist) manages all Vitrine page state
 - **State Persistence**: Filters, sorting, view mode, scroll position, and UI visibility all persist across page reloads
