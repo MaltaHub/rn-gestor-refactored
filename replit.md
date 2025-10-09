@@ -4,6 +4,15 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Phase 15: Design System Color Standardization ✅
+- **Complete UI Color Audit**: Systematically removed all violet/purple backgrounds from components (cards, modals, hovers, badges, navigation)
+- **Jungle Green Removal**: Eliminated jungle-green color tokens from design system (globals.css, theme providers, config files) - did not contrast well with purple theme
+- **White/Gray Backgrounds**: All components now use white/gray backgrounds with purple reserved exclusively for primary buttons, borders, text accents, and icons
+- **Component Updates**: Fixed 15+ components including Button (outline/ghost variants), Badge (default/info variants), Sidebar, ThemeSelector, ThemeToggle, TemaSection, Navbar, RenderTables hovers, and RenderCards
+- **Neutral Palette**: Button secondary changed from jungle-green to zinc-600/700; Badge success to standard green-50/700; Badge info to blue-50/700
+- **Dark Mode Consistency**: All dark mode backgrounds switched from purple-dark to zinc-700/800 for better contrast
+- **Architect Validated**: Full approval after multiple iterations ensuring ZERO purple backgrounds remain outside sanctioned accents
+
 **October 9, 2025** - Phase 14: ModeloTableModal Integration ✅
 - **ModeloTableModal Component**: Created comprehensive modal with RenderTables in edit mode for managing vehicle models
 - **8 Editable Columns**: marca, nome, combustivel (6 types), tipo_cambio (4 types), motor, lugares, portas, carroceria (8 types)
