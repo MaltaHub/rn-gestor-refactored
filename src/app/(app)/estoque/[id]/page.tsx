@@ -1,10 +1,81 @@
 'use client';
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Edit2, X, Save } from "lucide-react";
 
-import { useVeiculos } from "@/hooks/use-estoque";
+import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
+import { invalidateVeiculos } from "@/hooks/use-estoque";
+import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
+import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
+import { useQueryClient } from "@tanstack/react-query";
+import { PhotoGallery } from "@/components/Gallery";
+import { LojaSelector } from "@/components/LojaSelector";
+import { supabase } from "@/lib/supabase";
+import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
+import { useLojaStore } from "@/stores/useLojaStore";
+import { Button } from "@/components/ui/button";
 import type { VeiculoResumo } from "@/types/estoque";
+
+type EstadoVendaOption = VeiculoUI["estado_venda"];
+type EstadoVeiculoOption = NonNullable<VeiculoUI["estado_veiculo"]>;
+type CaracteristicaFormValue = { id: string; nome: string };
+
+const ESTADO_VENDA_OPTIONS: EstadoVendaOption[] = [
+  "disponivel", "reservado", "vendido", "repassado", "restrito",
+];
+
+const ESTADO_VEICULO_OPTIONS: EstadoVeiculoOption[] = [
+  "novo", "seminovo", "usado", "sucata", "limpo", "sujo",
+];
+
+const formatEnumLabel = (value: string) =>
+  value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+interface VehicleFormState {
+  placa: string;
+  cor: string;
+  chassi: string;
+  ano_fabricacao: string;
+  ano_modelo: string;
+  hodometro: string;
+  estado_venda: EstadoVendaOption;
+  estado_veiculo: EstadoVeiculoOption | "";
+  preco_venal: string;
+  observacao: string;
+  modelo_id: string;
+  local_id: string;
+  estagio_documentacao: string;
+  caracteristicas: CaracteristicaFormValue[];
+}
+
+const buildFormStateFromVeiculo = (v: VeiculoUI): VehicleFormState => ({
+  placa: v.placa ?? "",
+  cor: v.cor ?? "",
+  chassi: v.chassi ?? "",
+  ano_fabricacao: v.ano_fabricacao?.toString() ?? "",
+  ano_modelo: v.ano_modelo?.toString() ?? "",
+  hodometro: v.hodometro?.toString() ?? "",
+  estado_venda: v.estado_venda,
+  estado_veiculo: v.estado_veiculo ?? "",
+  preco_venal: v.preco_venal?.toString() ?? "",
+  observacao: v.observacao ?? "",
+  modelo_id: v.modelo_id ?? v.modelo?.id ?? "",
+  local_id: v.local_id ?? v.local?.id ?? "",
+  estagio_documentacao: v.estagio_documentacao ?? "",
+  caracteristicas:
+    v.caracteristicas?.map((c) => ({ id: c.id, nome: c.nome })) ?? [],
+});
+
+function isVeiculoUI(value: unknown): value is VeiculoUI {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Partial<VeiculoUI>;
+  return typeof v.id === "string" && typeof v.placa === "string";
+}
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -16,82 +87,96 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 function formatCurrency(value?: number | null) {
-  if (typeof value !== "number") {
-    return "—";
-  }
-
+  if (typeof value !== "number") return "—";
   return currencyFormatter.format(value);
 }
 
 function formatNumber(value?: number | null, suffix = "") {
-  if (typeof value !== "number") {
-    return "—";
-  }
-
+  if (typeof value !== "number") return "—";
   const formatted = value.toLocaleString("pt-BR");
   return suffix ? `${formatted} ${suffix}` : formatted;
 }
 
 function formatEnum(value?: string | null) {
-  if (!value) {
-    return "Não informado";
-  }
-
+  if (!value) return "Não informado";
   return value
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return "—";
-  }
-
+  if (!value) return "—";
   const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
+  if (Number.isNaN(parsed.getTime())) return value;
   return dateFormatter.format(parsed);
 }
 
 function formatText(value?: string | null) {
-  if (!value) {
-    return "—";
-  }
-
+  if (!value) return "—";
   return value;
 }
 
-function formatBoolean(value?: boolean | null) {
-  if (value == null) {
-    return "Não informado";
-  }
-
-  return value ? "Sim" : "Não";
-}
-
-export default function EstoqueDetalhePage() {
+export default function VeiculoDetalhePage() {
   const params = useParams<{ id: string }>();
-  const rawId = params?.id;
-  const veiculoId = Array.isArray(rawId) ? rawId[0] : rawId ?? "";
+  const veiculoId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? "";
 
-  const {
-    data: veiculo,
-    isLoading,
-  } = useVeiculos(veiculoId as string) as { data: VeiculoResumo | undefined; isLoading: boolean };
+  const { data: veiculoData, isLoading } = useVeiculosUI(veiculoId);
+  const { data: modelos = [] } = useModelos();
+  const { data: locais = [] } = useLocais();
+  const { data: lojas = [] } = useLojas();
+  const { data: caracteristicasDisponiveis = [] } =
+    useCaracteristicas() as { data: CaracteristicaFormValue[] };
+  const queryClient = useQueryClient();
+  const lojaSelecionadaId = useLojaStore((s) => s.lojaSelecionada?.id ?? null);
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formState, setFormState] = useState<VehicleFormState | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
+
+  const lojaNomePorId = useMemo(() => {
+    const map = new Map<string, string>();
+    lojas.forEach((l) => l.id && map.set(l.id, l.nome));
+    return map;
+  }, [lojas]);
+
+  const alvoPreferencialId = lojaSelecionadaId ?? veiculo?.localLojaId ?? null;
+  const localOptions = useMemo(() => {
+    return locais
+      .map((local) => {
+        const pertence = alvoPreferencialId ? local.loja_id === alvoPreferencialId : false;
+        const lojaNome = local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null;
+        const label = lojaNome ? `${lojaNome} • ${local.nome}` : local.nome;
+        const prioridade = pertence ? 0 : local.loja_id ? 1 : 2;
+        return { value: local.id, label, pertence, prioridade } as const;
+      })
+      .sort((a, b) => a.prioridade - b.prioridade || a.label.localeCompare(b.label, "pt-BR"));
+  }, [locais, lojaNomePorId, alvoPreferencialId]);
+
+  const modelosComNomeCompleto = useMemo(
+    () => modelos.map((m) => ({ ...m, nomeCompleto: buildModeloNomeCompletoOrDefault(m) })),
+    [modelos]
+  );
+
+  const modeloSelecionado = useMemo(
+    () => modelosComNomeCompleto.find((m) => m.id === formState?.modelo_id) ?? null,
+    [formState?.modelo_id, modelosComNomeCompleto]
+  );
+
+  useEffect(() => {
+    if (veiculo) {
+      setFormState(buildFormStateFromVeiculo(veiculo));
+    }
+  }, [veiculo?.id, veiculo?.editado_em]);
 
   if (!veiculoId) {
     return (
       <div className="bg-white px-6 py-10 text-zinc-900">
         <main className="mx-auto flex w-full max-w-3xl flex-col items-start gap-4">
-          <h1 className="text-2xl font-semibold text-zinc-800">
-            Veículo inválido
-          </h1>
-          <p className="text-sm text-zinc-500">
-            Não foi possível identificar o veículo solicitado.
-          </p>
+          <h1 className="text-2xl font-semibold text-zinc-800">Veículo inválido</h1>
+          <p className="text-sm text-zinc-500">Não foi possível identificar o veículo solicitado.</p>
           <Link className="text-sm font-medium text-blue-600" href="/estoque">
             Voltar ao estoque
           </Link>
@@ -100,13 +185,11 @@ export default function EstoqueDetalhePage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || !formState) {
     return (
       <div className="bg-white px-6 py-10 text-zinc-900">
         <main className="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-3 text-center">
-          <p className="text-base font-medium text-zinc-600">
-            Carregando informações do veículo...
-          </p>
+          <p className="text-base font-medium text-zinc-600">Carregando informações do veículo...</p>
         </main>
       </div>
     );
@@ -116,9 +199,7 @@ export default function EstoqueDetalhePage() {
     return (
       <div className="bg-white px-6 py-10 text-zinc-900">
         <main className="mx-auto flex w-full max-w-3xl flex-col items-start gap-4">
-          <h1 className="text-2xl font-semibold text-zinc-800">
-            Veículo não encontrado
-          </h1>
+          <h1 className="text-2xl font-semibold text-zinc-800">Veículo não encontrado</h1>
           <p className="text-sm text-zinc-500">
             O veículo solicitado não está disponível ou foi removido do estoque.
           </p>
@@ -130,237 +211,492 @@ export default function EstoqueDetalhePage() {
     );
   }
 
-  const {
-    id,
-    placa,
-    chassi,
-    hodometro,
-    cor,
-    estado_venda,
-    estado_veiculo,
-    estagio_documentacao,
-    ano_fabricacao,
-    ano_modelo,
-    observacao,
-    preco_venal,
-    registrado_em,
-    editado_em,
-    modelo,
-    //loja,
-    //local,
-    //documentacao,
-    caracteristicas,
-    //midia,
-    //anuncios,
-  }: VeiculoResumo = veiculo;
+  const handleChange =
+    (field: keyof VehicleFormState) =>
+      (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+        setFormState((prev) => (prev ? { ...prev, [field]: e.target.value } : prev));
 
-  const marca = modelo?.marca ?? "Marca não informada";
-  const modeloNome = modelo?.nome ?? "Modelo não informado";
-  //const lojaNome = loja?.loja?.nome ?? "Não atribuído";
-  //const localNome = local?.nome ?? "Não informado";
-  //const dataEntrada = loja?.data_entrada ?? documentacao?.data_entrada;
-  //const totalFotos = midia?.controle?.qtd_fotos ?? midia?.fotos?.length ?? 0;
-  //const anunciosAtivos = anuncios?.filter((item) => item.status === "ativo");
-  //const statusDocumentacao = documentacao?.status_geral ?? estagio_documentacao;
+  const handleToggleCaracteristica = (c: CaracteristicaFormValue) =>
+    setFormState((prev) =>
+      prev
+        ? {
+          ...prev,
+          caracteristicas: prev.caracteristicas.some((x) => x.id === c.id)
+            ? prev.caracteristicas.filter((x) => x.id !== c.id)
+            : [...prev.caracteristicas, c],
+        }
+        : prev
+    );
 
-  const documentacaoChecklist = [
-    { label: "Multas", value: "Nada Consta!"},//documentacao?.tem_multas },
-    { label: "Manual", value: "Sim!"},//documentacao?.tem_manual },
-    { label: "Chave reserva", value: "Sim!"},//documentacao?.tem_chave_reserva },
-    { label: "Nota fiscal de compra", value: "Sim!"},//documentacao?.tem_nf_compra },
-    { label: "CRV", value: "Sim!"},//documentacao?.tem_crv },
-    { label: "CRLV", value: "Sim!"},//documentacao?.tem_crlv },
-    { label: "Dívidas ativas", value: "Nada Consta!"},//documentacao?.tem_dividas_ativas },
-    { label: "Restrições", value: "Nada Consta!"},//documentacao?.tem_restricoes },
-    { label: "Transferência iniciada", value: "Nada Consta!"},//documentacao?.transferencia_iniciada },
-    { label: "Transferência concluída", value: "Sim!"},//documentacao?.transferencia_concluida },
-    { label: "Vistoria realizada", value: "Sim!"},//documentacao?.vistoria_realizada },
-    { label: "Vistoria aprovada", value: "Sim!"}//documentacao?.aprovada_vistoria },
-  ];
+  const handleSubmit: React.FormEventHandler = async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    if (!form.reportValidity() || !formState) {
+      setFeedback({ type: "error", message: "Preencha todos os campos obrigatórios." });
+      return;
+    }
 
-  const resumoSituacao = [
-    { label: "Estado de venda", value: formatEnum(estado_venda) },
-    { label: "Estado do veículo", value: formatEnum(estado_veiculo) },
-    {
-      label: "Situação da documentação",
-      value: formatEnum(estagio_documentacao),
-    },
-    { label: "Registrado em", value: formatDate(registrado_em) },
-    { label: "Última atualização", value: formatDate(editado_em) },
-  ];
+    try {
+      setIsSaving(true);
+      const toNumberOrNull = (v: string) =>
+        v.trim() === "" ? null : isNaN(Number(v)) ? null : Number(v);
+      const toValueOrNull = (v: string) => (v.trim() === "" ? null : v);
+      const hodometro = Number(formState.hodometro.trim());
+      if (isNaN(hodometro)) throw new Error("Informe um valor numérico válido para o hodômetro.");
 
-  const informacoesGerais = [
-    { label: "Ano fabricação", value: formatText(ano_fabricacao?.toString()) },
-    { label: "Ano modelo", value: formatText(ano_modelo?.toString()) },
-    { label: "Cor", value: formatText(cor) },
-    { label: "Hodômetro", value: formatNumber(hodometro, "km") },
-    { label: "Motor", value: formatText(modelo?.motor) },
-    { label: "Combustível", value: formatEnum(modelo?.combustivel) },
-    { label: "Câmbio", value: formatEnum(modelo?.tipo_cambio) },
-    { label: "Portas", value: formatText(modelo?.portas?.toString()) },
-    { label: "Lugares", value: formatText(modelo?.lugares?.toString()) },
-  ];
+      const { adicionar, remover } = calcularDiffCaracteristicas(
+        veiculo.caracteristicas ?? [],
+        formState.caracteristicas
+      );
 
-  const localizacaoValores = [
-    { label: "Data de entrada", value: formatDate(registrado_em) },
-    { label: "Preço vitrine", value: formatCurrency(preco_venal ?? null) },
-    {
-      label: "Fotos cadastradas",
-      value: "Em desenvolvimento" //totalFotos ? `${totalFotos} arquivo${totalFotos === 1 ? "" : "s"}` : "Sem fotos",
-    },
-    {
-      label: "Anúncios ativos",
-      value: "Em desenvolvimento" /*anunciosAtivos?.length
-        ? `${anunciosAtivos.length} anúncio${anunciosAtivos.length === 1 ? "" : "s"}`
-        : "Nenhum anúncio ativo",*/
-    },
-  ];
+      const payload: Parameters<typeof atualizarVeiculo>[1] = {
+        placa: formState.placa,
+        cor: formState.cor,
+        chassi: toValueOrNull(formState.chassi),
+        ano_fabricacao: toNumberOrNull(formState.ano_fabricacao),
+        ano_modelo: toNumberOrNull(formState.ano_modelo),
+        hodometro,
+        estado_venda: formState.estado_venda,
+        estado_veiculo: formState.estado_veiculo || null,
+        preco_venal: toNumberOrNull(formState.preco_venal),
+        observacao: toValueOrNull(formState.observacao),
+        modelo_id: formState.modelo_id || null,
+        local_id: formState.local_id || null,
+        estagio_documentacao: toValueOrNull(formState.estagio_documentacao),
+        adicionar_caracteristicas: adicionar,
+        remover_caracteristicas: remover,
+      };
+
+      await atualizarVeiculo(veiculo.id, payload);
+      invalidateVeiculos(queryClient);
+      setFeedback({ type: "success", message: "✅ Dados atualizados com sucesso!" });
+      setIsEditMode(false);
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        message: err instanceof Error ? err.message : "Erro ao atualizar veículo.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    if (veiculo) {
+      setFormState(buildFormStateFromVeiculo(veiculo));
+    }
+    setFeedback(null);
+  };
+
+  const marca = veiculo.modelo?.marca ?? "Marca não informada";
+  const modeloNome = veiculo.modelo?.nome ?? "Modelo não informado";
 
   return (
-    <div className="bg-white px-6 py-10 text-zinc-900">
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div className="relative bg-zinc-50 min-h-screen pb-24">
+      <div className="mx-auto w-full max-w-5xl px-6 py-10 space-y-8">
+        {/* Header */}
         <header className="flex flex-col gap-4 border-b border-zinc-200 pb-6 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium uppercase tracking-wide text-blue-600">
-              {formatEnum(estado_venda)}
+              {formatEnum(veiculo.estado_venda)}
             </span>
-            <h1 className="text-3xl font-semibold text-zinc-900">
+            <h1 className="text-3xl font-bold text-zinc-900">
               {marca} {modeloNome}
             </h1>
             <p className="text-sm text-zinc-500">
-              Placa {placa}
-              {chassi ? ` • Chassi ${chassi}` : ""}
+              Placa {veiculo.placa} • Chassi {veiculo.chassi || "—"}
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-start gap-3 md:justify-end">
-            <Link
-              className="inline-flex items-center justify-center rounded-full border border-blue-600 px-5 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-600 hover:text-white"
-              href={`/editar/${id}`}
-            >
-              Atualizar dados
-            </Link>
-            <Link
-              className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-5 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-              href="/estoque"
-            >
-              Voltar ao estoque
-            </Link>
+          <div className="flex gap-2">
+            {!isEditMode ? (
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<Edit2 className="w-4 h-4" />}
+                onClick={() => setIsEditMode(true)}
+              >
+                Editar
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="primary"
+                  size="md"
+                  leftIcon={<Save className="w-4 h-4" />}
+                  onClick={(e: any) => {
+                    const form = document.getElementById('form-editar-veiculo') as HTMLFormElement;
+                    if (form) form.requestSubmit();
+                  }}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Salvando..." : "Salvar"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  leftIcon={<X className="w-4 h-4" />}
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                >
+                  Cancelar
+                </Button>
+              </>
+            )}
+            <Button variant="ghost" size="md" asChild>
+              <Link href="/estoque">Voltar</Link>
+            </Button>
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-2">
-          <article className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium text-zinc-800">Situação</h2>
-            <dl className="mt-4 grid grid-cols-1 gap-4 text-sm text-zinc-600">
-              {resumoSituacao.map(({ label, value }) => (
-                <div key={label} className="flex flex-col">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    {label}
-                  </dt>
-                  <dd className="mt-1 text-zinc-700">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </article>
+        {feedback && (
+          <div
+            className={`rounded-md px-4 py-3 text-sm shadow-sm ${feedback.type === "success"
+                ? "bg-green-50 text-green-700 border border-green-200"
+                : "bg-red-50 text-red-700 border border-red-200"
+              }`}
+          >
+            {feedback.message}
+          </div>
+        )}
 
-          <article className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium text-zinc-800">Localização &amp; valores</h2>
-            <dl className="mt-4 grid grid-cols-1 gap-4 text-sm text-zinc-600">
-              {localizacaoValores.map(({ label, value }) => (
-                <div key={label} className="flex flex-col">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    {label}
-                  </dt>
-                  <dd className="mt-1 text-zinc-700">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </article>
-        </section>
+        {!isEditMode ? (
+          <ViewMode veiculo={veiculo} formState={formState} />
+        ) : (
+          <EditMode
+            veiculo={veiculo}
+            formState={formState}
+            handleChange={handleChange}
+            handleToggleCaracteristica={handleToggleCaracteristica}
+            handleSubmit={handleSubmit}
+            isSaving={isSaving}
+            modelosComNomeCompleto={modelosComNomeCompleto}
+            modeloSelecionado={modeloSelecionado}
+            localOptions={localOptions}
+            caracteristicasDisponiveis={caracteristicasDisponiveis}
+          />
+        )}
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-medium text-zinc-800">Informações gerais</h2>
-          <dl className="mt-4 grid grid-cols-1 gap-4 text-sm text-zinc-600 sm:grid-cols-2 lg:grid-cols-3">
-            {informacoesGerais.map(({ label, value }) => (
-              <div key={label} className="flex flex-col">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {label}
-                </dt>
-                <dd className="mt-1 text-zinc-700">{value}</dd>
-              </div>
-            ))}
-            <div className="flex flex-col sm:col-span-2 lg:col-span-3">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Observação
-              </dt>
-              <dd className="mt-1 whitespace-pre-wrap text-zinc-700">
-                {formatText(observacao)}
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-medium text-zinc-800">Documentação</h2>
-          <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <dl className="grid gap-3 text-sm text-zinc-600">
-              {documentacaoChecklist.map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between rounded-md border border-zinc-100 bg-zinc-50 px-4 py-2">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    {label}
-                  </dt>
-                  <dd className="text-sm font-medium text-zinc-700">
-                    {formatBoolean(!!value)}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <dl className="space-y-4 text-sm text-zinc-600">
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Observações gerais
-                </dt>
-                <dd className="mt-1 whitespace-pre-wrap text-zinc-700">
-                  {formatText(observacao)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Observações multas
-                </dt>
-                <dd className="mt-1 whitespace-pre-wrap text-zinc-700">
-                  {formatText("Nada Consta!")} {/*documentacao?.observacoes_multas*/}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Observações restrições
-                </dt>
-                <dd className="mt-1 whitespace-pre-wrap text-zinc-700">
-                  {formatText("Nada Consta!")} {/*documentacao?.observacoes_restricoes*/}
-                </dd>
-              </div>
-            </dl>
+        {/* Loja e fotos */}
+        <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
+            <span className="text-blue-600">•</span> Loja e fotos
+          </h2>
+          <div className="mt-4 space-y-6">
+            <LojaSelector />
+            <PhotoGallery
+              veiculoId={veiculo.id}
+              supabase={supabase}
+              empresaId={veiculo.empresa_id}
+            />
           </div>
         </section>
-
-        {caracteristicas && caracteristicas.length > 0 && (
-          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-medium text-zinc-800">Características</h2>
-            <ul className="mt-4 flex flex-wrap gap-2 text-sm">
-              {caracteristicas.map((caracteristica) => (
-                <li
-                  key={caracteristica.id}
-                  className="rounded-full bg-zinc-100 px-4 py-2 text-zinc-600"
-                >
-                  {caracteristica.nome}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-      </main>
+      </div>
     </div>
+  );
+}
+
+function ViewMode({ veiculo, formState }: { veiculo: VeiculoUI; formState: VehicleFormState }) {
+  const informacoesGerais = [
+    { label: "Ano fabricação", value: formatText(veiculo.ano_fabricacao?.toString()) },
+    { label: "Ano modelo", value: formatText(veiculo.ano_modelo?.toString()) },
+    { label: "Cor", value: formatText(veiculo.cor) },
+    { label: "Hodômetro", value: formatNumber(veiculo.hodometro, "km") },
+    { label: "Motor", value: formatText(veiculo.modelo?.motor) },
+    { label: "Combustível", value: formatEnum(veiculo.modelo?.combustivel) },
+    { label: "Câmbio", value: formatEnum(veiculo.modelo?.tipo_cambio) },
+    { label: "Portas", value: formatText(veiculo.modelo?.portas?.toString()) },
+    { label: "Lugares", value: formatText(veiculo.modelo?.lugares?.toString()) },
+  ];
+
+  const resumoSituacao = [
+    { label: "Estado de venda", value: formatEnum(veiculo.estado_venda) },
+    { label: "Estado do veículo", value: formatEnum(veiculo.estado_veiculo) },
+    { label: "Situação da documentação", value: formatEnum(veiculo.estagio_documentacao) },
+    { label: "Registrado em", value: formatDate(veiculo.registrado_em) },
+    { label: "Última atualização", value: formatDate(veiculo.editado_em) },
+  ];
+
+  return (
+    <>
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Informações gerais</h2>
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {informacoesGerais.map((item) => (
+            <div key={item.label}>
+              <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{item.label}</dt>
+              <dd className="mt-1 text-sm text-zinc-900">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Situação</h2>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          {resumoSituacao.map((item) => (
+            <div key={item.label}>
+              <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{item.label}</dt>
+              <dd className="mt-1 text-sm text-zinc-900">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+        {veiculo.preco_venal && (
+          <div className="mt-4 pt-4 border-t border-zinc-100">
+            <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Preço vitrine</dt>
+            <dd className="mt-1 text-2xl font-bold text-green-600">{formatCurrency(veiculo.preco_venal)}</dd>
+          </div>
+        )}
+      </section>
+
+      {veiculo.caracteristicas && veiculo.caracteristicas.length > 0 && (
+        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-medium mb-4">Características</h2>
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {veiculo.caracteristicas.map((c) => (
+              <li key={c.id} className="flex items-center gap-2 text-sm text-zinc-700">
+                <span className="text-blue-600">✓</span>
+                {c.nome}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {veiculo.observacao && (
+        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-medium mb-4">Observações</h2>
+          <p className="text-sm text-zinc-700 whitespace-pre-wrap">{veiculo.observacao}</p>
+        </section>
+      )}
+    </>
+  );
+}
+
+function EditMode({
+  veiculo,
+  formState,
+  handleChange,
+  handleToggleCaracteristica,
+  handleSubmit,
+  isSaving,
+  modelosComNomeCompleto,
+  modeloSelecionado,
+  localOptions,
+  caracteristicasDisponiveis,
+}: {
+  veiculo: VeiculoUI;
+  formState: VehicleFormState;
+  handleChange: (field: keyof VehicleFormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  handleToggleCaracteristica: (c: CaracteristicaFormValue) => void;
+  handleSubmit: React.FormEventHandler;
+  isSaving: boolean;
+  modelosComNomeCompleto: any[];
+  modeloSelecionado: any;
+  localOptions: any[];
+  caracteristicasDisponiveis: CaracteristicaFormValue[];
+}) {
+  return (
+    <form id="form-editar-veiculo" onSubmit={handleSubmit} className="space-y-6">
+      {/* Dados principais */}
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Dados principais</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Placa</span>
+            <input
+              value={formState.placa.toLocaleUpperCase()}
+              onChange={handleChange("placa")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Chassi</span>
+            <input
+              value={formState.chassi}
+              onChange={handleChange("chassi")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Cor</span>
+            <input
+              value={formState.cor}
+              onChange={handleChange("cor")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </label>
+        </div>
+        <label className="mt-4 flex flex-col gap-1 text-sm">
+          <span className="font-medium text-zinc-700">Observações</span>
+          <textarea
+            value={formState.observacao}
+            onChange={handleChange("observacao")}
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            rows={4}
+          />
+        </label>
+      </section>
+
+      {/* Especificações */}
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Especificações</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Ano de fabricação</span>
+            <input
+              type="number"
+              value={formState.ano_fabricacao}
+              onChange={handleChange("ano_fabricacao")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              min={1900}
+              max={9999}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Ano do modelo</span>
+            <input
+              type="number"
+              value={formState.ano_modelo}
+              onChange={handleChange("ano_modelo")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              min={1900}
+              max={9999}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Hodômetro</span>
+            <input
+              type="number"
+              value={formState.hodometro}
+              onChange={handleChange("hodometro")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              min={0}
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Preço venal</span>
+            <input
+              type="number"
+              value={formState.preco_venal}
+              onChange={handleChange("preco_venal")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              min={0}
+              step="0.01"
+            />
+          </label>
+        </div>
+      </section>
+
+      {/* Status e localização */}
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Status e localização</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Estado de venda</span>
+            <select
+              value={formState.estado_venda}
+              onChange={handleChange("estado_venda")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              required
+            >
+              {ESTADO_VENDA_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {formatEnumLabel(option)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Estado do veículo</span>
+            <select
+              value={formState.estado_veiculo}
+              onChange={handleChange("estado_veiculo")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Sem definição</option>
+              {ESTADO_VEICULO_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {formatEnumLabel(option)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Estágio da documentação</span>
+            <input
+              value={formState.estagio_documentacao}
+              onChange={handleChange("estagio_documentacao")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Modelo</span>
+            <select
+              value={formState.modelo_id}
+              onChange={handleChange("modelo_id")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Selecione um modelo</option>
+              {modelosComNomeCompleto
+                .filter((modelo) => Boolean(modelo.id))
+                .map((modelo) => (
+                  <option key={modelo.id as string} value={modelo.id as string}>
+                    {modelo.nomeCompleto}
+                  </option>
+                ))}
+            </select>
+            <span className="text-xs text-zinc-500">
+              {formState.modelo_id
+                ? modeloSelecionado?.nomeCompleto ?? "Modelo não encontrado nas configurações."
+                : "Selecione um modelo para ver o nome completo."}
+            </span>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700">Local</span>
+            <select
+              value={formState.local_id}
+              onChange={handleChange("local_id")}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Selecione um local</option>
+              {localOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      {/* Características */}
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Características</h2>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {caracteristicasDisponiveis.map((caracteristica) => (
+            <li key={caracteristica.id}>
+              <label className="flex items-center gap-3 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formState.caracteristicas.some(
+                    (selecionada) => selecionada.id === caracteristica.id,
+                  )}
+                  onChange={() => handleToggleCaracteristica({
+                    id: caracteristica.id,
+                    nome: caracteristica.nome,
+                  })}
+                  className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                />
+                {caracteristica.nome}
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </form>
   );
 }

@@ -4,6 +4,16 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Phase 8: RenderTables Component Implementation ✅
+- Created RenderTables component with Canva/Notion-style inline editing capabilities
+- Implemented virtualization with 10-row window and infinite scroll support
+- Added column resizing, header sorting (with accessor/comparator support), and row actions
+- Integrated Modal component for popup editing/creation workflows
+- Created useEstoqueStore (Zustand) for persistent state (filters, scroll, column widths)
+- Removed cards view from Estoque page (table-only mode)
+- Fixed critical bugs: virtualization spacer rows, numeric field sorting
+- Architect-reviewed and approved all implementations
+
 **October 9, 2025** - Phase 7: Estoque Page UI Refactoring ✅
 - Migrated Estoque page to use Design System components (Button, Input, Badge, Card)
 - Refactored header with text-3xl title, Badge for vehicle count, Button with Plus icon
