@@ -70,7 +70,7 @@ const GridCards = ({ vehicles, domain }: { vehicles: any[]; domain: Domain }) =>
       const data = getVehicleData(item, domain);
       return (
         <li key={data.id} className="flex flex-col h-full w-full">
-          <Card variant="default" className="flex h-full w-full flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
+          <Card variant="default" padding="none" className="flex h-full w-full flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <Link href={data.detailUrl} className="block h-full w-full group">
               <div className="relative aspect-video w-full overflow-hidden">
                 {data.capaUrl ? (
