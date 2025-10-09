@@ -1,10 +1,11 @@
-import { ButtonHTMLAttributes, forwardRef, ReactNode, CSSProperties } from 'react';
+import React, { ButtonHTMLAttributes, forwardRef, ReactNode, CSSProperties } from 'react';
 import { SPACING, FONT_SIZE, BORDER_RADIUS, TRANSITIONS } from '@/config';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  asChild?: boolean;
   customColor?: {
     bg?: string;
     text?: string;
@@ -30,7 +31,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     className = '', 
     children, 
     disabled,
-    style, 
+    style,
+    asChild,
     ...props 
   }, ref) => {
     const finalIcon = leftIcon || rightIcon || icon;
@@ -98,19 +100,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const customHoverClass = customColor?.hover ? '[&:hover]:bg-[var(--custom-hover-bg)]' : '';
     const customFocusClass = customColor?.focus ? '[&:focus]:ring-[var(--custom-focus-ring)]' : '';
 
+    const Comp = asChild && React.isValidElement(children) ? (children.type as any) : 'button';
+    const childProps = asChild && React.isValidElement(children) ? (children.props as any) : {};
+
     return (
-      <button
+      <Comp
         ref={ref}
         className={`${baseStyles} ${customColor ? `${customHoverClass} ${customFocusClass}` : variants[variant]} ${className}`}
         style={customStyle}
         disabled={disabled || isLoading}
+        {...(childProps || {})}
         {...props}
       >
-        {isLoading && <LoadingSpinner />}
-        {!isLoading && finalIcon && finalIconPosition === 'left' && <span className="mr-2">{finalIcon}</span>}
-        {children}
-        {!isLoading && finalIcon && finalIconPosition === 'right' && <span className="ml-2">{finalIcon}</span>}
-      </button>
+        {!asChild && isLoading && <LoadingSpinner />}
+        {!asChild && !isLoading && finalIcon && finalIconPosition === 'left' && <span className="mr-2">{finalIcon}</span>}
+        {asChild && React.isValidElement(children) ? (children.props as any).children : children}
+        {!asChild && !isLoading && finalIcon && finalIconPosition === 'right' && <span className="ml-2">{finalIcon}</span>}
+      </Comp>
     );
   }
 );

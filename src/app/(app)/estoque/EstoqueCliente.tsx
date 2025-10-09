@@ -7,8 +7,12 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useLocais } from "@/hooks/use-configuracoes";
-import { Search, X } from "lucide-react";
+import { Search, X, Plus, Grid3x3, Table2 } from "lucide-react";
 import { ESTADOS_VENDA as ESTADOS_VENDA_CONFIG, SPECIAL_VALUES, STORAGE_KEYS } from "@/config";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 /* =========================
  * Constantes / Utils
@@ -541,79 +545,87 @@ useEffect(() => {
 
           return (
             <li key={veiculo.id} ref={registerItemRef(veiculo.id)} className="h-full">
-              <article
-                className={`flex h-full flex-col justify-between rounded-lg border bg-white p-5 shadow-sm transition hover:border-zinc-300 hover:shadow-md ${isHighlighted ? "border-blue-500 ring-2 ring-blue-200" : "border-zinc-200"
-                  }`}
-              >
-                <div className="space-y-3">
+              <Card className={`h-full ${isHighlighted ? "!border-[var(--purple-magic)] ring-2 ring-[var(--purple-magic)]/20" : ""}`}>
+                <Card.Body className="flex h-full flex-col gap-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-blue-600">
+                    <Badge 
+                      variant="primary"
+                      className="uppercase tracking-wide"
+                    >
                       {veiculo.estadoVendaLabel}
-                    </span>
+                    </Badge>
                     {precoFormatado && (
-                      <span className="text-sm font-semibold text-zinc-800">{precoFormatado}</span>
+                      <span className="text-sm font-semibold text-[var(--text-primary)]">{precoFormatado}</span>
                     )}
                   </div>
+                  
                   <div>
-                    <h2 className="text-lg font-medium text-zinc-800">{veiculo.veiculoDisplay}</h2>
-                    <p className="text-sm text-zinc-500">Placa {veiculo.placa}</p>
+                    <h2 className="text-lg font-medium text-[var(--text-primary)]">{veiculo.veiculoDisplay}</h2>
+                    <p className="text-sm text-[var(--text-secondary)]">Placa {veiculo.placa}</p>
                   </div>
-                  <dl className="mt-4 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+                  
+                  <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
                     <div className="flex flex-col">
-                      <dt className="font-semibold text-zinc-700">Ano</dt>
-                      <dd className="text-zinc-600">{veiculo.anoPrincipal ?? "—"}</dd>
+                      <dt className="font-semibold text-[var(--text-primary)]">Ano</dt>
+                      <dd className="text-[var(--text-secondary)]">{veiculo.anoPrincipal ?? "—"}</dd>
                     </div>
                     <div className="flex flex-col">
-                      <dt className="font-semibold text-zinc-700">Hodômetro</dt>
-                      <dd className="text-zinc-600">{hodometroFormatado}</dd>
+                      <dt className="font-semibold text-[var(--text-primary)]">Hodômetro</dt>
+                      <dd className="text-[var(--text-secondary)]">{hodometroFormatado}</dd>
                     </div>
                     <div className="flex flex-col">
-                      <dt className="font-semibold text-zinc-700">Estado do veículo</dt>
-                      <dd className="text-zinc-600">{veiculo.estadoVeiculoLabel}</dd>
+                      <dt className="font-semibold text-[var(--text-primary)]">Estado do veículo</dt>
+                      <dd className="text-[var(--text-secondary)]">{veiculo.estadoVeiculoLabel}</dd>
                     </div>
                     <div className="flex flex-col">
-                      <dt className="font-semibold text-zinc-700">Localização</dt>
-                      <dd className="text-zinc-600">{veiculo.localDisplay}</dd>
+                      <dt className="font-semibold text-[var(--text-primary)]">Localização</dt>
+                      <dd className="text-[var(--text-secondary)]">{veiculo.localDisplay}</dd>
                     </div>
                     <div className="flex flex-col">
-                      <dt className="font-semibold text-zinc-700">Documentação</dt>
-                      <dd className="text-zinc-600">{veiculo.estagio_documentacao ?? "Sem informação"}</dd>
+                      <dt className="font-semibold text-[var(--text-primary)]">Documentação</dt>
+                      <dd className="text-[var(--text-secondary)]">{veiculo.estagio_documentacao ?? "Sem informação"}</dd>
                     </div>
                     <div className="flex flex-col">
-                      <dt className="font-semibold text-zinc-700">Cor</dt>
-                      <dd className="text-zinc-600">{veiculo.cor}</dd>
+                      <dt className="font-semibold text-[var(--text-primary)]">Cor</dt>
+                      <dd className="text-[var(--text-secondary)]">{veiculo.cor}</dd>
                     </div>
                   </dl>
+                  
                   {caracteristicasResumo.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {caracteristicasResumo.map((nome) => (
-                        <span key={nome} className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-600">
+                        <Badge key={nome} variant="neutral" size="sm">
                           {nome}
-                        </span>
+                        </Badge>
                       ))}
                       {veiculo.caracteristicasExtrasTotal > 0 && (
-                        <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">
+                        <Badge variant="neutral" size="sm">
                           +{veiculo.caracteristicasExtrasTotal} mais
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   )}
-                </div>
-                <footer className="mt-6 flex flex-wrap gap-2 text-sm">
-                  <Link
-                    href={`/estoque/${veiculo.id}`}
-                    className="inline-flex flex-1 items-center justify-center rounded-md border border-zinc-200 px-3 py-2 font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
-                  >
-                    Ver detalhes
-                  </Link>
-                  <Link
-                    href={`/editar/${veiculo.id}`}
-                    className="inline-flex flex-1 items-center justify-center rounded-md bg-blue-600 px-3 py-2 font-medium text-white transition hover:bg-blue-700"
-                  >
-                    Editar
-                  </Link>
-                </footer>
-              </article>
+                  
+                  <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      asChild
+                    >
+                      <Link href={`/estoque/${veiculo.id}`}>Ver detalhes</Link>
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="flex-1"
+                      asChild
+                    >
+                      <Link href={`/editar/${veiculo.id}`}>Editar</Link>
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
             </li>
           );
         })}
@@ -695,20 +707,22 @@ useEffect(() => {
                     <td className="px-4 py-3 text-right">
                       <div
                         className="flex justify-end gap-2"
-                        onClick={(e) => e.stopPropagation()} // ⛔ impede que o clique nos botões dispare o redirecionamento
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <Link
-                          href={`/estoque/${veiculo.id}`}
-                          className="inline-flex items-center rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
                         >
-                          Ver
-                        </Link>
-                        <Link
-                          href={`/editar/${veiculo.id}`}
-                          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-700"
+                          <Link href={`/estoque/${veiculo.id}`}>Ver</Link>
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          asChild
                         >
-                          Editar
-                        </Link>
+                          <Link href={`/editar/${veiculo.id}`}>Editar</Link>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -726,7 +740,7 @@ useEffect(() => {
    * Render principal
    * ========================= */
   return (
-    <div className="bg-white px-6 py-10 text-zinc-900">
+    <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
 
       {/* 🔒 BARRA FIXA: pesquisa + filtros, ancorada no topo (logo abaixo do header) */}
       {searchOpen &&
@@ -734,36 +748,29 @@ useEffect(() => {
           <section
             id="sessao-busca-filtros"
             ref={barRef}
-            className="
-    fixed inset-x-0 top-0 z-50
-    border-b border-zinc-200
-    bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75
-  "
+            className="fixed inset-x-0 top-0 z-50 border-b border-[var(--border)] bg-[var(--bg-primary)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-primary)]/75"
           >
             <div className="mx-auto w-full max-w-5xl px-6 pt-4 pb-3">
               <form onSubmit={handleSearchSubmit} className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-                <label className="flex w-full items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 text-sm text-zinc-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 sm:max-w-xl">
-                  <span className="text-xs font-semibold uppercase text-zinc-400">Pesq.:</span>
-                  <input
-                    ref={searchInputRef}
-                    type="search"
-                    placeholder="Modelo, placa, local..."
-                    className="h-10 w-full border-none bg-transparent text-sm text-zinc-700 outline-none"
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                  />
-                </label>
-                <button
+                <Input
+                  ref={searchInputRef}
+                  type="search"
+                  placeholder="Modelo, placa, local..."
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  leftIcon={<Search className="h-4 w-4" />}
+                  inputSize="md"
+                  className="sm:max-w-xl"
+                />
+                <Button
                   type="submit"
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 sm:w-auto"
-                  aria-label="Buscar"
+                  variant="primary"
+                  size="md"
+                  leftIcon={<Search className="h-4 w-4" />}
+                  className="sm:w-auto"
                 >
-                  <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.8" />
-                  </svg>
-                  <span>Buscar</span>
-                </button>
+                  Buscar
+                </Button>
               </form>
 
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -805,13 +812,14 @@ useEffect(() => {
                   </select>
                 </div>
 
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="md"
                   onClick={() => handleViewToggle()}
-                  className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900"
+                  leftIcon={viewMode === "cards" ? <Table2 className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
                 >
                   {viewMode === "cards" ? "Ver em tabela" : "Ver em cartões"}
-                </button>
+                </Button>
               </div>
 
               <p className="mt-3 text-xs text-zinc-500">
@@ -825,23 +833,30 @@ useEffect(() => {
             className="mx-auto mt-6 w-full max-w-5xl">
 
             {temFiltrosAtivos && (
-              <div className="mt-3 flex items-center gap-3 text-sm">
-                <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
-                  <span className="text-base">🔎</span>
-                  <span>Filtrando resultados</span>
-                </span>
-                <button
-                  type="button"
+              <div className="mt-3 flex items-center gap-3">
+                <Badge
+                  variant="warning"
+                  customColors={{
+                    bg: 'var(--warning-pale)',
+                    text: 'var(--warning)'
+                  }}
+                  className="gap-2"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  Filtrando resultados
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setSearchTerm("");
                     setLocalFiltro("");
                     setLocalScope("todos");
                     setModeloFiltro("");
                   }}
-                  className="text-xs font-medium text-blue-600 hover:text-blue-800"
                 >
                   Limpar filtros
-                </button>
+                </Button>
               </div>
             )}
 
@@ -866,52 +881,62 @@ useEffect(() => {
       {!searchOpen &&
         <>
           {/* HEADER (medido p/ posicionar a barra fixa logo abaixo) */}
-          <header ref={headerRef} className="mx-auto w-full max-w-5xl">
+          <header 
+            ref={headerRef} 
+            className="mx-auto w-full max-w-5xl transition-all"
+            style={{ paddingTop: searchOpen && barHeight > 0 ? `${barHeight}px` : '0px' }}
+          >
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight">Estoque de Veículos</h1>
-                <p className="text-sm text-zinc-500">Visualize, edite e cadastre veículos disponíveis nas lojas.</p>
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">Estoque de Veículos</h1>
+                <p className="text-sm text-[var(--text-secondary)]">Visualize, edite e cadastre veículos disponíveis nas lojas.</p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="hidden rounded-full border border-zinc-200 px-4 py-2 text-sm text-zinc-600 sm:inline-flex">
-                  {veiculosFiltrados.length} de {veiculos.length} veículos
-                </span>
-                <Link
-                  href="/criar"
-                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                <Badge 
+                  variant="info"
+                  className="hidden sm:inline-flex"
+                  customColors={{
+                    bg: 'var(--bg-secondary)',
+                    text: 'var(--text-primary)'
+                  }}
                 >
-                  + Cadastrar veículo
-                </Link>
+                  {veiculosFiltrados.length} de {veiculos.length} veículos
+                </Badge>
+                <Button
+                  variant="primary"
+                  size="md"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  asChild
+                >
+                  <Link href="/criar">Cadastrar veículo</Link>
+                </Button>
               </div>
             </div>
 
             <nav className="mt-6 flex flex-wrap items-center gap-2 text-sm">
-              <Link
-                href={pathname ?? "/estoque"}
-                className={`rounded-full border px-3 py-1.5 transition ${!estadoFiltro
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-800"
-                  }`}
-              >
-                Todos
-                <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-xs text-zinc-500">{veiculos.length}</span>
+              <Link href={pathname ?? "/estoque"}>
+                <Badge
+                  variant={!estadoFiltro ? "primary" : "outline"}
+                  className="cursor-pointer transition-all hover:scale-105"
+                >
+                  Todos
+                  <span className="ml-2 rounded-full bg-black/10 px-2 py-0.5 text-xs">{veiculos.length}</span>
+                </Badge>
               </Link>
               {ESTADOS_VENDA.map((estado) => {
                 const active = estadoFiltro === estado;
                 const href = `${pathname}?estado=${estado}`;
                 return (
-                  <Link
-                    key={estado}
-                    href={href}
-                    className={`rounded-full border px-3 py-1.5 transition ${active
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-800"
-                      }`}
-                  >
-                    {formatEstadoLabel(estado)}
-                    <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-xs text-zinc-500">
-                      {contagemPorEstado[estado] ?? 0}
-                    </span>
+                  <Link key={estado} href={href}>
+                    <Badge
+                      variant={active ? "primary" : "outline"}
+                      className="cursor-pointer transition-all hover:scale-105"
+                    >
+                      {formatEstadoLabel(estado)}
+                      <span className="ml-2 rounded-full bg-black/10 px-2 py-0.5 text-xs">
+                        {contagemPorEstado[estado] ?? 0}
+                      </span>
+                    </Badge>
                   </Link>
                 );
               })}
@@ -919,23 +944,30 @@ useEffect(() => {
           </header>
 
           {temFiltrosAtivos && (
-            <div className="mt-3 flex items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700 shadow-sm">
-                <span className="text-base">🔎</span>
-                <span>Filtrando resultados</span>
-              </span>
-              <button
-                type="button"
+            <div className="mt-3 flex items-center gap-3">
+              <Badge
+                variant="warning"
+                customColors={{
+                  bg: 'var(--warning-pale)',
+                  text: 'var(--warning)'
+                }}
+                className="gap-2"
+              >
+                <Search className="h-3.5 w-3.5" />
+                Filtrando resultados
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setSearchTerm("");
                   setLocalFiltro("");
                   setLocalScope("todos");
                   setModeloFiltro("");
                 }}
-                className="text-xs font-medium text-blue-600 hover:text-blue-800"
               >
                 Limpar filtros
-              </button>
+              </Button>
             </div>
           )}
 
@@ -960,19 +992,15 @@ useEffect(() => {
       }
 
       {/* 🔍 Botão flutuante para mostrar/ocultar */}
-      <button
+      <Button
+        variant="primary"
+        size="md"
         onClick={() => setSearchOpen(!searchOpen)}
-        className="
-    fixed bottom-6 right-6 z-50
-    flex items-center justify-center
-    h-14 w-14 rounded-full
-    bg-blue-600 text-white shadow-lg
-    transition hover:bg-blue-700 active:scale-95
-  "
+        className="!fixed bottom-6 right-6 z-50 !h-14 !w-14 !rounded-full !p-0 shadow-lg"
         aria-label="Alternar pesquisa"
       >
         {searchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
-      </button>
+      </Button>
     </div>
   );
 }
