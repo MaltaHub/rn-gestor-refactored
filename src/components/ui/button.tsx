@@ -13,6 +13,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   };
   icon?: ReactNode;
   iconPosition?: 'left' | 'right';
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -23,12 +25,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     customColor,
     icon,
     iconPosition = 'left',
+    leftIcon,
+    rightIcon,
     className = '', 
     children, 
     disabled,
     style, 
     ...props 
   }, ref) => {
+    const finalIcon = leftIcon || rightIcon || icon;
+    const finalIconPosition = leftIcon ? 'left' : rightIcon ? 'right' : iconPosition;
     const baseStyles = 'inline-flex items-center justify-center font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
     
     const variants = {
@@ -101,9 +107,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading && <LoadingSpinner />}
-        {!isLoading && icon && iconPosition === 'left' && <span className="mr-2">{icon}</span>}
+        {!isLoading && finalIcon && finalIconPosition === 'left' && <span className="mr-2">{finalIcon}</span>}
         {children}
-        {!isLoading && icon && iconPosition === 'right' && <span className="ml-2">{icon}</span>}
+        {!isLoading && finalIcon && finalIconPosition === 'right' && <span className="ml-2">{finalIcon}</span>}
       </button>
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Grid, Rows, Table, Filter, FileDown } from "lucide-react";
 
 import { LojaSelector } from "@/components/LojaSelector";
 import { RenderCards } from "@/components/render-cards";
@@ -15,8 +15,10 @@ import { AddVehicleToStoreButton } from "./loja-actions";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useCaracteristicas } from "@/hooks/use-configuracoes";
 import { ESTADOS_VENDA as ESTADOS_VENDA_CONFIG, STORAGE_KEYS } from "@/config";
-
-import { Grid, Rows, Table } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 type ViewMode = "cards-photo" | "cards-info" | "table";
 type Ordenacao = "recentes" | "preco-desc" | "preco-asc" | "modelo";
 // ✅ NOVO: mapa de emojis p/ cada modo
@@ -334,17 +336,32 @@ export default function VitrinePage() {
 
 
   return (
-    <div className="bg-[var(--bg-primary)] px-6 py-10 text-[var(--text-primary)]">
-      <header className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Vitrine de veículos</h1>
+    <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+      <header 
+        className="mx-auto flex w-full max-w-7xl flex-col gap-6 transition-all"
+        style={{ paddingTop: searchOpen && barH > 0 ? `${barH}px` : '0px' }}
+      >
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">Vitrine de veículos</h1>
             <p className="text-sm text-[var(--text-secondary)]">
-              Explore e compartilhe os veículos disponíveis na loja selecionada.
+              Explore e compartilhe os veículos disponíveis na loja selecionada
             </p>
           </div>
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] p-4 shadow-sm">
-            <LojaSelector />
+          <div className="flex items-center gap-3">
+            <Card variant="default" className="w-full lg:w-auto">
+              <Card.Body className="p-4">
+                <LojaSelector />
+              </Card.Body>
+            </Card>
+            <Button
+              variant="outline"
+              size="md"
+              leftIcon={<FileDown className="h-4 w-4" />}
+              onClick={() => alert('Gerar PDF em breve!')}
+            >
+              PDF
+            </Button>
           </div>
         </div>
 
@@ -358,53 +375,52 @@ export default function VitrinePage() {
   "
         >
           {/* Conteúdo centralizado no mesmo grid da página */}
-          <div className="mx-auto w-full max-w-6xl px-6 pt-4 pb-3">
+          <div className="mx-auto w-full max-w-7xl px-4 pt-4 pb-3 sm:px-6 lg:px-8">
             {/* Cabeçalho de controle */}
-            <div className="flex items-center justify-between">
-              <label className="flex w-full items-center gap-3 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] focus-within:border-[var(--purple-dark)] focus-within:ring-2 focus-within:ring-[var(--purple-pale)] sm:max-w-lg">
-                <span className="text-xs font-semibold uppercase text-[var(--text-tertiary)]">Pesq.:</span>
-                <input
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex-1 sm:max-w-md">
+                <Input
                   type="search"
-                  placeholder="Modelo, placa, local..."
-                  className="h-8 w-full border-none bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
+                  placeholder="Buscar por modelo, placa, local..."
                   value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  leftIcon={<Search className="h-4 w-4" />}
+                  inputSize="md"
                 />
-              </label>
+              </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Filter className="h-4 w-4" />}
                   onClick={() => setFiltersOpen((prev) => !prev)}
-                  className="rounded-md border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--purple-dark)] hover:text-[var(--text-primary)]"
                 >
-                  {filtersOpen ? "Ocultar filtros ▲" : "Mostrar filtros ▼"}
-                </button>
+                  {filtersOpen ? "Ocultar" : "Filtros"}
+                </Button>
 
                 {empresa?.papel === "proprietario" && (
-                  <button
-                    type="button"
+                  <Button
+                    variant={isManaging ? "primary" : "outline"}
+                    size="sm"
                     onClick={handleToggleManage}
                     disabled={!lojaSelecionada}
-                    className={`rounded-md border px-3 py-2 text-xs font-medium transition ${isManaging
-                        ? "border-[var(--purple-dark)] bg-[var(--purple-pale)] text-[var(--purple-darker)]"
-                        : "border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--purple-dark)] hover:text-[var(--text-primary)]"
-                      } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
-                    {isManaging ? "Fechar gestão" : "Gerenciar vitrine"}
-                  </button>
+                    {isManaging ? "Fechar gestão" : "Gerenciar"}
+                  </Button>
                 )}
 
                 {(() => {
                   const Icon = VIEW_MODE_ICON[viewMode];
                   return (
-                    <button
-                      type="button"
+                    <Button
+                      variant="primary"
+                      size="sm"
                       onClick={handleCycleViewMode}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-[var(--purple-dark)] text-[var(--white-pure)] shadow-sm transition hover:bg-[var(--purple-darker)]"
+                      className="!p-2"
                     >
                       <Icon className="h-5 w-5" />
-                    </button>
+                    </Button>
                   );
                 })()}
               </div>
@@ -415,8 +431,8 @@ export default function VitrinePage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 <select
                   value={estadoFiltro}
-                  onChange={(event) => setEstadoFiltro(event.target.value as EstadoVendaFiltro | "")}
-                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)]"
+                  onChange={(e) => setEstadoFiltro(e.target.value as EstadoVendaFiltro | "")}
+                  className="h-10 w-full rounded-lg border border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] px-3 text-sm text-[var(--foreground)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]/20 focus:outline-none transition-all"
                 >
                   <option value="">Todos os status</option>
                   {ESTADOS_VENDA.map((estado) => (
@@ -428,8 +444,8 @@ export default function VitrinePage() {
 
                 <select
                   value={caracteristicaFiltro}
-                  onChange={(event) => setCaracteristicaFiltro(event.target.value)}
-                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)]"
+                  onChange={(e) => setCaracteristicaFiltro(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] px-3 text-sm text-[var(--foreground)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]/20 focus:outline-none transition-all"
                 >
                   <option value="">Todas as características</option>
                   {caracteristicas.map((caracteristica) => (
@@ -439,30 +455,30 @@ export default function VitrinePage() {
                   ))}
                 </select>
 
-                <input
+                <Input
                   type="number"
-                  min="0"
-                  step="0.01"
+                  min={0}
+                  step={0.01}
                   placeholder="Preço mínimo"
                   value={precoMin}
-                  onChange={(event) => setPrecoMin(event.target.value)}
-                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)] placeholder:text-[var(--text-tertiary)]"
+                  onChange={(e) => setPrecoMin(e.target.value)}
+                  inputSize="sm"
                 />
 
-                <input
+                <Input
                   type="number"
-                  min="0"
-                  step="0.01"
+                  min={0}
+                  step={0.01}
                   placeholder="Preço máximo"
                   value={precoMax}
-                  onChange={(event) => setPrecoMax(event.target.value)}
-                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)] placeholder:text-[var(--text-tertiary)]"
+                  onChange={(e) => setPrecoMax(e.target.value)}
+                  inputSize="sm"
                 />
 
                 <select
                   value={ordenacao}
-                  onChange={(event) => setOrdenacao(event.target.value as Ordenacao)}
-                  className="h-10 w-full rounded-md border border-[var(--border)] px-3 text-sm text-[var(--text-secondary)] focus:border-[var(--purple-dark)] focus:ring-2 focus:ring-[var(--purple-pale)] bg-[var(--bg-primary)]"
+                  onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
+                  className="h-10 w-full rounded-lg border border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] px-3 text-sm text-[var(--foreground)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]/20 focus:outline-none transition-all"
                 >
                   {Object.entries(ORDENACAO_LABEL).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -476,40 +492,48 @@ export default function VitrinePage() {
         </section>}
 
         {/* 🔍 Botão flutuante para mostrar/ocultar */}
-        <button
+        <Button
+          variant="primary"
+          size="md"
           onClick={() => setSearchOpen(!searchOpen)}
-          className="
-    fixed bottom-6 right-6 z-50
-    flex items-center justify-center
-    h-14 w-14 rounded-full
-    bg-[var(--purple-dark)] text-[var(--white-pure)] shadow-lg
-    transition hover:bg-[var(--purple-darker)] active:scale-95
-  "
+          className="!fixed bottom-6 right-6 z-50 !h-14 !w-14 !rounded-full !p-0 shadow-lg"
           aria-label="Alternar pesquisa"
         >
           {searchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
-        </button>
-
-        {/* ⛳️ Spacer para não sobrepor o conteúdo (altura da barra fixa) */}
+        </Button>
 
         {lojaSelecionada ? (
-          <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]">
-            <span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-[var(--text-secondary)]">
               Loja selecionada: <strong className="text-[var(--text-primary)]">{lojaSelecionada.nome}</strong>
             </span>
-            <span className="inline-flex items-center rounded-full bg-[var(--purple-pale)] px-3 py-1 text-xs font-medium text-[var(--purple-darker)]">
-              {total} veículos encontrados
-            </span>
+            <Badge 
+              variant="info"
+              customColors={{
+                bg: 'var(--purple-pale)',
+                text: 'var(--purple-darker)'
+              }}
+            >
+              {total} veículos
+            </Badge>
           </div>
         ) : null}
         {temFiltrosAtivos && (
-  <div className="mt-3 flex items-center gap-3 text-sm">
-    <span className="inline-flex items-center gap-2 rounded-md border border-[var(--warning-pale)] bg-[var(--warning-pale)] px-3 py-1.5 text-[var(--warning)] shadow-sm">
-      <span className="text-base">🔎</span>
-      <span>Filtrando resultados</span>
-    </span>
-    <button
-      type="button"
+  <div className="mt-3 flex flex-wrap items-center gap-3">
+    <Badge 
+      variant="warning"
+      customColors={{
+        bg: 'var(--warning-pale)',
+        text: 'var(--warning)'
+      }}
+      className="gap-2"
+    >
+      <Search className="h-3.5 w-3.5" />
+      Filtrando resultados
+    </Badge>
+    <Button
+      variant="ghost"
+      size="sm"
       onClick={() => {
         setSearchTerm("");
         setEstadoFiltro("");
@@ -517,30 +541,38 @@ export default function VitrinePage() {
         setPrecoMin("");
         setPrecoMax("");
       }}
-      className="text-xs font-medium text-[var(--purple-dark)] hover:text-[var(--purple-darker)]"
     >
       Limpar filtros
-    </button>
+    </Button>
   </div>
 )}
 
       </header>
 
-      <main className="mx-auto mt-8 w-auto max-w-6xl">
+      <main className="mx-auto mt-8 w-full max-w-7xl">
         {renderConteudo()}
         {isManaging && (
-          <section className="mt-10 space-y-4 rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)] p-6">
-            <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Gerenciar vitrine</h2>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Adicione veículos do estoque para esta loja diariamente.
-                </p>
+          <Card variant="default" className="mt-10">
+            <Card.Header>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Gerenciar vitrine</h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Adicione veículos do estoque para esta loja
+                  </p>
+                </div>
+                <Badge 
+                  variant="info"
+                  customColors={{
+                    bg: 'var(--purple-pale)',
+                    text: 'var(--purple-darker)'
+                  }}
+                >
+                  {veiculosDisponiveis.length} disponíveis
+                </Badge>
               </div>
-              <span className="inline-flex items-center rounded-full bg-[var(--purple-pale)] px-3 py-1 text-xs font-semibold text-[var(--purple-darker)]">
-                {veiculosDisponiveis.length} disponíveis
-              </span>
-            </header>
+            </Card.Header>
+            <Card.Body>
             {!lojaSelecionada ? (
               <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-primary)] p-6 text-sm text-[var(--text-secondary)]">
                 Selecione uma loja para gerenciar a vitrine.
@@ -600,7 +632,8 @@ export default function VitrinePage() {
                 ))}
               </ul>
             )}
-          </section>
+            </Card.Body>
+          </Card>
         )}
       </main>
     </div>
