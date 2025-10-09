@@ -15,6 +15,7 @@ import { VehicleInfo } from "@/components/vitrine/VehicleInfo";
 import { PriceInfo } from "@/components/vitrine/PriceInfo";
 import { CharacteristicsInfo } from "@/components/vitrine/CharacteristicsInfo";
 import { QuickActions } from "@/components/vitrine/QuickActions";
+import { ShareImagesButton } from "@/components/vitrine/ShareImagesButton";
 import { Badge } from "@/components/ui/badge";
 
 const ESTADOS_VENDA = [
@@ -181,6 +182,10 @@ export default function VitrineDetalhePage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                <ShareImagesButton 
+                  fotos={fotos} 
+                  vehicleDisplay={veiculo.veiculoDisplay} 
+                />
                 <Badge variant="info" className="font-semibold">
                   {veiculo.estadoVendaLabel}
                 </Badge>
