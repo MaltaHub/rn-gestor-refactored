@@ -4,6 +4,16 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Phase 14: ModeloTableModal Integration ✅
+- **ModeloTableModal Component**: Created comprehensive modal with RenderTables in edit mode for managing vehicle models
+- **8 Editable Columns**: marca, nome, combustivel (6 types), tipo_cambio (4 types), motor, lugares, portas, carroceria (8 types)
+- **Inline Editing**: Click-to-edit cells with inputs/selects, real-time updates via salvarConfiguracao
+- **Modal Creation Form**: Secondary modal with complete form for creating new models with all fields
+- **Auto-Selection**: Using refetchQueries with await ensures newly created models are immediately available and auto-selected in vehicle form
+- **CRUD Operations**: Create, inline update, and delete with confirmation; integrated with React Query cache management
+- **UI Integration**: Replaced QuickAddModal with ModeloTableModal for Modelo in /criar page; características and locais remain with QuickAddModal
+- **Cache Fix**: Critical fix using refetchQueries instead of invalidateQueries for synchronous data availability
+
 **October 9, 2025** - Phase 12: Modern UI & UX Polish ✅
 - **Section Icons**: Added lucide-react icons to all sections (Car, Settings, MapPin, List, FileText) with flex layout
 - **Card Shadows**: Replaced plain borders with shadow-sm + border-gray-100, hover:shadow-md transitions for depth
@@ -30,7 +40,7 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 - **Navigation Fixed**: Removed VeiculoFormModal from Estoque page, restored link to /criar for creation
 - **RenderTables Click Fixed**: Corrected onClick propagation - now properly navigates to /estoque/[id] detail pages
 - **UI Color Update**: Changed all component backgrounds from green to white for better contrast with purple theme
-- **Architecture Clarification**: Pop-ups/modals are ONLY for inline quick edits within RenderTables/RenderCards; dedicated pages remain for full CRUD workflows
+- **Architecture Clarification**: Pop-ups/modals support both simple inline creation (QuickAddModal) and comprehensive table management (ModeloTableModal with RenderTables); dedicated pages remain for full CRUD workflows
 
 **October 9, 2025** - Phase 9: Complete System Refactoring ✅
 - **RenderTables Component**: Created with Canva/Notion-style inline editing, virtualization (10-row window + infinite scroll), column resizing, header sorting (accessor/comparator support), and row actions
