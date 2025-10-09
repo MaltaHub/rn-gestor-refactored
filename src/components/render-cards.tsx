@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
@@ -8,6 +9,7 @@ import type { VeiculoLojaUI } from "@/adapters/adaptador-vitrine";
 import type { VeiculoUI } from "@/adapters/adaptador-estoque";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
+import { useDebounce } from "@/hooks/use-debounce";
 
 type ViewMode = "cards-photo" | "cards-info" | "table";
 type Domain = "vitrine" | "estoque";
@@ -21,6 +23,8 @@ interface RenderCardsProps {
   focusMode?: boolean;
   onClose?: () => void;
   isLoading?: boolean;
+  initialScroll?: number;
+  onScrollChange?: (position: number) => void;
 }
 
 const getDisplayPrice = (veiculo: VeiculoLojaUI | VeiculoUI) => {
@@ -301,7 +305,40 @@ export function RenderCards({
   focusMode = false,
   onClose,
   isLoading = false,
+  initialScroll,
+  onScrollChange,
 }: RenderCardsProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
+  
+  const debouncedScrollPosition = useDebounce(scrollPositionRef.current, 500);
+
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (onScrollChange && debouncedScrollPosition > 0) {
+      onScrollChange(debouncedScrollPosition);
+    }
+  }, [debouncedScrollPosition, onScrollChange]);
+
+  useEffect(() => {
+    if (initialScroll !== undefined && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = initialScroll;
+    }
+  }, [initialScroll]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !onScrollChange) return;
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [handleScroll, onScrollChange]);
+
   if (isLoading) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 py-16 text-center text-sm text-gray-600 dark:text-gray-400">
@@ -339,7 +376,10 @@ export function RenderCards({
             aria-hidden="true"
           />
         )}
-        <div className={`${focusMode ? 'fixed inset-0 z-50 overflow-auto' : 'relative'} p-6`}>
+        <div 
+          ref={scrollContainerRef}
+          className={`${focusMode ? 'fixed inset-0 z-50 overflow-auto' : 'relative'} p-6`}
+        >
           {onClose && (
             <button
               onClick={onClose}
@@ -357,5 +397,9 @@ export function RenderCards({
     );
   }
 
-  return <div className="w-full">{renderContent()}</div>;
+  return (
+    <div ref={scrollContainerRef} className="w-full overflow-auto">
+      {renderContent()}
+    </div>
+  );
 }

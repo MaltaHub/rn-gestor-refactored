@@ -33,8 +33,15 @@ export default function EstoquePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { filters, setFilters, resetFilters } = useEstoqueStore();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const { 
+    filters, 
+    viewConfig, 
+    setFilters, 
+    resetFilters, 
+    setViewConfig, 
+    setScrollPosition,
+    setColumnWidth 
+  } = useEstoqueStore();
 
   const estadoFiltroParam = searchParams.get('estado');
   const estadoFiltro =
@@ -292,7 +299,7 @@ export default function EstoquePage() {
           </Link>
         </div>
 
-        {searchOpen && (
+        {filters.filtrosVisiveis && (
           <div className="rounded-lg border border-[var(--border-default)] bg-white dark:bg-gray-800 p-4 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Input
@@ -351,12 +358,12 @@ export default function EstoquePage() {
 
         <div className="flex justify-between items-center">
           <Button
-            variant={searchOpen ? 'primary' : 'outline'}
+            variant={filters.filtrosVisiveis ? 'primary' : 'outline'}
             size="sm"
             leftIcon={<Search className="w-4 h-4" />}
-            onClick={() => setSearchOpen(!searchOpen)}
+            onClick={() => setFilters({ filtrosVisiveis: !filters.filtrosVisiveis })}
           >
-            {searchOpen ? 'Ocultar busca' : 'Mostrar busca'}
+            {filters.filtrosVisiveis ? 'Ocultar busca' : 'Mostrar busca'}
           </Button>
         </div>
 
@@ -369,6 +376,18 @@ export default function EstoquePage() {
           enableVirtualization={true}
           itemsPerPage={15}
           className="mt-6"
+          initialSort={viewConfig.sortKey && viewConfig.sortDirection ? {
+            key: viewConfig.sortKey,
+            direction: viewConfig.sortDirection
+          } : null}
+          onSortChange={(sort) => setViewConfig({
+            sortKey: sort?.key || null,
+            sortDirection: sort?.direction || 'asc'
+          })}
+          initialScroll={viewConfig.scrollPosition}
+          onScrollChange={setScrollPosition}
+          initialColumnWidths={viewConfig.columnWidths}
+          onColumnWidthChange={setColumnWidth}
         />
       </div>
     </div>

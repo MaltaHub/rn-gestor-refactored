@@ -36,6 +36,12 @@ export interface RenderTablesProps<T> {
     renderForm: (row: T | null, onChange: (updates: Partial<T>) => void) => React.ReactNode;
   };
   className?: string;
+  initialSort?: { key: string; direction: 'asc' | 'desc' } | null;
+  onSortChange?: (sort: { key: string; direction: 'asc' | 'desc' } | null) => void;
+  initialScroll?: number;
+  onScrollChange?: (position: number) => void;
+  initialColumnWidths?: Record<string, number>;
+  onColumnWidthChange?: (key: string, width: number) => void;
 }
 
 interface SortConfig {
@@ -57,16 +63,25 @@ export function RenderTables<T extends Record<string, unknown>>({
   enableVirtualization = true,
   editModal,
   className = '',
+  initialSort,
+  onSortChange,
+  initialScroll,
+  onScrollChange,
+  initialColumnWidths,
+  onColumnWidthChange,
 }: RenderTablesProps<T>) {
   const tableRef = useRef<HTMLDivElement>(null);
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [internalSortConfig, setInternalSortConfig] = useState<SortConfig | null>(initialSort || null);
+  const [internalColumnWidths, setInternalColumnWidths] = useState<Record<string, number>>(initialColumnWidths || {});
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: itemsPerPage });
   const [resizingColumn, setResizingColumn] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowKey: string; columnKey: string } | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<T | null>(null);
   const [formData, setFormData] = useState<Partial<T>>({});
+
+  const sortConfig = onSortChange ? (initialSort || null) : internalSortConfig;
+  const columnWidths = onColumnWidthChange ? (initialColumnWidths || {}) : internalColumnWidths;
 
   const getRowKey = useCallback(
     (row: T): string => {
@@ -115,14 +130,21 @@ export function RenderTables<T extends Record<string, unknown>>({
     const column = columns.find((c) => c.key === columnKey);
     if (!column?.sortable) return;
 
-    setSortConfig((prev) => {
+    const updateSort = (prev: SortConfig | null) => {
       if (prev?.key === columnKey) {
         return prev.direction === 'asc'
           ? { key: columnKey, direction: 'desc' }
           : null;
       }
       return { key: columnKey, direction: 'asc' };
-    });
+    };
+
+    if (onSortChange) {
+      const newSort = updateSort(sortConfig);
+      onSortChange(newSort);
+    } else {
+      setInternalSortConfig(updateSort);
+    }
   };
 
   const handleScroll = useCallback(() => {
@@ -139,7 +161,11 @@ export function RenderTables<T extends Record<string, unknown>>({
     );
 
     setVisibleRange({ start, end });
-  }, [enableVirtualization, sortedData.length]);
+
+    if (onScrollChange) {
+      onScrollChange(scrollTop);
+    }
+  }, [enableVirtualization, sortedData.length, onScrollChange]);
 
   useEffect(() => {
     const tableElement = tableRef.current;
@@ -149,14 +175,23 @@ export function RenderTables<T extends Record<string, unknown>>({
     return () => tableElement.removeEventListener('scroll', handleScroll);
   }, [handleScroll, enableVirtualization]);
 
+  useEffect(() => {
+    if (initialScroll !== undefined && tableRef.current) {
+      tableRef.current.scrollTop = initialScroll;
+    }
+  }, [initialScroll]);
+
   const handleColumnResize = (columnKey: string, deltaX: number) => {
-    setColumnWidths((prev) => {
-      const column = columns.find((c) => c.key === columnKey);
-      const currentWidth = prev[columnKey] || column?.width || 150;
-      const minWidth = column?.minWidth || 80;
-      const newWidth = Math.max(minWidth, currentWidth + deltaX);
-      return { ...prev, [columnKey]: newWidth };
-    });
+    const column = columns.find((c) => c.key === columnKey);
+    const currentWidth = columnWidths[columnKey] || column?.width || 150;
+    const minWidth = column?.minWidth || 80;
+    const newWidth = Math.max(minWidth, currentWidth + deltaX);
+    
+    if (onColumnWidthChange) {
+      onColumnWidthChange(columnKey, newWidth);
+    } else {
+      setInternalColumnWidths((prev) => ({ ...prev, [columnKey]: newWidth }));
+    }
   };
 
   const handleCellEdit = (rowKey: string, columnKey: string, value: unknown) => {
