@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { EstadoVenda } from '@/config';
 
 const isBrowser = typeof window !== 'undefined';
 
@@ -21,7 +22,7 @@ const storage = createJSONStorage(() => ({
   },
 }));
 
-type EstadoVendaFiltro = 'disponivel' | 'reservado' | 'vendido' | 'em_negociacao' | '';
+type EstadoVendaFiltro = EstadoVenda | '';
 
 export interface VitrineFilters {
   searchTerm: string;

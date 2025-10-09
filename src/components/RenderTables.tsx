@@ -130,13 +130,13 @@ export function RenderTables<T extends Record<string, unknown>>({
     const column = columns.find((c) => c.key === columnKey);
     if (!column?.sortable) return;
 
-    const updateSort = (prev: SortConfig | null) => {
+    const updateSort = (prev: SortConfig | null): SortConfig | null => {
       if (prev?.key === columnKey) {
         return prev.direction === 'asc'
-          ? { key: columnKey, direction: 'desc' }
+          ? { key: columnKey, direction: 'desc' as const }
           : null;
       }
-      return { key: columnKey, direction: 'asc' };
+      return { key: columnKey, direction: 'asc' as const };
     };
 
     if (onSortChange) {

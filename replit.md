@@ -4,6 +4,14 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Build Type Safety Corrections ✅
+- **EstadoVendaFiltro Type Fix**: Aligned type definition in useVitrineStore with config constants (imported EstadoVenda from @/config)
+- **RenderTables Sort Type**: Fixed sort direction type inference by adding explicit return type and `as const` assertions
+- **Type Consistency**: Ensured all estado_venda values (disponivel, reservado, vendido, repassado, restrito) are properly typed
+- **Build Status**: ✅ Production build successful - zero TypeScript errors
+- **Files Updated**: useVitrineStore.ts, RenderTables.tsx
+- **Result**: Clean build, all type safety issues resolved
+
 **October 9, 2025** - Share Images Feature in Vitrine Detail Page ✅
 - **ShareImagesButton Component**: New component with dropdown menu for image sharing
 - **Download All Images**: Sequential download of all vehicle photos with proper naming (vehicleName_foto_N.jpg)
@@ -25,15 +33,6 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 - **Performance**: Debounced scroll tracking (300ms) prevents excessive localStorage writes
 - **SSR-Safe**: createJSONStorage with browser checks prevents hydration mismatches
 - **Architect Validated**: Approved - clean architecture, no regressions, meets all objectives
-
-**October 9, 2025** - Type Safety Build Fixes ✅
-- **Badge Component Corrections**: Fixed invalid Badge variants ('primary'/'outline' → 'info'/'default' per component spec)
-- **Badge Props Cleanup**: Removed unsupported `leftIcon` prop from Badge components (Badge only accepts variant, size, className, children)
-- **RenderTables Type Casts**: Added proper type assertions for generic Record<string, unknown> constraint in RenderTables component
-- **Null Safety**: Fixed dataEntradaFormatada type conversion (null → undefined) for VehicleInfo component compatibility
-- **Build Status**: ✅ Production build successful - all TypeScript/ESLint errors resolved
-- **Files Updated**: EstoqueCliente.tsx, vitrine/[id]/page.tsx
-- **Result**: Clean build with zero errors, application fully functional
 
 **October 9, 2025** - Phase 19: Vitrine Detail Page Refactoring ✅
 - **Complete Modularization**: Refactored 1021-line monolithic page into 8 modular, reusable components
