@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Plus } from "lucide-react";
+import { ArrowLeft, Save, Plus, Car, Settings, MapPin, List, FileText } from "lucide-react";
 import { QuickAddModal, QuickAddField } from "@/components/QuickAddModal";
 import type { VeiculoResumo } from "@/types/estoque";
 
@@ -43,6 +43,10 @@ const ESTADO_VEICULO_OPTIONS: EstadoVeiculoOption[] = [
   "novo", "seminovo", "usado", "sucata", "limpo", "sujo",
 ];
 
+const CORES_COMUNS = [
+  "Branco", "Preto", "Prata", "Vermelho", "Azul", "Cinza", "Verde", "Amarelo", "Marrom", "Bege"
+];
+
 const INITIAL_FORM_STATE: VehicleFormState = {
   placa: "",
   cor: "",
@@ -66,6 +70,12 @@ const formatEnumLabel = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+const validatePlaca = (placa: string): boolean => {
+  if (!placa) return true;
+  const regex = /^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/;
+  return regex.test(placa);
+};
+
 export default function CriarVeiculoPage() {
   const router = useRouter();
   const { data: modelos = [] } = useModelos();
@@ -79,6 +89,7 @@ export default function CriarVeiculoPage() {
   const [formState, setFormState] = useState<VehicleFormState>({ ...INITIAL_FORM_STATE });
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [placaValida, setPlacaValida] = useState<boolean | null>(null);
   
   const [isModeloModalOpen, setIsModeloModalOpen] = useState(false);
   const [isCaracteristicaModalOpen, setIsCaracteristicaModalOpen] = useState(false);
@@ -111,6 +122,17 @@ export default function CriarVeiculoPage() {
     (field: keyof VehicleFormState) =>
       (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
         setFormState((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const handlePlacaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    setFormState((prev) => ({ ...prev, placa: value }));
+    
+    if (value.length > 0) {
+      setPlacaValida(validatePlaca(value));
+    } else {
+      setPlacaValida(null);
+    }
+  };
 
   const handleToggleCaracteristica = (c: CaracteristicaFormValue) =>
     setFormState((prev) => ({
@@ -167,6 +189,11 @@ export default function CriarVeiculoPage() {
       return;
     }
 
+    if (!validatePlaca(formState.placa)) {
+      setFeedback({ type: "error", message: "Formato de placa inválido. Use ABC-1234 ou ABC1D23." });
+      return;
+    }
+
     try {
       setIsSaving(true);
       const toNumberOrNull = (v: string) =>
@@ -209,10 +236,14 @@ export default function CriarVeiculoPage() {
     }
   };
 
+  const getPlacaBorderClass = () => {
+    if (placaValida === null) return "border-gray-200";
+    return placaValida ? "border-green-500" : "border-red-500";
+  };
+
   return (
     <div className="min-h-screen bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <div className="mx-auto w-full max-w-4xl">
-        {/* Header */}
         <header className="mb-8">
           <Button
             variant="ghost"
@@ -228,7 +259,6 @@ export default function CriarVeiculoPage() {
           </p>
         </header>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-8 pb-24">
           {feedback && (
             <div
@@ -241,99 +271,131 @@ export default function CriarVeiculoPage() {
             </div>
           )}
 
-          {/* Dados principais */}
-          <section className="bg-white rounded-lg border border-[var(--border-default)] p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Dados principais</h3>
+          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+            <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)] mb-4">
+              <Car className="w-5 h-5" />
+              Dados principais
+            </h3>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Placa *</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">
+                  Placa <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-1">(obrigatório)</span>
+                </span>
                 <input
-                  value={formState.placa.toLocaleUpperCase()}
-                  onChange={handleChange("placa")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  value={formState.placa}
+                  onChange={handlePlacaChange}
+                  className={`h-11 rounded-md border ${getPlacaBorderClass()} px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150`}
+                  placeholder="ABC-1234 ou ABC1D23"
                   required
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Chassi</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Chassi</span>
                 <input
                   value={formState.chassi}
                   onChange={handleChange("chassi")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  placeholder="9BWZZZ377VT004251"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Cor</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Cor</span>
                 <input
                   value={formState.cor}
                   onChange={handleChange("cor")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  list="cores-comuns"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  placeholder="Vermelho, Prata, Preto..."
                 />
+                <datalist id="cores-comuns">
+                  {CORES_COMUNS.map((cor) => (
+                    <option key={cor} value={cor} />
+                  ))}
+                </datalist>
               </label>
             </div>
           </section>
 
-          {/* Especificações */}
-          <section className="bg-white rounded-lg border border-[var(--border-default)] p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Especificações</h3>
+          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+            <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)] mb-4">
+              <Settings className="w-5 h-5" />
+              Especificações
+            </h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Ano fabricação</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Ano fabricação</span>
                 <input
                   type="number"
                   value={formState.ano_fabricacao}
                   onChange={handleChange("ano_fabricacao")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   min={1900}
-                  max={9999}
+                  max={2099}
+                  step={1}
+                  placeholder="2023"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Ano modelo</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Ano modelo</span>
                 <input
                   type="number"
                   value={formState.ano_modelo}
                   onChange={handleChange("ano_modelo")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   min={1900}
-                  max={9999}
+                  max={2099}
+                  step={1}
+                  placeholder="2024"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Hodômetro *</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">
+                  Hodômetro <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-1">(obrigatório)</span>
+                </span>
                 <input
                   type="number"
                   value={formState.hodometro}
                   onChange={handleChange("hodometro")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   min={0}
+                  max={999999}
+                  step={1000}
+                  placeholder="15000"
                   required
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Preço venal</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Preço venal</span>
                 <input
                   type="number"
                   value={formState.preco_venal}
                   onChange={handleChange("preco_venal")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   min={0}
-                  step="0.01"
+                  step={100}
+                  placeholder="45000"
                 />
               </label>
             </div>
           </section>
 
-          {/* Status e localização */}
-          <section className="bg-white rounded-lg border border-[var(--border-default)] p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Status e localização</h3>
+          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+            <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)] mb-4">
+              <MapPin className="w-5 h-5" />
+              Status e localização
+            </h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Estado de venda *</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">
+                  Estado de venda <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-1">(obrigatório)</span>
+                </span>
                 <select
                   value={formState.estado_venda}
                   onChange={handleChange("estado_venda")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   required
                 >
                   {ESTADO_VENDA_OPTIONS.map((option) => (
@@ -343,12 +405,12 @@ export default function CriarVeiculoPage() {
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Estado do veículo</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Estado do veículo</span>
                 <select
                   value={formState.estado_veiculo}
                   onChange={handleChange("estado_veiculo")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                 >
                   <option value="">Sem definição</option>
                   {ESTADO_VEICULO_OPTIONS.map((option) => (
@@ -358,21 +420,22 @@ export default function CriarVeiculoPage() {
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Documentação</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Documentação</span>
                 <input
                   value={formState.estagio_documentacao}
                   onChange={handleChange("estagio_documentacao")}
-                  className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  placeholder="Em dia, Pendente..."
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Modelo</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Modelo</span>
                 <div className="flex gap-2">
                   <select
                     value={formState.modelo_id}
                     onChange={handleChange("modelo_id")}
-                    className="flex-1 rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                    className="flex-1 h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   >
                     <option value="">Selecione um modelo</option>
                     {modelosComNomeCompleto
@@ -395,13 +458,13 @@ export default function CriarVeiculoPage() {
                   </Button>
                 </div>
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-secondary)]">Local</span>
+              <label className="flex flex-col gap-1">
+                <span className="font-medium text-[var(--text-secondary)] text-xs">Local</span>
                 <div className="flex gap-2">
                   <select
                     value={formState.local_id}
                     onChange={handleChange("local_id")}
-                    className="flex-1 rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                    className="flex-1 h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   >
                     <option value="">Selecione um local</option>
                     {localOptions.map((option) => (
@@ -425,10 +488,12 @@ export default function CriarVeiculoPage() {
             </div>
           </section>
 
-          {/* Características */}
-          <section className="bg-white rounded-lg border border-[var(--border-default)] p-6">
+          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Características</h3>
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
+                <List className="w-5 h-5" />
+                Características
+              </h3>
               <Button
                 type="button"
                 variant="ghost"
@@ -453,7 +518,7 @@ export default function CriarVeiculoPage() {
                         id: caracteristica.id,
                         nome: caracteristica.nome,
                       })}
-                      className="rounded border-[var(--border-default)] text-[var(--purple-magic)] focus:ring-[var(--purple-magic)]"
+                      className="rounded border-gray-300 text-[var(--purple-magic)] focus:ring-[var(--purple-magic)] transition-all duration-150"
                     />
                     <span className="text-[var(--text-primary)]">{caracteristica.nome}</span>
                   </label>
@@ -462,21 +527,22 @@ export default function CriarVeiculoPage() {
             </ul>
           </section>
 
-          {/* Observações */}
-          <section className="bg-white rounded-lg border border-[var(--border-default)] p-6">
+          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
             <label className="flex flex-col gap-2">
-              <span className="text-lg font-semibold text-[var(--text-primary)]">Observações</span>
+              <span className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
+                <FileText className="w-5 h-5" />
+                Observações
+              </span>
               <textarea
                 value={formState.observacao}
                 onChange={handleChange("observacao")}
-                className="rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                 rows={4}
                 placeholder="Informações adicionais sobre o veículo..."
               />
             </label>
           </section>
 
-          {/* Floating Action Buttons */}
           <div className="fixed bottom-6 right-6 z-50 flex gap-3 pointer-events-none">
             <Button
               type="button"
@@ -499,7 +565,6 @@ export default function CriarVeiculoPage() {
           </div>
         </form>
 
-        {/* Modals for Inline Creation */}
         <QuickAddModal
           isOpen={isModeloModalOpen}
           onClose={() => setIsModeloModalOpen(false)}
