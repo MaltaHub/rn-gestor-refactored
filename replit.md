@@ -2,6 +2,22 @@
 
 This is a **Vehicle Management System** designed to manage vehicle inventory and storefront operations across multiple stores. Built with **Next.js 15**, it allows users to track vehicles, manage details, photos, documentation, and publish to sales platforms. It functions as a Progressive Web App (PWA) with offline capabilities, supporting multi-store operations with role-based access control and real-time collaboration. The system aims to streamline vehicle management and sales processes for dealerships, offering a modern, responsive UI focused on readability and user experience.
 
+# Recent Changes
+
+**October 9, 2025** - Phase 18: User Profile Page Implementation ✅
+- **Profile Page Created**: New `/perfil` route with complete user profile management
+- **Profile Service**: Created `src/services/perfil.ts` with functions for getProfile(), updateProfile(), updateEmail(), updatePassword()
+- **Secure Password Change**: Implemented proper reauthentication flow - validates current password via signInWithPassword before allowing update
+- **Profile Editing**: Form sections for personal information (full name, email, avatar URL) and password change (current, new, confirm)
+- **Avatar Preview**: Live preview of avatar image when URL is provided
+- **Navigation Updates**: Added "Perfil" link to both sidebar (all authenticated users) and navbar (proprietários)
+- **User Icon**: Imported and added User icon from lucide-react for profile navigation
+- **Validation**: Password minimum 6 characters, confirmation match check, clear error messages
+- **Feedback System**: Success/error alerts with color-coded messages, loading states on buttons
+- **Dark Mode Support**: Full theme compatibility consistent with design system
+- **Security**: Current password validation prevents unauthorized changes, fresh session created via signInWithPassword
+- **Architect Validated**: Approved after security fix for reauthentication flow
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
