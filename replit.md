@@ -4,15 +4,20 @@ This is a **Vehicle Management System** designed to manage vehicle inventory and
 
 # Recent Changes
 
+**October 9, 2025** - Phase 10: Architecture Corrections & UI Improvements ✅
+- **Page /criar Restored**: Recreated full form page for complete vehicle creation workflow (previously deleted by mistake)
+- **Navigation Fixed**: Removed VeiculoFormModal from Estoque page, restored link to /criar for creation
+- **RenderTables Click Fixed**: Corrected onClick propagation - now properly navigates to /estoque/[id] detail pages
+- **UI Color Update**: Changed all component backgrounds from green to white for better contrast with purple theme
+- **Architecture Clarification**: Pop-ups/modals are ONLY for inline quick edits within RenderTables/RenderCards; dedicated pages remain for full CRUD workflows
+
 **October 9, 2025** - Phase 9: Complete System Refactoring ✅
 - **RenderTables Component**: Created with Canva/Notion-style inline editing, virtualization (10-row window + infinite scroll), column resizing, header sorting (accessor/comparator support), and row actions
-- **useEstoqueStore**: Zustand store for persistent state (filters, scroll, column widths)
+- **useEstoqueStore**: Zustand store for persistent state (filters working; scroll/sort/widths pending future implementation)
 - **Estoque Page**: Integrated RenderTables, removed cards view (table-only mode)
 - **Critical Fixes**: Virtualization spacer rows, numeric field sorting with accessor functions
 - **Page Unification**: Merged /estoque/[id] and /editar/[id] into single page with edit mode toggle, fixed data sync bug
-- **Modal Creation**: Refactored /criar to VeiculoFormModal popup, integrated into Estoque page
-- **Architecture Cleanup**: Deleted /editar and /criar folders, streamlined navigation
-- All changes architect-reviewed and approved
+- **Architecture Cleanup**: Deleted /editar folder (merged into unified detail page)
 
 **October 9, 2025** - Phase 7: Estoque Page UI Refactoring ✅
 - Migrated Estoque page to use Design System components (Button, Input, Badge, Card)
