@@ -1,6 +1,27 @@
 # Overview
 
-This is a **Vehicle Management System** designed to manage vehicle inventory and storefront operations across multiple stores. Built with **Next.js 15**, it allows users to track vehicles, manage details, photos, documentation, and publish to sales platforms. It functions as a Progressive Web App (PWA) with offline capabilities, supporting multi-store operations with role-based access control and real-time collaboration. The system aims to streamline vehicle management and sales processes for dealerships.
+This is a **Vehicle Management System** designed to manage vehicle inventory and storefront operations across multiple stores.
+
+# Recent Changes
+
+**October 9, 2025** - Phase 7: Estoque Page UI Refactoring ✅
+- Migrated Estoque page to use Design System components (Button, Input, Badge, Card)
+- Refactored header with text-3xl title, Badge for vehicle count, Button with Plus icon
+- Converted navigation tabs to Badge components with conditional variant and hover effects
+- Migrated search/filter inputs to Input component with icons
+- Refactored all buttons using Button component with appropriate variants and icons
+- Updated vehicle cards to use Card compound components with design tokens
+- Migrated table action links to Button component with asChild support
+- Applied CSS variables throughout for consistent theming
+- Implemented mobile-first responsive design with breakpoints
+
+**October 9, 2025** - Phase 6: Vitrine Page UI Refactoring ✅
+- Migrated Vitrine page to use Design System components
+- Enhanced Button component with leftIcon/rightIcon alias support
+- Fixed critical bug: Dynamic paddingTop to prevent search bar overlay
+- Applied design tokens and CSS variables throughout
+
+Built with **Next.js 15**, it allows users to track vehicles, manage details, photos, documentation, and publish to sales platforms. It functions as a Progressive Web App (PWA) with offline capabilities, supporting multi-store operations with role-based access control and real-time collaboration. The system aims to streamline vehicle management and sales processes for dealerships.
 
 # User Preferences
 
