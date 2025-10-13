@@ -22,6 +22,7 @@ type ModeloFormData = {
   combustivel: string;
   tipo_cambio: string;
   motor: string;
+  edicao: string;
   lugares: number | string;
   portas: number | string;
   carroceria: string;
@@ -63,6 +64,17 @@ const parseOptionalNumber = (value: string | number | null | undefined): number 
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const normalizeOptionalText = (value: unknown): string | null => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return String(value);
+};
+
 export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTableModalProps) {
   const queryClient = useQueryClient();
   const { data: modelos = [] } = useModelos();
@@ -74,6 +86,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
     combustivel: 'gasolina',
     tipo_cambio: 'manual',
     motor: '1.0',
+    edicao: '',
     lugares: 5,
     portas: 4,
     carroceria: 'hatch',
@@ -169,6 +182,21 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       ),
     },
     {
+      key: 'edicao',
+      label: 'Edição',
+      width: 120,
+      editable: true,
+      render: (value) => String(value || '-'),
+      editRender: (value, row, onChange) => (
+        <input
+          type="text"
+          value={String(value || '')}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-2 py-1 border rounded"
+        />
+      ),
+    },
+    {
       key: 'lugares',
       label: 'Lugares',
       width: 100,
@@ -229,6 +257,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
       combustivel: 'gasolina',
       tipo_cambio: 'manual',
       motor: '1.0',
+      edicao: '',
       lugares: 5,
       portas: 4,
       carroceria: 'hatch',
@@ -245,6 +274,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
         combustivel: updates.combustivel !== undefined ? updates.combustivel : row.combustivel,
         tipo_cambio: updates.tipo_cambio !== undefined ? updates.tipo_cambio : row.tipo_cambio,
         motor: updates.motor !== undefined ? updates.motor : row.motor,
+        edicao: updates.edicao !== undefined ? normalizeOptionalText(updates.edicao) : row.edicao,
         lugares: updates.lugares !== undefined ? parseOptionalNumber(updates.lugares) : row.lugares,
         portas: updates.portas !== undefined ? parseOptionalNumber(updates.portas) : row.portas,
         carroceria: updates.carroceria !== undefined ? updates.carroceria : row.carroceria,
@@ -288,6 +318,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
         combustivel: formData.combustivel || null,
         tipo_cambio: formData.tipo_cambio || null,
         motor: formData.motor?.trim() || null,
+        edicao: normalizeOptionalText(formData.edicao),
         lugares: parseOptionalNumber(formData.lugares),
         portas: parseOptionalNumber(formData.portas),
         carroceria: formData.carroceria || null,
@@ -372,7 +403,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
         </label>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-[var(--text-secondary)]">Motor</span>
           <input
@@ -380,6 +411,17 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
             value={formData.motor}
             onChange={(e) => setFormData(prev => ({ ...prev, motor: e.target.value }))}
             className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-[var(--text-secondary)]">Edição</span>
+          <input
+            type="text"
+            value={formData.edicao}
+            onChange={(e) => setFormData(prev => ({ ...prev, edicao: e.target.value }))}
+            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            placeholder="Ex.: Sport, Limited"
           />
         </label>
 
