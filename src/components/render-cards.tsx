@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
@@ -75,6 +75,83 @@ const getVehicleData = (item: VeiculoLojaUI | VeiculoUI, domain: Domain) => {
   };
 };
 
+const LazyVehicleImage = ({ src, alt }: { src: string; alt: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+    setIsLoaded(false);
+  }, [src]);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node || !src || shouldLoad) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const isVisible = entries.some((entry) => entry.isIntersecting);
+        if (isVisible) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px 0px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [src, shouldLoad]);
+
+  const showSkeleton = (!shouldLoad || !isLoaded) && !hasError;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-800"
+    >
+      {shouldLoad && !hasError && (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          priority={false}
+          onLoadingComplete={() => setIsLoaded(true)}
+          onError={() => {
+            setHasError(true);
+            setIsLoaded(false);
+          }}
+        />
+      )}
+
+      {showSkeleton && (
+        <div
+          className="absolute inset-0 animate-pulse bg-gradient-to-br from-gray-200/60 via-gray-100/60 to-gray-200/60 dark:from-gray-700/60 dark:via-gray-800/60 dark:to-gray-700/60"
+          aria-hidden="true"
+        />
+      )}
+
+      {hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+          <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+            Sem foto de capa
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const GridCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)[]; domain: Domain }) => (
   <ul className="grid max-w-screen-xl grid-cols-1 gap-6 px-4 mx-auto sm:grid-cols-2 lg:grid-cols-3 sm:px-6">
     {vehicles.map((item) => {
@@ -83,24 +160,17 @@ const GridCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
         <li key={data.id} className="flex flex-col h-full w-full">
           <Card variant="default" padding="none" className="flex h-full w-full flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
             <Link href={data.detailUrl} className="block h-full w-full group">
-              <div className="relative aspect-video w-full overflow-hidden">
-                {data.capaUrl ? (
-                  <Image
-                    src={data.capaUrl}
-                    alt={data.display}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    priority={false}
-                  />
-                ) : (
+              {data.capaUrl ? (
+                <LazyVehicleImage src={data.capaUrl} alt={data.display} />
+              ) : (
+                <div className="relative aspect-video w-full overflow-hidden">
                   <div className="flex h-full items-center justify-center bg-gray-100 dark:bg-gray-800">
                     <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                       Sem foto de capa
                     </span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="flex flex-1 flex-col gap-4 p-6 min-h-0 break-words">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">

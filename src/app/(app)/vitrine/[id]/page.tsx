@@ -90,6 +90,8 @@ export default function VitrineDetalhePage() {
     veiculoId: veiculoLoja?.veiculoId,
   });
 
+  console.warn("fotos", fotos);
+
   const handleOpenLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
     setIsLightboxOpen(true);

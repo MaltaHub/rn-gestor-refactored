@@ -255,6 +255,12 @@ export function PhotoGallery({
       await qc.invalidateQueries({ queryKey: qKey });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Erro inesperado no upload";
+      console.error("[PhotoGallery] Falha ao registrar foto na vitrine:", e);
+      try {
+        await supabase.storage.from(bucket).remove([key]);
+      } catch (cleanupError) {
+        console.error("[PhotoGallery] Falha ao remover arquivo órfão:", cleanupError);
+      }
       setPending((prev) =>
         prev.map((it) =>
           it.tempId === p.tempId

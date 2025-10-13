@@ -36,6 +36,11 @@ const formatEnumLabel = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+const sortEnumOptions = <T extends string>(options: readonly T[]) =>
+  [...options].sort((a, b) =>
+    formatEnumLabel(a).localeCompare(formatEnumLabel(b), "pt-BR")
+  );
+
 interface VehicleFormState {
   placa: string;
   cor: string;
@@ -136,6 +141,16 @@ export default function VeiculoDetalhePage() {
 
   const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
 
+  const estadoVendaOptionsOrdenadas = useMemo(
+    () => sortEnumOptions(ESTADO_VENDA_OPTIONS),
+    []
+  );
+
+  const estadoVeiculoOptionsOrdenadas = useMemo(
+    () => sortEnumOptions(ESTADO_VEICULO_OPTIONS),
+    []
+  );
+
   const lojaNomePorId = useMemo(() => {
     const map = new Map<string, string>();
     lojas.forEach((l) => l.id && map.set(l.id, l.nome));
@@ -156,7 +171,10 @@ export default function VeiculoDetalhePage() {
   }, [locais, lojaNomePorId, alvoPreferencialId]);
 
   const modelosComNomeCompleto = useMemo(
-    () => modelos.map((m) => ({ ...m, nomeCompleto: buildModeloNomeCompletoOrDefault(m) })),
+    () =>
+      modelos
+        .map((m) => ({ ...m, nomeCompleto: buildModeloNomeCompletoOrDefault(m) }))
+        .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto, "pt-BR")),
     [modelos]
   );
 
@@ -375,6 +393,8 @@ export default function VeiculoDetalhePage() {
             modeloSelecionado={modeloSelecionado}
             localOptions={localOptions}
             caracteristicasDisponiveis={caracteristicasDisponiveis}
+            estadoVendaOptions={estadoVendaOptionsOrdenadas}
+            estadoVeiculoOptions={estadoVeiculoOptionsOrdenadas}
           />
         )}
 
@@ -485,6 +505,8 @@ function EditMode({
   modeloSelecionado,
   localOptions,
   caracteristicasDisponiveis,
+  estadoVendaOptions,
+  estadoVeiculoOptions,
 }: {
   veiculo: VeiculoUI;
   formState: VehicleFormState;
@@ -496,6 +518,8 @@ function EditMode({
   modeloSelecionado: { id?: string; marca: string; nome: string; nomeCompleto: string } | null;
   localOptions: Array<{ value: string; label: string; pertence: boolean; prioridade: number }>;
   caracteristicasDisponiveis: CaracteristicaFormValue[];
+  estadoVendaOptions: EstadoVendaOption[];
+  estadoVeiculoOptions: EstadoVeiculoOption[];
 }) {
   return (
     <form id="form-editar-veiculo" onSubmit={handleSubmit} className="space-y-6">
@@ -603,7 +627,7 @@ function EditMode({
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               required
             >
-              {ESTADO_VENDA_OPTIONS.map((option) => (
+              {estadoVendaOptions.map((option) => (
                 <option key={option} value={option}>
                   {formatEnumLabel(option)}
                 </option>
@@ -618,7 +642,7 @@ function EditMode({
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="">Sem definição</option>
-              {ESTADO_VEICULO_OPTIONS.map((option) => (
+              {estadoVeiculoOptions.map((option) => (
                 <option key={option} value={option}>
                   {formatEnumLabel(option)}
                 </option>

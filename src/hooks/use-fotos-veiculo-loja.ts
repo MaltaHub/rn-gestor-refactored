@@ -33,6 +33,7 @@ async function fetchFotos({ empresaId, lojaId, veiculoId }: Required<Params>) {
 
   if (error) throw error;
 
+  
   return (data ?? []).map((item) => ({
     id: item.id,
     path: item.path,
@@ -45,7 +46,7 @@ async function fetchFotos({ empresaId, lojaId, veiculoId }: Required<Params>) {
 export function useFotosVeiculoLoja(params: Params) {
   const { empresaId, lojaId, veiculoId } = params;
   const enabled = Boolean(empresaId && lojaId && veiculoId);
-
+    
   return useQuery({
     queryKey: [
       "fotos_veiculo_loja",

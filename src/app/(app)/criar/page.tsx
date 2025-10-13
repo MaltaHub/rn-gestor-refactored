@@ -71,6 +71,11 @@ const formatEnumLabel = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+const sortEnumOptions = <T extends string>(options: readonly T[]) =>
+  [...options].sort((a, b) =>
+    formatEnumLabel(a).localeCompare(formatEnumLabel(b), "pt-BR")
+  );
+
 const validatePlaca = (placa: string): boolean => {
   if (!placa) return true;
   const regex = /^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$/;
@@ -96,6 +101,16 @@ export default function CriarVeiculoPage() {
   const [isCaracteristicaModalOpen, setIsCaracteristicaModalOpen] = useState(false);
   const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
 
+  const estadoVendaOptionsOrdenadas = useMemo(
+    () => sortEnumOptions(ESTADO_VENDA_OPTIONS),
+    []
+  );
+
+  const estadoVeiculoOptionsOrdenadas = useMemo(
+    () => sortEnumOptions(ESTADO_VEICULO_OPTIONS),
+    []
+  );
+
   const lojaNomePorId = useMemo(() => {
     const map = new Map<string, string>();
     lojas.forEach((l) => l.id && map.set(l.id, l.nome));
@@ -115,8 +130,20 @@ export default function CriarVeiculoPage() {
   }, [locais, lojaNomePorId, lojaSelecionadaId]);
 
   const modelosComNomeCompleto = useMemo(
-    () => modelos.map((m) => ({ ...m, nomeCompleto: buildModeloNomeCompletoOrDefault(m) })),
+    () =>
+      modelos
+        .map((m) => ({ ...m, nomeCompleto: buildModeloNomeCompletoOrDefault(m) }))
+        .sort((a, b) => a.nomeCompleto.localeCompare(b.nomeCompleto, "pt-BR")),
     [modelos]
+  );
+
+  const lojasOptionsOrdenadas = useMemo(
+    () =>
+      lojas
+        .slice()
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+        .map((loja) => ({ value: loja.id || "", label: loja.nome })),
+    [lojas]
   );
 
   const handleChange =
@@ -387,7 +414,7 @@ export default function CriarVeiculoPage() {
                   className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                   required
                 >
-                  {ESTADO_VENDA_OPTIONS.map((option) => (
+                  {estadoVendaOptionsOrdenadas.map((option) => (
                     <option key={option} value={option}>
                       {formatEnumLabel(option)}
                     </option>
@@ -402,7 +429,7 @@ export default function CriarVeiculoPage() {
                   className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
                 >
                   <option value="">Sem definição</option>
-                  {ESTADO_VEICULO_OPTIONS.map((option) => (
+                  {estadoVeiculoOptionsOrdenadas.map((option) => (
                     <option key={option} value={option}>
                       {formatEnumLabel(option)}
                     </option>
@@ -585,7 +612,7 @@ export default function CriarVeiculoPage() {
               name: 'loja_id', 
               label: 'Loja (opcional)', 
               required: false,
-              options: lojas.map(loja => ({ value: loja.id || '', label: loja.nome }))
+              options: lojasOptionsOrdenadas
             }
           ]}
           onSave={handleSaveLocal}
