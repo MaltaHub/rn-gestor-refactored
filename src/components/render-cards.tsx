@@ -444,7 +444,7 @@ export function RenderCards({
       case "cards-info":
         return <InfoCards vehicles={vehicles} domain={domain} />;
       default:
-        return <GridCards vehicles={vehicles} domain={domain} />;
+        return <InfoCards vehicles={vehicles} domain={domain} />;
     }
   };
 

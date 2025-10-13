@@ -40,6 +40,7 @@ const combustivelOptions = [
 const tipoCambioOptions = [
   { value: 'manual', label: 'Manual' },
   { value: 'automatico', label: 'Automático' },
+  { value: 'automatizado', label: 'Automatizado' },
   { value: 'cvt', label: 'CVT' },
   { value: 'outro', label: 'Outro' },
 ];
