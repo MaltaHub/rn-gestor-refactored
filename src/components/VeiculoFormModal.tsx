@@ -9,7 +9,6 @@ import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Modal, ModalContent, ModalFooter } from "./ui/modal";
 import { Button } from "./ui/button";
-import { X } from "lucide-react";
 import type { VeiculoResumo } from "@/types/estoque";
 
 type EstadoVendaOption = VeiculoResumo["estado_venda"];
@@ -104,11 +103,6 @@ export function VeiculoFormModal({ isOpen, onClose, onSuccess }: VeiculoFormModa
   const modelosComNomeCompleto = useMemo(
     () => modelos.map((m) => ({ ...m, nomeCompleto: buildModeloNomeCompletoOrDefault(m) })),
     [modelos]
-  );
-
-  const modeloSelecionado = useMemo(
-    () => modelosComNomeCompleto.find((m) => m.id === formState.modelo_id) ?? null,
-    [formState.modelo_id, modelosComNomeCompleto]
   );
 
   useEffect(() => {
@@ -406,7 +400,7 @@ export function VeiculoFormModal({ isOpen, onClose, onSuccess }: VeiculoFormModa
         </Button>
         <Button
           variant="primary"
-          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+          onClick={() => {
             const form = document.getElementById('form-criar-veiculo') as HTMLFormElement;
             if (form) form.requestSubmit();
           }}

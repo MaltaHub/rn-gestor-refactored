@@ -5,7 +5,7 @@
  * Lista virtualizada para melhor performance com grandes quantidades de dados
  */
 
-import { useRef, useState, useEffect, ReactNode } from 'react';
+import { useRef, useState, ReactNode } from 'react';
 
 interface VirtualizedListProps<T> {
   items: T[];
@@ -28,7 +28,6 @@ export function VirtualizedList<T>({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const totalHeight = items.length * itemHeight;
-  const visibleCount = Math.ceil(containerHeight / itemHeight);
   
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
   const endIndex = Math.min(

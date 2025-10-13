@@ -10,8 +10,6 @@ import { RPC_FUNCTIONS } from '@/config';
 import { RepositoryError } from './types';
 
 type Veiculo = Database['public']['Tables']['veiculos']['Row'];
-type VeiculoInsert = Database['public']['Tables']['veiculos']['Insert'];
-type VeiculoUpdate = Database['public']['Tables']['veiculos']['Update'];
 
 export interface VeiculoCreatePayload {
   modelo_id: string;

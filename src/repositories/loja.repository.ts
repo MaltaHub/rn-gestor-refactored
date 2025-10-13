@@ -5,7 +5,6 @@
 
 import { BaseRepository } from './base.repository';
 import { Database } from '@/types/supabase';
-import { RepositoryError } from './types';
 
 type Loja = Database['public']['Tables']['lojas']['Row'];
 

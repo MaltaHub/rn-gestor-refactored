@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
@@ -11,7 +11,7 @@ import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Plus, Car, Settings, MapPin, List, FileText } from "lucide-react";
-import { QuickAddModal, QuickAddField } from "@/components/QuickAddModal";
+import { QuickAddModal } from "@/components/QuickAddModal";
 import { ModeloTableModal } from "@/components/ModeloTableModal";
 import type { VeiculoResumo } from "@/types/estoque";
 
@@ -109,6 +109,14 @@ export default function CriarVeiculoPage() {
   const estadoVeiculoOptionsOrdenadas = useMemo(
     () => sortEnumOptions(ESTADO_VEICULO_OPTIONS),
     []
+  );
+
+  const caracteristicasOrdenadas = useMemo(
+    () =>
+      [...caracteristicasDisponiveis].sort((a, b) =>
+        a.nome.localeCompare(b.nome, "pt-BR")
+      ),
+    [caracteristicasDisponiveis]
   );
 
   const lojaNomePorId = useMemo(() => {
@@ -522,7 +530,7 @@ export default function CriarVeiculoPage() {
               </Button>
             </div>
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {caracteristicasDisponiveis.map((caracteristica) => (
+              {caracteristicasOrdenadas.map((caracteristica) => (
                 <li key={caracteristica.id}>
                   <label className="flex items-center gap-3 text-sm cursor-pointer">
                     <input

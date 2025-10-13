@@ -74,7 +74,6 @@ export function RenderTables<T extends Record<string, unknown>>({
   const [internalSortConfig, setInternalSortConfig] = useState<SortConfig | null>(initialSort || null);
   const [internalColumnWidths, setInternalColumnWidths] = useState<Record<string, number>>(initialColumnWidths || {});
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: itemsPerPage });
-  const [resizingColumn, setResizingColumn] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowKey: string; columnKey: string } | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<T | null>(null);
@@ -285,9 +284,7 @@ export function RenderTables<T extends Record<string, unknown>>({
                         className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[var(--purple-magic)] opacity-0 group-hover:opacity-100 transition-opacity"
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setResizingColumn(column.key);
                           const startX = e.clientX;
-                          const startWidth = getColumnWidth(column);
 
                           const handleMouseMove = (moveEvent: MouseEvent) => {
                             const deltaX = moveEvent.clientX - startX;
@@ -295,7 +292,6 @@ export function RenderTables<T extends Record<string, unknown>>({
                           };
 
                           const handleMouseUp = () => {
-                            setResizingColumn(null);
                             document.removeEventListener('mousemove', handleMouseMove);
                             document.removeEventListener('mouseup', handleMouseUp);
                           };

@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  PointerEvent as ReactPointerEvent,
-  KeyboardEvent as ReactKeyboardEvent,
-} from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Image from "next/image";
 import type { FotoVeiculoLoja } from "@/hooks/use-fotos-veiculo-loja";
 

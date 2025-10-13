@@ -13,8 +13,6 @@ import type {
   VeiculoLoja,
 } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";
-import { STORAGE_BUCKETS } from "@/config";
-
 type CaracteristicaPivot = {
   caracteristica: Caracteristica | null;
 } | null;
@@ -38,8 +36,11 @@ type FotoMetadataRow = {
   path: string;
   e_capa: boolean;
   ordem: number;
-  loja_id: string;
+  loja_id: string | null;
 };
+
+const buildFotoKey = (veiculoId: string, lojaId: string | null | undefined) =>
+  `${veiculoId}::${lojaId ?? "__null__"}`;
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -60,12 +61,6 @@ const toVeiculoResumo = (raw: RawVeiculo): VeiculoResumo | null => {
     ...raw,
     caracteristicas,
   };
-};
-
-const getPublicUrl = (path: string | null): string | null => {
-  if (!path) return null;
-  const result = supabase.storage.from(STORAGE_BUCKETS.FOTOS_VEICULOS_LOJA).getPublicUrl(path);
-  return result.data?.publicUrl ?? null;
 };
 
 async function fetchVeiculosLoja(lojaId: string): Promise<RawVeiculoLoja[]> {
@@ -133,18 +128,10 @@ const buildFotosMaps = async (
     return new Map();
   }
 
-  const lojaIds = Array.from(new Set(rows.map((row) => row.loja_id)));
-
-  let fotosQuery = supabase
+  const fotosQuery = supabase
     .from("fotos_metadados")
     .select("veiculo_id, path, e_capa, ordem, loja_id")
     .in("veiculo_id", veiculoIds);
-
-  if (lojaIds.length === 1) {
-    fotosQuery = fotosQuery.eq("loja_id", lojaIds[0]!);
-  } else {
-    fotosQuery = fotosQuery.in("loja_id", lojaIds);
-  }
 
   const { data: fotos, error } = await fotosQuery;
 
@@ -154,25 +141,27 @@ const buildFotosMaps = async (
 
   const agrupado = new Map<string, FotoMetadataRow[]>();
   for (const foto of (fotos ?? []) as FotoMetadataRow[]) {
-    const lista = agrupado.get(foto.veiculo_id) ?? [];
-    lista.push(foto);
-    agrupado.set(foto.veiculo_id, lista);
+    const specificKey = buildFotoKey(foto.veiculo_id, foto.loja_id);
+    const listaEspecifica = agrupado.get(specificKey) ?? [];
+    listaEspecifica.push(foto);
+    agrupado.set(specificKey, listaEspecifica);
+
+    const fallbackKey = buildFotoKey(foto.veiculo_id, null);
+    if (fallbackKey !== specificKey) {
+      const listaFallback = agrupado.get(fallbackKey) ?? [];
+      listaFallback.push(foto);
+      agrupado.set(fallbackKey, listaFallback);
+    }
   }
 
   const resultado = new Map<string, { temFotos: boolean; capaUrl: string | null }>();
 
   agrupado.forEach((lista, veiculoId) => {
-    const ordenado = [...lista].sort((a, b) => {
-      if (a.e_capa === b.e_capa) {
-        return a.ordem - b.ordem;
-      }
-      return a.e_capa ? -1 : 1;
-    });
-
-    const capa = ordenado.find((item) => item.e_capa) ?? ordenado[0];
+    const ordenado = [...lista].sort((a, b) => a.ordem - b.ordem);
+    const capa = ordenado.find((item) => item.e_capa) ?? ordenado[0] ?? null;
     resultado.set(veiculoId, {
       temFotos: ordenado.length > 0,
-      capaUrl: capa ? getPublicUrl(capa.path) : null,
+      capaUrl: capa?.path ?? null,
     });
   });
 
@@ -188,7 +177,11 @@ const attachFotos = async (
 
   return rows.map((row) => {
     const veiculoId = row.veiculo?.id ?? null;
-    const fotosInfo = veiculoId ? fotosMap.get(veiculoId) : undefined;
+    const key = veiculoId ? buildFotoKey(veiculoId, row.loja_id ?? null) : null;
+    const fallbackKey = veiculoId ? buildFotoKey(veiculoId, null) : null;
+    const fotosInfo =
+      (key ? fotosMap.get(key) : undefined) ??
+      (fallbackKey ? fotosMap.get(fallbackKey) : undefined);
     return {
       ...row,
       temFotos: fotosInfo?.temFotos ?? false,

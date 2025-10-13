@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ThemeContext } from './ThemeContext';
-import { defaultThemeColors, cssVariableMap } from './tokens';
+import { defaultThemeColors } from './tokens';
 import { STORAGE_KEYS, THEME_SCHEDULE } from '@/config';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { ThemeMode, AppliedTheme, CustomThemeOverride } from './types';

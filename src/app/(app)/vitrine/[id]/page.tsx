@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
-import { useVeiculoLojaUI } from "@/adapters/adaptador-vitrine";
+import { useVeiculoLojaUI, type VeiculoLojaUI } from "@/adapters/adaptador-vitrine";
 import { useFotosVeiculoLoja } from "@/hooks/use-fotos-veiculo-loja";
 import { useLocais, useLojas } from "@/hooks/use-configuracoes";
 import { useLojaStore } from "@/stores/useLojaStore";
@@ -18,15 +18,7 @@ import { QuickActions } from "@/components/vitrine/QuickActions";
 import { ShareImagesButton } from "@/components/vitrine/ShareImagesButton";
 import { Badge } from "@/components/ui/badge";
 
-const ESTADOS_VENDA = [
-  "disponivel",
-  "reservado",
-  "vendido",
-  "repassado",
-  "restrito",
-] as const;
-
-type EstadoVenda = (typeof ESTADOS_VENDA)[number];
+type EstadoVenda = NonNullable<VeiculoLojaUI["veiculo"]>["estado_venda"];
 
 export default function VitrineDetalhePage() {
   const params = useParams<{ id: string }>();
@@ -89,8 +81,6 @@ export default function VitrineDetalhePage() {
     lojaId: veiculoLoja?.lojaId,
     veiculoId: veiculoLoja?.veiculoId,
   });
-
-  console.warn("fotos", fotos);
 
   const handleOpenLightbox = useCallback((index: number) => {
     setLightboxIndex(index);

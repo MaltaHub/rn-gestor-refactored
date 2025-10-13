@@ -16,7 +16,6 @@ import { supabase } from "@/lib/supabase";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
-import type { VeiculoResumo } from "@/types/estoque";
 
 type EstadoVendaOption = VeiculoUI["estado_venda"];
 type EstadoVeiculoOption = NonNullable<VeiculoUI["estado_veiculo"]>;
@@ -140,6 +139,7 @@ export default function VeiculoDetalhePage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
+  const veiculoMemo = useMemo(() => veiculo, [veiculo?.id, veiculo?.editado_em]);
 
   const estadoVendaOptionsOrdenadas = useMemo(
     () => sortEnumOptions(ESTADO_VENDA_OPTIONS),
@@ -149,6 +149,14 @@ export default function VeiculoDetalhePage() {
   const estadoVeiculoOptionsOrdenadas = useMemo(
     () => sortEnumOptions(ESTADO_VEICULO_OPTIONS),
     []
+  );
+
+  const caracteristicasOrdenadas = useMemo(
+    () =>
+      [...caracteristicasDisponiveis].sort((a, b) =>
+        a.nome.localeCompare(b.nome, "pt-BR")
+      ),
+    [caracteristicasDisponiveis]
   );
 
   const lojaNomePorId = useMemo(() => {
@@ -184,10 +192,10 @@ export default function VeiculoDetalhePage() {
   );
 
   useEffect(() => {
-    if (veiculo) {
-      setFormState(buildFormStateFromVeiculo(veiculo));
+    if (veiculoMemo) {
+      setFormState(buildFormStateFromVeiculo(veiculoMemo));
     }
-  }, [veiculo?.id, veiculo?.editado_em]);
+  }, [veiculoMemo]);
 
   if (!veiculoId) {
     return (
@@ -343,7 +351,7 @@ export default function VeiculoDetalhePage() {
                   variant="primary"
                   size="md"
                   leftIcon={<Save className="w-4 h-4" />}
-                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  onClick={() => {
                     const form = document.getElementById('form-editar-veiculo') as HTMLFormElement;
                     if (form) form.requestSubmit();
                   }}
@@ -380,19 +388,17 @@ export default function VeiculoDetalhePage() {
         )}
 
         {!isEditMode ? (
-          <ViewMode veiculo={veiculo} formState={formState} />
+          <ViewMode veiculo={veiculo} />
         ) : (
           <EditMode
-            veiculo={veiculo}
             formState={formState}
             handleChange={handleChange}
             handleToggleCaracteristica={handleToggleCaracteristica}
             handleSubmit={handleSubmit}
-            isSaving={isSaving}
             modelosComNomeCompleto={modelosComNomeCompleto}
             modeloSelecionado={modeloSelecionado}
             localOptions={localOptions}
-            caracteristicasDisponiveis={caracteristicasDisponiveis}
+            caracteristicasDisponiveis={caracteristicasOrdenadas}
             estadoVendaOptions={estadoVendaOptionsOrdenadas}
             estadoVeiculoOptions={estadoVeiculoOptionsOrdenadas}
           />
@@ -417,7 +423,7 @@ export default function VeiculoDetalhePage() {
   );
 }
 
-function ViewMode({ veiculo, formState }: { veiculo: VeiculoUI; formState: VehicleFormState }) {
+function ViewMode({ veiculo }: { veiculo: VeiculoUI }) {
   const informacoesGerais = [
     { label: "Ano fabricação", value: formatText(veiculo.ano_fabricacao?.toString()) },
     { label: "Ano modelo", value: formatText(veiculo.ano_modelo?.toString()) },
@@ -495,12 +501,10 @@ function ViewMode({ veiculo, formState }: { veiculo: VeiculoUI; formState: Vehic
 }
 
 function EditMode({
-  veiculo,
   formState,
   handleChange,
   handleToggleCaracteristica,
   handleSubmit,
-  isSaving,
   modelosComNomeCompleto,
   modeloSelecionado,
   localOptions,
@@ -508,12 +512,10 @@ function EditMode({
   estadoVendaOptions,
   estadoVeiculoOptions,
 }: {
-  veiculo: VeiculoUI;
   formState: VehicleFormState;
   handleChange: (field: keyof VehicleFormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   handleToggleCaracteristica: (c: CaracteristicaFormValue) => void;
   handleSubmit: React.FormEventHandler;
-  isSaving: boolean;
   modelosComNomeCompleto: Array<{ id?: string; marca: string; nome: string; nomeCompleto: string }>;
   modeloSelecionado: { id?: string; marca: string; nome: string; nomeCompleto: string } | null;
   localOptions: Array<{ value: string; label: string; pertence: boolean; prioridade: number }>;

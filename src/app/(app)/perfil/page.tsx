@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { updateProfile, updateEmail, updatePassword } from '@/services/perfil';
 import { signOut } from '@/services/auth';
@@ -102,10 +103,10 @@ export default function PerfilPage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
+    } catch (err) {
       setFeedback({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Erro ao alterar senha'
+        message: err instanceof Error ? err.message : 'Erro ao alterar senha'
       });
     } finally {
       setLoadingPassword(false);
@@ -117,7 +118,7 @@ export default function PerfilPage() {
     
     try {
       await signOut();
-    } catch (error) {
+    } catch {
       setFeedback({
         type: 'error',
         message: 'Erro ao sair. Tente novamente.'
@@ -195,9 +196,11 @@ export default function PerfilPage() {
             
             {avatarUrl && (
               <div className="flex items-center gap-3">
-                <img
+                <Image
                   src={avatarUrl}
                   alt="Avatar preview"
+                  width={64}
+                  height={64}
                   className="h-16 w-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">

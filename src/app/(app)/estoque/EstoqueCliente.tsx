@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X, Plus } from 'lucide-react';
 

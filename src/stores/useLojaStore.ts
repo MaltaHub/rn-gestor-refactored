@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage, type PersistStorage } from "zustand/middleware";
+import { persist, type PersistStorage } from "zustand/middleware";
 import { Loja } from "@/types";
 import { STORAGE_KEYS } from "@/config";
 

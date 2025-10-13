@@ -7,7 +7,6 @@ import { LojaRepository } from '@/repositories';
 import { handleError } from '@/lib/errors';
 import { Database } from '@/types/supabase';
 
-type Loja = Database['public']['Tables']['lojas']['Row'];
 type LojaInsert = Database['public']['Tables']['lojas']['Insert'];
 type LojaUpdate = Database['public']['Tables']['lojas']['Update'];
 

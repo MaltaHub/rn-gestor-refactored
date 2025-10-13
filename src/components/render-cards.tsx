@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
@@ -10,6 +10,8 @@ import type { VeiculoUI } from "@/adapters/adaptador-estoque";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { useDebounce } from "@/hooks/use-debounce";
+import { supabase } from "@/lib/supabase";
+import { STORAGE_BUCKETS } from "@/config";
 
 type ViewMode = "cards-photo" | "cards-info" | "table";
 type Domain = "vitrine" | "estoque";
@@ -26,6 +28,15 @@ interface RenderCardsProps {
   initialScroll?: number;
   onScrollChange?: (position: number) => void;
 }
+
+const resolveImageUrl = (path: string) => {
+  if (!path) return "";
+  const trimmed = path.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const { data } = supabase.storage.from(STORAGE_BUCKETS.FOTOS_VEICULOS_LOJA).getPublicUrl(trimmed);
+  return data?.publicUrl ?? trimmed;
+};
 
 const getDisplayPrice = (veiculo: VeiculoLojaUI | VeiculoUI) => {
   if ('precoLojaFormatado' in veiculo) {
@@ -58,7 +69,6 @@ const getVehicleData = (item: VeiculoLojaUI | VeiculoUI, domain: Domain) => {
   const registradoEmFormatado = estoqueItem.registrado_em 
     ? dateFormatter.format(new Date(estoqueItem.registrado_em)) 
     : "—";
-    
   return {
     id: estoqueItem.id,
     display: estoqueItem.veiculoDisplay ?? "Veículo sem modelo",
@@ -80,15 +90,17 @@ const LazyVehicleImage = ({ src, alt }: { src: string; alt: string }) => {
   const [shouldLoad, setShouldLoad] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const resolvedSrc = useMemo(() => resolveImageUrl(src), [src]);
 
   useEffect(() => {
     setHasError(false);
     setIsLoaded(false);
-  }, [src]);
+    setShouldLoad(false);
+  }, [resolvedSrc]);
 
   useEffect(() => {
     const node = containerRef.current;
-    if (!node || !src || shouldLoad) return;
+    if (!node || !resolvedSrc || shouldLoad) return;
 
     if (typeof IntersectionObserver === "undefined") {
       setShouldLoad(true);
@@ -108,7 +120,7 @@ const LazyVehicleImage = ({ src, alt }: { src: string; alt: string }) => {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [src, shouldLoad]);
+  }, [resolvedSrc, shouldLoad]);
 
   const showSkeleton = (!shouldLoad || !isLoaded) && !hasError;
 
@@ -119,14 +131,14 @@ const LazyVehicleImage = ({ src, alt }: { src: string; alt: string }) => {
     >
       {shouldLoad && !hasError && (
         <Image
-          src={src}
+          src={resolvedSrc}
           alt={alt}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
           priority={false}
-          onLoadingComplete={() => setIsLoaded(true)}
+          onLoad={() => setIsLoaded(true)}
           onError={() => {
             setHasError(true);
             setIsLoaded(false);
