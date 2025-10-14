@@ -75,7 +75,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     };
 
     const customFocusClass = customColors?.focus ? '[&:focus]:ring-[var(--custom-focus-ring)] [&:focus]:border-[var(--custom-focus-ring)]' : '';
-    const placeholderClass = customColors ? '' : 'placeholder:text-[var(--foreground)]/40';
+    const placeholderClass = customColors ? '' : 'placeholder:text-gray-500 dark:placeholder:text-gray-400';
 
     const getIconStyle = (position: 'left' | 'right'): CSSProperties => ({
       ...(position === 'left' ? { left: SPACING.md } : { right: SPACING.md }),
@@ -90,12 +90,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label 
-            htmlFor={inputId} 
-            className="block font-medium text-[var(--foreground)]"
-            style={{ 
-              fontSize: FONT_SIZE.sm, 
-              marginBottom: SPACING.sm 
+          <label
+            htmlFor={inputId}
+            className="block font-medium text-gray-900 dark:text-gray-100"
+            style={{
+              fontSize: FONT_SIZE.sm,
+              marginBottom: SPACING.sm,
             }}
           >
             {label}
@@ -103,8 +103,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {leftIcon && (
-            <div 
-              className="absolute top-1/2 -translate-y-1/2 text-[var(--foreground)]/40"
+            <div
+              className="absolute top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
               style={getIconStyle('left')}
             >
               {leftIcon}
@@ -123,7 +123,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                   ? `focus:ring-2 ${customFocusClass}`
                   : 'border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 focus:ring-[var(--purple-magic)] focus:border-[var(--purple-magic)]'
               }
-              ${!customColors && 'bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] text-[var(--foreground)]'}
+              ${!customColors && 'bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] text-gray-900 dark:text-gray-100'}
               ${placeholderClass}
               focus:outline-none focus:ring-2
               disabled:opacity-50 disabled:cursor-not-allowed
@@ -133,8 +133,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div 
-              className="absolute top-1/2 -translate-y-1/2 text-[var(--foreground)]/40"
+            <div
+              className="absolute top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
               style={getIconStyle('right')}
             >
               {rightIcon}

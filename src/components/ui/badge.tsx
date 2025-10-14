@@ -15,7 +15,7 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
     const baseStyles = 'inline-flex items-center font-medium';
     
     const variants = {
-      default: 'bg-[var(--gray-whisper)] text-[var(--foreground)] dark:bg-zinc-700 dark:text-zinc-200',
+      default: 'bg-[var(--gray-whisper)] text-zinc-900 dark:bg-zinc-700 dark:text-zinc-200',
       success: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400',
       warning: 'bg-[var(--warning-pale)] text-[var(--warning)] dark:bg-[var(--warning)]/30 dark:text-[var(--warning-light)]',
       danger: 'bg-[var(--danger-pale)] text-[var(--danger)] dark:bg-[var(--danger)]/30 dark:text-[var(--danger-light)]',

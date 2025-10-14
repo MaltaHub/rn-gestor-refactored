@@ -47,13 +47,13 @@ export function TemaSection() {
       <ThemeSelector />
 
       {mode === 'custom' && (
-        <div className="mt-6 p-4 rounded-lg border-2 border-[var(--purple-magic)]/20 bg-white dark:bg-[var(--surface-dark)]">
-          <h3 className="text-sm font-medium text-[var(--foreground)] mb-3">
+        <div className="mt-6 rounded-lg border-2 border-[var(--purple-magic)]/20 bg-white p-4 text-gray-900 dark:bg-[var(--surface-dark)] dark:text-gray-100">
+          <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">
             Cores personalizadas
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[var(--foreground)]/80 mb-1">
+              <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
                 Cor de fundo
               </label>
               <input
@@ -64,7 +64,7 @@ export function TemaSection() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[var(--foreground)]/80 mb-1">
+              <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
                 Cor do texto
               </label>
               <input
@@ -75,7 +75,7 @@ export function TemaSection() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[var(--foreground)]/80 mb-1">
+              <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
                 Cor primária
               </label>
               <input
@@ -86,7 +86,7 @@ export function TemaSection() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[var(--foreground)]/80 mb-1">
+              <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
                 Cor secundária
               </label>
               <input
@@ -106,7 +106,7 @@ export function TemaSection() {
             </button>
             <button
               onClick={handleResetCustom}
-              className="px-4 py-2 rounded-lg border border-[var(--gray-light)] text-[var(--foreground)] hover:bg-[var(--gray-whisper)] transition-colors text-sm font-medium"
+              className="px-4 py-2 rounded-lg border border-[var(--gray-light)] text-gray-700 hover:bg-[var(--gray-whisper)] transition-colors text-sm font-medium dark:text-gray-200"
             >
               Resetar
             </button>

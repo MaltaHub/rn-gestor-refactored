@@ -272,18 +272,12 @@ export default function VitrinePage() {
                 <Input
                   type="search"
                   placeholder="Buscar por modelo, placa, local..."
+                  aria-label="Buscar veículos na vitrine"
                   value={filters.searchTerm}
                   onChange={(e) => setFilters({ searchTerm: e.target.value })}
                   leftIcon={<Search className="h-4 w-4" />}
                   inputSize="md"
-                  customColors={{
-                    bg: 'var(--surface-dark)',
-                    text: '#FFFFFF',
-                    border: 'rgba(255,255,255,0.25)',
-                    focus: 'rgba(255,255,255,0.85)',
-                    icon: 'rgba(255,255,255,0.7)',
-                  }}
-                  className="placeholder:text-white/60"
+                  className="shadow-sm"
                 />
               </div>
 

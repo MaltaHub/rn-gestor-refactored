@@ -303,10 +303,13 @@ export default function EstoquePage() {
           <div className="rounded-lg border border-[var(--border-default)] bg-white dark:bg-gray-800 p-4 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Input
+                type="search"
                 leftIcon={<Search className="w-4 h-4" />}
                 placeholder="Buscar por veículo, placa, modelo..."
+                aria-label="Buscar no estoque"
                 value={filters.termo}
                 onChange={(e) => setFilters({ termo: e.target.value })}
+                className="shadow-sm"
               />
 
               <select

@@ -31,7 +31,7 @@ const CardRoot = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`${customColors ? 'border' : variants[variant]} ${className}`}
+        className={`${customColors ? 'border' : variants[variant]} ${customColors?.text ? '' : 'text-gray-900 dark:text-gray-100'} ${className}`}
         style={cardStyle}
         {...props}
       >
@@ -60,12 +60,12 @@ const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
       >
         <div className="flex-1">
           {title && (
-            <h3 className="text-lg font-semibold text-[var(--foreground)]">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-sm text-[var(--foreground)]/60 mt-1">
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {subtitle}
             </p>
           )}
