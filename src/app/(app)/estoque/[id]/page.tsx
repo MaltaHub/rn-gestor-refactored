@@ -202,7 +202,7 @@ export default function VeiculoDetalhePage() {
   useEffect(() => {
     if (!veiculo) return;
     setFormState(buildFormStateFromVeiculo(veiculo));
-  }, [veiculo?.id]);
+  }, [veiculo]);
 
   if (!veiculoId) {
     return (

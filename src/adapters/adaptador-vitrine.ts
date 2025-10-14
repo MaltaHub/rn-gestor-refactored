@@ -39,9 +39,6 @@ type FotoMetadataRow = {
   loja_id: string | null;
 };
 
-const buildFotoKey = (veiculoId: string, lojaId: string | null | undefined) =>
-  `${veiculoId}::${lojaId ?? "__null__"}`;
-
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -221,7 +218,6 @@ const attachFotos = async (
     if (!veiculoId) return { ...row, temFotos: false, capaUrl: null };
     const agrupado = porVeiculo.get(veiculoId);
     if (!agrupado) {
-      const placa = row.veiculo?.placa ?? null;
       // Nenhuma foto foi retornada para este veículo/loja na primeira busca.
       const extras = await fetchFotosExtras(veiculoId);
       if (extras.length) {
@@ -239,8 +235,6 @@ const attachFotos = async (
       // Ainda sem fotos mesmo após tentar novamente.
       return { ...row, temFotos: false, capaUrl: null };
     }
-    const placa = row.veiculo?.placa ?? null;
-
     const lojaKey = row.loja_id ?? null;
     const especifica = agrupado.porLoja.get(lojaKey);
     const infoEspecifica = pickCapa(especifica);

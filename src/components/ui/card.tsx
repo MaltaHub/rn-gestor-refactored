@@ -7,6 +7,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   customColors?: {
     bg?: string;
     border?: string;
+    text?: string;
   };
 }
 
@@ -24,6 +25,7 @@ const CardRoot = forwardRef<HTMLDivElement, CardProps>(
       ...(customColors && {
         backgroundColor: customColors.bg,
         borderColor: customColors.border,
+        color: customColors.text,
       }),
       ...style,
     };
