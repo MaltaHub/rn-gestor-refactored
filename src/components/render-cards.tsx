@@ -36,7 +36,14 @@ const resolveImageUrl = (path: string) => {
   if (!trimmed) return "";
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   const { data } = supabase.storage.from(STORAGE_BUCKETS.FOTOS_VEICULOS_LOJA).getPublicUrl(trimmed);
-  return data?.publicUrl ?? trimmed;
+  const url = data?.publicUrl ?? trimmed;
+  // Garante URL bem formada para o otimizador do Next
+  try {
+    const u = new URL(url);
+    return u.toString();
+  } catch {
+    return url;
+  }
 };
 
 const getDisplayPrice = (veiculo: VeiculoLojaUI | VeiculoUI) => {
@@ -132,6 +139,7 @@ const LazyVehicleImage = ({ src, alt }: { src: string; alt: string }) => {
     >
       {shouldLoad && !hasError && (
         <Image
+          key={resolvedSrc}
           src={resolvedSrc}
           alt={alt}
           fill
