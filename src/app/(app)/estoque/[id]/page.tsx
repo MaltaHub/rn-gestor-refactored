@@ -197,11 +197,12 @@ export default function VeiculoDetalhePage() {
     [formState?.modelo_id, modelosComNomeCompleto]
   );
 
+  // Inicializa o formulário quando o veículo carregou ou mudou de id.
+  // Evita laço de atualização quando o objeto "veiculo" muda de identidade a cada render.
   useEffect(() => {
-    if (veiculo) {
-      setFormState(buildFormStateFromVeiculo(veiculo));
-    }
-  }, [veiculo]);
+    if (!veiculo) return;
+    setFormState(buildFormStateFromVeiculo(veiculo));
+  }, [veiculo?.id]);
 
   if (!veiculoId) {
     return (

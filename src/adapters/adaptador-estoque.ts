@@ -1,4 +1,5 @@
 import { useVeiculos } from "@/hooks/use-estoque";
+import { useMemo } from "react";
 import { useModelos, useLocais } from "@/hooks/use-configuracoes";
 import type { VeiculoResumo } from "@/types/estoque";
 import type { Modelo, Local } from "@/types";
@@ -160,6 +161,22 @@ export function useVeiculosUI(id?: string) {
 
   const isLoading = isVeiculosLoading || isModelosLoading || isLocaisLoading;
 
+  const veiculoBase = useMemo(() => {
+    if (!data) return null;
+    return Array.isArray(data) ? (data[0] as VeiculoResumo | null) : (data as VeiculoResumo | null);
+  }, [data]);
+
+  const adaptado = useMemo(() => {
+    if (!id || !veiculoBase) return null;
+    return adaptVeiculo(veiculoBase, modelos, locais);
+  }, [id, veiculoBase, modelos, locais]);
+
+  const listaAdaptada = useMemo(() => {
+    if (!data || id) return [] as VeiculoUI[];
+    const listaBase = Array.isArray(data) ? data : [data];
+    return listaBase.map((item) => adaptVeiculo(item as VeiculoResumo, modelos, locais));
+  }, [data, id, modelos, locais]);
+
   if (!data) {
     return {
       data: id ? null : [],
@@ -169,17 +186,12 @@ export function useVeiculosUI(id?: string) {
   }
 
   if (id) {
-    const veiculoBase = Array.isArray(data) ? data[0] : data;
-    const adaptado = veiculoBase ? adaptVeiculo(veiculoBase as VeiculoResumo, modelos, locais) : null;
     return {
       data: adaptado,
       isLoading,
       error,
     } as const;
   }
-
-  const listaBase = Array.isArray(data) ? data : [data];
-  const listaAdaptada = listaBase.map((item) => adaptVeiculo(item as VeiculoResumo, modelos, locais));
 
   return {
     data: listaAdaptada,
