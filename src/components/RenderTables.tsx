@@ -194,9 +194,15 @@ export function RenderTables<T extends Record<string, unknown>>({
   };
 
   const handleCellEdit = (rowKey: string, columnKey: string, value: unknown) => {
+    setEditingCell({ rowKey, columnKey });
+    setFormData((prev) => ({ ...prev, [columnKey]: value }));
+  };
+
+  const handleCellEditSave = (rowKey: string, columnKey: string) => {
     const row = sortedData.find((r) => getRowKey(r) === rowKey);
     if (!row || !onUpdate) return;
 
+    const value = formData[columnKey];
     onUpdate(row, { [columnKey]: value } as Partial<T>);
     setEditingCell(null);
   };
@@ -345,20 +351,51 @@ export function RenderTables<T extends Record<string, unknown>>({
                             textAlign: column.align || 'left',
                           }}
                           onClick={(e) => {
-                            if (mode === 'edit' && column.editable) {
+                            if (mode === 'edit' && column.editable && !isEditing) {
                               e.stopPropagation();
                               setEditingCell({ rowKey: rKey, columnKey: column.key });
+                              setFormData((prev) => ({ ...prev, [column.key]: value }));
                             }
                           }}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key === 'Enter' &&
+                              mode === 'edit' &&
+                              isEditing
+                            ) {
+                              handleCellEditSave(rKey, column.key);
+                              e.preventDefault();
+                            }
+                          }}
+                          {...(isEditing && !column.editRender
+                            ? {
+                                contentEditable: true,
+                                onInput: (e) => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    [column.key]: (e.target as HTMLElement).innerText,
+                                  }));
+                                },
+                              }
+                            : {})}
+                          suppressContentEditableWarning={true}
                         >
-                          {isEditing && column.editRender ? (
-                            column.editRender(value, row, (newValue) =>
-                              handleCellEdit(rKey, column.key, newValue)
+                          { isEditing ? (
+                            column.editRender ? (
+                              column.editRender(
+                                formData[column.key] ?? value,
+                                row,
+                                (newValue) => handleCellEdit(rKey, column.key, newValue)
+                              )
+                            ) : (
+                              <span>{String(formData[column.key] ?? value ?? '—')}</span>
                             )
-                          ) : column.render ? (
-                            column.render(value, row, index)
                           ) : (
-                            <span>{String(value ?? '—')}</span>
+                            column.render ? (
+                              column.render(value, row, index)
+                            ) : (
+                              <span>{String(value ?? '—')}</span>
+                            )
                           )}
                         </td>
                       );

@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Edit2, X, Save } from "lucide-react";
+import { Edit2, X, Save, Plus } from "lucide-react";
 
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
 import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
+import { salvarConfiguracao } from "@/services/configuracoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { PhotoGallery } from "@/components/Gallery";
 import { LojaSelector } from "@/components/LojaSelector";
@@ -16,6 +17,8 @@ import { supabase } from "@/lib/supabase";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
+import { QuickAddModal } from "@/components/QuickAddModal";
+import { ModeloTableModal } from "@/components/ModeloTableModal";
 
 type EstadoVendaOption = VeiculoUI["estado_venda"];
 type EstadoVeiculoOption = NonNullable<VeiculoUI["estado_veiculo"]>;
@@ -144,6 +147,36 @@ export default function VeiculoDetalhePage() {
   const [formState, setFormState] = useState<VehicleFormState | null>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isModeloModalOpen, setIsModeloModalOpen] = useState(false);
+  const [isCaracteristicaModalOpen, setIsCaracteristicaModalOpen] = useState(false);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showFeedbackMessage = (type: "success" | "error", message: string) => {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+    }
+    setFeedback({ type, message });
+    feedbackTimeoutRef.current = setTimeout(() => {
+      setFeedback(null);
+      feedbackTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const showErrorMessage = (message: string) => {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+    setFeedback({ type: "error", message });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
 
@@ -261,11 +294,48 @@ export default function VeiculoDetalhePage() {
         : prev
     );
 
+  const handleSaveCaracteristica = async (data: Record<string, string>) => {
+    const nome = data.nome?.trim();
+    if (!nome) {
+      throw new Error("Informe um nome para a característica.");
+    }
+
+    await salvarConfiguracao("caracteristica", { nome });
+    await queryClient.refetchQueries({ queryKey: ["configuracoes", "caracteristica"] });
+
+    const updatedCaracteristicas =
+      queryClient.getQueryData<CaracteristicaFormValue[]>(["configuracoes", "caracteristica"]) || [];
+    const novaCaracteristica = updatedCaracteristicas.find(
+      (caracteristica) => caracteristica.nome.toLowerCase() === nome.toLowerCase(),
+    );
+
+    if (novaCaracteristica) {
+      setFormState((prev) =>
+        prev && !prev.caracteristicas.some((item) => item.id === novaCaracteristica.id)
+          ? {
+              ...prev,
+              caracteristicas: [...prev.caracteristicas, novaCaracteristica],
+            }
+          : prev,
+      );
+      showFeedbackMessage("success", "✅ Característica adicionada ao veículo.");
+      return { id: novaCaracteristica.id };
+    }
+
+    showFeedbackMessage("success", "Característica adicionada.");
+    return {};
+  };
+
+  const handleModeloCreated = (modeloId: string) => {
+    setFormState((prev) => (prev ? { ...prev, modelo_id: modeloId } : prev));
+    showFeedbackMessage("success", "✅ Modelo criado e selecionado!");
+  };
+
   const handleSubmit: React.FormEventHandler = async (e) => {
     e.preventDefault();
     const form = e.currentTarget as HTMLFormElement;
     if (!form.reportValidity() || !formState) {
-      setFeedback({ type: "error", message: "Preencha todos os campos obrigatórios." });
+      showErrorMessage("Preencha todos os campos obrigatórios.");
       return;
     }
 
@@ -302,13 +372,10 @@ export default function VeiculoDetalhePage() {
 
       await atualizarVeiculo(veiculo.id, payload);
       invalidateVeiculos(queryClient);
-      setFeedback({ type: "success", message: "✅ Dados atualizados com sucesso!" });
+      showFeedbackMessage("success", "✅ Dados atualizados com sucesso!");
       setIsEditMode(false);
     } catch (err) {
-      setFeedback({
-        type: "error",
-        message: err instanceof Error ? err.message : "Erro ao atualizar veículo.",
-      });
+      showErrorMessage(err instanceof Error ? err.message : "Erro ao atualizar veículo.");
     } finally {
       setIsSaving(false);
     }
@@ -408,6 +475,8 @@ export default function VeiculoDetalhePage() {
             caracteristicasDisponiveis={caracteristicasOrdenadas}
             estadoVendaOptions={estadoVendaOptionsOrdenadas}
             estadoVeiculoOptions={estadoVeiculoOptionsOrdenadas}
+            onOpenModeloModal={() => setIsModeloModalOpen(true)}
+            onOpenCaracteristicaModal={() => setIsCaracteristicaModalOpen(true)}
           />
         )}
 
@@ -425,6 +494,28 @@ export default function VeiculoDetalhePage() {
             />
           </div>
         </section>
+
+        <ModeloTableModal
+          isOpen={isModeloModalOpen}
+          onClose={() => setIsModeloModalOpen(false)}
+          onModeloCreated={handleModeloCreated}
+        />
+
+        <QuickAddModal
+          isOpen={isCaracteristicaModalOpen}
+          onClose={() => setIsCaracteristicaModalOpen(false)}
+          title="Adicionar Nova Característica"
+          fields={[
+            {
+              type: "text",
+              name: "nome",
+              label: "Nome",
+              required: true,
+              placeholder: "Ex: Ar condicionado",
+            },
+          ]}
+          onSave={handleSaveCaracteristica}
+        />
       </div>
     </div>
   );
@@ -488,7 +579,7 @@ function ViewMode({ veiculo }: { veiculo: VeiculoUI }) {
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Características</h2>
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {veiculo.caracteristicas.map((c) => (
-              <li key={c.id} className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+              <li key={c.id} className="flex items-center gap-2 text-sm text-[var(--foreground)]">
                 <span className="text-[var(--foreground)] hover:text-[var(--purple-magic)]">✓</span>
                 {c.nome}
               </li>
@@ -518,6 +609,8 @@ function EditMode({
   caracteristicasDisponiveis,
   estadoVendaOptions,
   estadoVeiculoOptions,
+  onOpenModeloModal,
+  onOpenCaracteristicaModal,
 }: {
   formState: VehicleFormState;
   handleChange: (field: keyof VehicleFormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
@@ -529,6 +622,8 @@ function EditMode({
   caracteristicasDisponiveis: CaracteristicaFormValue[];
   estadoVendaOptions: EstadoVendaOption[];
   estadoVeiculoOptions: EstadoVeiculoOption[];
+  onOpenModeloModal: () => void;
+  onOpenCaracteristicaModal: () => void;
 }) {
   return (
     <form id="form-editar-veiculo" onSubmit={handleSubmit} className="space-y-6">
@@ -668,20 +763,32 @@ function EditMode({
           </label>
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-[var(--text-primary)]">Modelo</span>
-            <select
-              value={formState.modelo_id}
-              onChange={handleChange("modelo_id")}
-              className={`${inputBaseClasses} h-11`}
-            >
-              <option value="">Selecione um modelo</option>
-              {modelosComNomeCompleto
-                .filter((modelo) => Boolean(modelo.id))
-                .map((modelo) => (
-                  <option key={modelo.id as string} value={modelo.id as string}>
-                    {modelo.nomeCompleto}
-                  </option>
-                ))}
-            </select>
+            <div className="flex flex-col gap-2">
+              <select
+                value={formState.modelo_id}
+                onChange={handleChange("modelo_id")}
+                className={`${inputBaseClasses} h-11`}
+              >
+                <option value="">Selecione um modelo</option>
+                {modelosComNomeCompleto
+                  .filter((modelo) => Boolean(modelo.id))
+                  .map((modelo) => (
+                    <option key={modelo.id as string} value={modelo.id as string}>
+                      {modelo.nomeCompleto}
+                    </option>
+                  ))}
+              </select>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onOpenModeloModal}
+                className="px-2 text-[var(--foreground)] hover:bg-white/10"
+                aria-label="Adicionar novo modelo"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
             <span className="text-xs text-[var(--text-secondary)]">
               {formState.modelo_id
                 ? modeloSelecionado?.nomeCompleto ?? "Modelo não encontrado nas configurações."
@@ -708,8 +815,20 @@ function EditMode({
 
       {/* Características */}
       <section className={sectionClasses}>
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Características</h2>
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Características</h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onOpenCaracteristicaModal}
+            leftIcon={<Plus className="w-4 h-4" />}
+            aria-label="Adicionar nova característica"
+          >
+            Adicionar
+          </Button>
+        </div>
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {caracteristicasDisponiveis.map((caracteristica) => (
             <li key={caracteristica.id}>
               <label className="flex items-center gap-3 text-sm cursor-pointer">
