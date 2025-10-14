@@ -12,6 +12,7 @@ import { Card } from "./ui/card";
 import { useDebounce } from "@/hooks/use-debounce";
 import { supabase } from "@/lib/supabase";
 import { STORAGE_BUCKETS } from "@/config";
+import { isEstadoVendido } from "@/utils/status";
 
 type ViewMode = "cards-photo" | "cards-info" | "table";
 type Domain = "vitrine" | "estoque";
@@ -168,6 +169,7 @@ const GridCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
   <ul className="grid max-w-screen-xl grid-cols-1 gap-6 px-4 mx-auto sm:grid-cols-2 lg:grid-cols-3 sm:px-6">
     {vehicles.map((item) => {
       const data = getVehicleData(item, domain);
+      const isSold = isEstadoVendido(data.estado);
       return (
         <li key={data.id} className="flex flex-col h-full w-full">
           <Card variant="default" padding="none" className="flex h-full w-full flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
@@ -186,7 +188,9 @@ const GridCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
 
               <div className="flex flex-1 flex-col gap-4 p-6 min-h-0 break-words">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                  <Badge variant="info" className="font-semibold shrink-0">{data.estado}</Badge>
+                  <Badge variant={isSold ? "danger" : "info"} className="font-semibold shrink-0">
+                    {data.estado}
+                  </Badge>
                   <span className="text-xl font-bold text-purple-600 dark:text-purple-400 break-words text-right sm:text-left min-w-0">
                     {getDisplayPrice(item)}
                   </span>
@@ -247,6 +251,7 @@ const InfoCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
   <ul className="flex flex-col gap-4">
     {vehicles.map((item) => {
       const data = getVehicleData(item, domain);
+      const isSold = isEstadoVendido(data.estado);
       return (
         <li key={data.id}>
           <Card variant="default" className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between hover:shadow-lg transition-shadow duration-300">
@@ -256,7 +261,9 @@ const InfoCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
                   <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {data.display}
                   </h2>
-                  <Badge variant="info" className="font-semibold">{data.estado}</Badge>
+                  <Badge variant={isSold ? "danger" : "info"} className="font-semibold">
+                    {data.estado}
+                  </Badge>
                 </div>
                 <div className="flex flex-wrap gap-6 text-sm text-gray-600 dark:text-gray-400">
                   <span>
@@ -328,6 +335,7 @@ const TableView = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-400">
             {vehicles.map((item) => {
               const data = getVehicleData(item, domain);
+              const isSold = isEstadoVendido(data.estado);
               return (
                 <tr
                   key={data.id}
@@ -353,7 +361,11 @@ const TableView = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
-                    <span className="block overflow-hidden text-ellipsis text-gray-700 dark:text-gray-300">
+                    <span
+                      className={`block overflow-hidden text-ellipsis ${
+                        isSold ? 'text-[var(--danger)] font-semibold' : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
                       {data.estado}
                     </span>
                   </td>
@@ -444,7 +456,7 @@ export function RenderCards({
       case "cards-info":
         return <InfoCards vehicles={vehicles} domain={domain} />;
       default:
-        return <InfoCards vehicles={vehicles} domain={domain} />;
+        return <GridCards vehicles={vehicles} domain={domain} />;
     }
   };
 

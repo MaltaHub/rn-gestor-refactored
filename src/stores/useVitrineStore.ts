@@ -51,7 +51,7 @@ interface VitrineState {
 
 const DEFAULT_FILTERS: VitrineFilters = {
   searchTerm: '',
-  estadoFiltro: '',
+  estadoFiltro: 'disponivel',
   caracteristicaFiltro: '',
   precoMin: '',
   precoMax: '',
@@ -60,7 +60,7 @@ const DEFAULT_FILTERS: VitrineFilters = {
 };
 
 const DEFAULT_VIEW_CONFIG: VitrineViewConfig = {
-  viewMode: 'cards-photo',
+  viewMode: 'cards-info',
   ordenacao: 'recentes',
   scrollPosition: 0,
 };

@@ -53,19 +53,19 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
         />
         <div
           ref={ref}
-          className={`relative w-full ${sizes[size]} bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col ${className}`}
+          className={`relative w-full ${sizes[size]} rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col ${className}`}
           role="dialog"
           aria-modal="true"
           {...props}
         >
           {title && (
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] px-6 py-4">
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">{title}</h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="rounded-full p-2 text-[var(--foreground)] hover:bg-white/10"
                 aria-label="Fechar"
               >
                 <X className="w-5 h-5" />
@@ -95,7 +95,7 @@ ModalContent.displayName = 'ModalContent';
 
 export const ModalFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', children, ...props }, ref) => (
-    <div ref={ref} className={`px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3 ${className}`} {...props}>
+    <div ref={ref} className={`px-6 py-4 border-t border-[var(--border-default)] flex items-center justify-end gap-3 ${className}`} {...props}>
       {children}
     </div>
   )

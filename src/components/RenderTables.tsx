@@ -254,16 +254,16 @@ export function RenderTables<T extends Record<string, unknown>>({
 
       <div
         ref={tableRef}
-        className="overflow-auto border border-[var(--border-default)] rounded-lg bg-white"
+        className="overflow-auto border border-[var(--purple-dark)]/40 rounded-lg bg-[var(--surface-dark)] text-[var(--foreground)]"
         style={{ maxHeight: '70vh' }}
       >
         <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-white border-b border-[var(--border-default)]">
+            <thead className="sticky top-0 z-10 bg-[var(--surface-dark)] border-b border-[var(--purple-dark)]/40">
               <tr>
                 {columns.map((column) => (
                   <th
                     key={column.key}
-                    className="group relative px-4 py-3 text-left text-sm font-semibold text-[var(--text-primary)] select-none"
+                    className="group relative px-4 py-3 text-left text-sm font-semibold text-[var(--foreground)] select-none"
                     style={{
                       width: getColumnWidth(column),
                       minWidth: column.minWidth || 80,
@@ -300,14 +300,14 @@ export function RenderTables<T extends Record<string, unknown>>({
                           document.addEventListener('mouseup', handleMouseUp);
                         }}
                       >
-                        <GripVertical className="w-3 h-3 text-[var(--text-secondary)]" />
+                        <GripVertical className="w-3 h-3 text-white/50" />
                       </div>
                     )}
                   </th>
                 ))}
 
                 {mode === 'edit' && (onRowEdit || onRowDelete) && (
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-[var(--text-primary)] w-32">
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-[var(--foreground)] w-32">
                     Ações
                   </th>
                 )}
@@ -326,7 +326,7 @@ export function RenderTables<T extends Record<string, unknown>>({
                 return (
                   <tr
                     key={rKey}
-                    className="border-b border-[var(--border-default)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    className="border-b border-[var(--purple-dark)]/40 hover:bg-white/10 transition-colors cursor-pointer"
                     onClick={() => onRowClick?.(row, index)}
                   >
                     {columns.map((column) => {
@@ -339,7 +339,7 @@ export function RenderTables<T extends Record<string, unknown>>({
                       return (
                         <td
                           key={column.key}
-                          className="px-4 py-3 text-sm text-[var(--text-primary)]"
+                          className="px-4 py-3 text-sm text-[var(--foreground)]"
                           style={{
                             width: getColumnWidth(column),
                             textAlign: column.align || 'left',

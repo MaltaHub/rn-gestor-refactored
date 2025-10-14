@@ -12,6 +12,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     focus?: string;
     bg?: string;
     text?: string;
+    icon?: string;
   };
 }
 
@@ -74,6 +75,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     };
 
     const customFocusClass = customColors?.focus ? '[&:focus]:ring-[var(--custom-focus-ring)] [&:focus]:border-[var(--custom-focus-ring)]' : '';
+    const placeholderClass = customColors ? '' : 'placeholder:text-[var(--foreground)]/40';
+
+    const getIconStyle = (position: 'left' | 'right'): CSSProperties => ({
+      ...(position === 'left' ? { left: SPACING.md } : { right: SPACING.md }),
+      ...(customColors?.icon || customColors?.text
+        ? {
+            color: customColors.icon ?? customColors.text,
+            opacity: customColors.icon ? 1 : 0.8,
+          }
+        : {}),
+    });
 
     return (
       <div className="w-full">
@@ -93,7 +105,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {leftIcon && (
             <div 
               className="absolute top-1/2 -translate-y-1/2 text-[var(--foreground)]/40"
-              style={{ left: SPACING.md }}
+              style={getIconStyle('left')}
             >
               {leftIcon}
             </div>
@@ -112,7 +124,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                   : 'border-[var(--gray-light)] dark:border-[var(--purple-dark)]/30 focus:ring-[var(--purple-magic)] focus:border-[var(--purple-magic)]'
               }
               ${!customColors && 'bg-[var(--white-pure)] dark:bg-[var(--surface-dark)] text-[var(--foreground)]'}
-              placeholder:text-[var(--foreground)]/40
+              ${placeholderClass}
               focus:outline-none focus:ring-2
               disabled:opacity-50 disabled:cursor-not-allowed
               ${className}
@@ -123,7 +135,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {rightIcon && (
             <div 
               className="absolute top-1/2 -translate-y-1/2 text-[var(--foreground)]/40"
-              style={{ right: SPACING.md }}
+              style={getIconStyle('right')}
             >
               {rightIcon}
             </div>

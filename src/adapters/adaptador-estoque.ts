@@ -44,7 +44,6 @@ const buildVeiculoDisplay = (veiculo: VeiculoResumo | null) => {
   const extraParts = [
     veiculo.cor,
     veiculo.ano_modelo,
-    veiculo.ano_fabricacao,
     veiculo.hodometro != null ? `${veiculo.hodometro}km` : null,
   ];
   const parts = [modeloNomeCompleto, ...extraParts]

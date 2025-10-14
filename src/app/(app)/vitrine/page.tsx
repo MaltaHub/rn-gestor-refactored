@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { isEstadoVendido } from "@/utils/status";
 type ViewMode = "cards-photo" | "cards-info" | "table";
 type Ordenacao = "recentes" | "preco-desc" | "preco-asc" | "modelo";
 
@@ -76,7 +77,7 @@ export default function VitrinePage() {
   const temFiltrosAtivos = useMemo(() => {
     return (
       filters.searchTerm.trim() !== "" ||
-      filters.estadoFiltro !== "" ||
+      filters.estadoFiltro !== "disponivel" ||
       filters.caracteristicaFiltro !== "" ||
       filters.precoMin.trim() !== "" ||
       filters.precoMax.trim() !== ""
@@ -275,6 +276,14 @@ export default function VitrinePage() {
                   onChange={(e) => setFilters({ searchTerm: e.target.value })}
                   leftIcon={<Search className="h-4 w-4" />}
                   inputSize="md"
+                  customColors={{
+                    bg: 'var(--surface-dark)',
+                    text: '#FFFFFF',
+                    border: 'rgba(255,255,255,0.25)',
+                    focus: 'rgba(255,255,255,0.85)',
+                    icon: 'rgba(255,255,255,0.7)',
+                  }}
+                  className="placeholder:text-white/60"
                 />
               </div>
 
@@ -493,7 +502,15 @@ export default function VitrinePage() {
                         </div>
                         <div>
                           <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Status</dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.estadoVendaLabel}</dd>
+                          <dd
+                            className={
+                              isEstadoVendido(veiculo.estadoVendaLabel)
+                                ? 'text-[var(--danger)] font-semibold'
+                                : 'text-gray-900 dark:text-gray-100'
+                            }
+                          >
+                            {veiculo.estadoVendaLabel}
+                          </dd>
                         </div>
                         <div>
                           <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Preço base</dt>

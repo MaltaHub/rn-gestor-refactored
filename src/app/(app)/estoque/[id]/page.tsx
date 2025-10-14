@@ -120,6 +120,13 @@ function formatText(value?: string | null) {
   return value;
 }
 
+const sectionClasses =
+  "rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg";
+const inputBaseClasses =
+  "rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)] focus:outline-none transition-all duration-150";
+const checkboxClasses =
+  "rounded border-[var(--border-default)] bg-[var(--surface-dark)] text-[var(--purple-magic)] focus:ring-[var(--purple-magic)] transition-all duration-150";
+
 export default function VeiculoDetalhePage() {
   const params = useParams<{ id: string }>();
   const veiculoId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? "";
@@ -139,7 +146,6 @@ export default function VeiculoDetalhePage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const veiculo = isVeiculoUI(veiculoData) ? veiculoData : null;
-  const veiculoMemo = useMemo(() => veiculo, [veiculo?.id, veiculo?.editado_em]);
 
   const estadoVendaOptionsOrdenadas = useMemo(
     () => sortEnumOptions(ESTADO_VENDA_OPTIONS),
@@ -192,18 +198,18 @@ export default function VeiculoDetalhePage() {
   );
 
   useEffect(() => {
-    if (veiculoMemo) {
-      setFormState(buildFormStateFromVeiculo(veiculoMemo));
+    if (veiculo) {
+      setFormState(buildFormStateFromVeiculo(veiculo));
     }
-  }, [veiculoMemo]);
+  }, [veiculo]);
 
   if (!veiculoId) {
     return (
-      <div className="bg-white px-6 py-10 text-zinc-900">
+      <div className="bg-[var(--surface-dark)] px-6 py-10 text-[var(--foreground)]">
         <main className="mx-auto flex w-full max-w-3xl flex-col items-start gap-4">
-          <h1 className="text-2xl font-semibold text-zinc-800">Veículo inválido</h1>
-          <p className="text-sm text-zinc-500">Não foi possível identificar o veículo solicitado.</p>
-          <Link className="text-sm font-medium text-blue-600" href="/estoque">
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Veículo inválido</h1>
+          <p className="text-sm text-[var(--text-secondary)]">Não foi possível identificar o veículo solicitado.</p>
+          <Link className="text-sm font-medium text-[var(--foreground)] hover:text-[var(--purple-magic)]" href="/estoque">
             Voltar ao estoque
           </Link>
         </main>
@@ -213,9 +219,9 @@ export default function VeiculoDetalhePage() {
 
   if (isLoading || !formState) {
     return (
-      <div className="bg-white px-6 py-10 text-zinc-900">
+      <div className="bg-[var(--surface-dark)] px-6 py-10 text-[var(--foreground)]">
         <main className="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-3 text-center">
-          <p className="text-base font-medium text-zinc-600">Carregando informações do veículo...</p>
+          <p className="text-base font-medium text-[var(--text-secondary)]">Carregando informações do veículo...</p>
         </main>
       </div>
     );
@@ -223,13 +229,13 @@ export default function VeiculoDetalhePage() {
 
   if (!veiculo) {
     return (
-      <div className="bg-white px-6 py-10 text-zinc-900">
+      <div className="bg-[var(--surface-dark)] px-6 py-10 text-[var(--foreground)]">
         <main className="mx-auto flex w-full max-w-3xl flex-col items-start gap-4">
-          <h1 className="text-2xl font-semibold text-zinc-800">Veículo não encontrado</h1>
-          <p className="text-sm text-zinc-500">
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Veículo não encontrado</h1>
+          <p className="text-sm text-[var(--text-secondary)]">
             O veículo solicitado não está disponível ou foi removido do estoque.
           </p>
-          <Link className="text-sm font-medium text-blue-600" href="/estoque">
+          <Link className="text-sm font-medium text-[var(--foreground)] hover:text-[var(--purple-magic)]" href="/estoque">
             Voltar ao estoque
           </Link>
         </main>
@@ -319,18 +325,18 @@ export default function VeiculoDetalhePage() {
   const modeloNome = veiculo.modelo?.nome ?? "Modelo não informado";
 
   return (
-    <div className="relative bg-zinc-50 min-h-screen pb-24">
+    <div className="relative min-h-screen bg-[var(--surface-dark)] pb-24 text-[var(--foreground)]">
       <div className="mx-auto w-full max-w-5xl px-6 py-10 space-y-8">
         {/* Header */}
-        <header className="flex flex-col gap-4 border-b border-zinc-200 pb-6 md:flex-row md:items-start md:justify-between">
+        <header className="flex flex-col gap-4 border-b border-[var(--border-default)] pb-6 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium uppercase tracking-wide text-blue-600">
+            <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-[var(--foreground)]">
               {formatEnum(veiculo.estado_venda)}
             </span>
-            <h1 className="text-3xl font-bold text-zinc-900">
+            <h1 className="text-3xl font-bold text-[var(--text-primary)]">
               {marca} {modeloNome}
             </h1>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-[var(--text-secondary)]">
               Placa {veiculo.placa} • Chassi {veiculo.chassi || "—"}
             </p>
           </div>
@@ -378,9 +384,9 @@ export default function VeiculoDetalhePage() {
 
         {feedback && (
           <div
-            className={`rounded-md px-4 py-3 text-sm shadow-sm ${feedback.type === "success"
-                ? "bg-green-50 text-green-700 border border-green-200"
-                : "bg-red-50 text-red-700 border border-red-200"
+            className={`rounded-md px-4 py-3 text-sm shadow-sm border ${feedback.type === "success"
+                ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                : "border-red-500/40 bg-red-500/10 text-red-200"
               }`}
           >
             {feedback.message}
@@ -405,9 +411,9 @@ export default function VeiculoDetalhePage() {
         )}
 
         {/* Loja e fotos */}
-        <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
-            <span className="text-blue-600">•</span> Loja e fotos
+        <section className={sectionClasses}>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+            <span className="text-[var(--foreground)] hover:text-[var(--purple-magic)]">•</span> Loja e fotos
           </h2>
           <div className="mt-4 space-y-6">
             <LojaSelector />
@@ -446,43 +452,43 @@ function ViewMode({ veiculo }: { veiculo: VeiculoUI }) {
 
   return (
     <>
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Informações gerais</h2>
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Informações gerais</h2>
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {informacoesGerais.map((item) => (
             <div key={item.label}>
-              <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{item.label}</dt>
-              <dd className="mt-1 text-sm text-zinc-900">{item.value}</dd>
+              <dt className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">{item.label}</dt>
+              <dd className="mt-1 text-sm text-[var(--text-primary)]">{item.value}</dd>
             </div>
           ))}
         </dl>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Situação</h2>
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Situação</h2>
         <dl className="grid gap-4 sm:grid-cols-2">
           {resumoSituacao.map((item) => (
             <div key={item.label}>
-              <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{item.label}</dt>
-              <dd className="mt-1 text-sm text-zinc-900">{item.value}</dd>
+              <dt className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">{item.label}</dt>
+              <dd className="mt-1 text-sm text-[var(--text-primary)]">{item.value}</dd>
             </div>
           ))}
         </dl>
         {veiculo.preco_venal && (
-          <div className="mt-4 pt-4 border-t border-zinc-100">
-            <dt className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Preço vitrine</dt>
-            <dd className="mt-1 text-2xl font-bold text-green-600">{formatCurrency(veiculo.preco_venal)}</dd>
+          <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
+            <dt className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">Preço vitrine</dt>
+            <dd className="mt-1 text-2xl font-bold text-emerald-300">{formatCurrency(veiculo.preco_venal)}</dd>
           </div>
         )}
       </section>
 
       {veiculo.caracteristicas && veiculo.caracteristicas.length > 0 && (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-medium mb-4">Características</h2>
+        <section className={sectionClasses}>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Características</h2>
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {veiculo.caracteristicas.map((c) => (
-              <li key={c.id} className="flex items-center gap-2 text-sm text-zinc-700">
-                <span className="text-blue-600">✓</span>
+              <li key={c.id} className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+                <span className="text-[var(--foreground)] hover:text-[var(--purple-magic)]">✓</span>
                 {c.nome}
               </li>
             ))}
@@ -491,9 +497,9 @@ function ViewMode({ veiculo }: { veiculo: VeiculoUI }) {
       )}
 
       {veiculo.observacao && (
-        <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-medium mb-4">Observações</h2>
-          <p className="text-sm text-zinc-700 whitespace-pre-wrap">{veiculo.observacao}</p>
+        <section className={sectionClasses}>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Observações</h2>
+          <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{veiculo.observacao}</p>
         </section>
       )}
     </>
@@ -526,90 +532,90 @@ function EditMode({
   return (
     <form id="form-editar-veiculo" onSubmit={handleSubmit} className="space-y-6">
       {/* Dados principais */}
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Dados principais</h2>
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Dados principais</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Placa</span>
+            <span className="font-medium text-[var(--text-primary)]">Placa</span>
             <input
               value={formState.placa.toLocaleUpperCase()}
               onChange={handleChange("placa")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
               required
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Chassi</span>
+            <span className="font-medium text-[var(--text-primary)]">Chassi</span>
             <input
               value={formState.chassi}
               onChange={handleChange("chassi")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Cor</span>
+            <span className="font-medium text-[var(--text-primary)]">Cor</span>
             <input
               value={formState.cor}
               onChange={handleChange("cor")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
             />
           </label>
         </div>
         <label className="mt-4 flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-700">Observações</span>
+          <span className="font-medium text-[var(--text-primary)]">Observações</span>
           <textarea
             value={formState.observacao}
             onChange={handleChange("observacao")}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={`${inputBaseClasses} min-h-[150px] resize-y`}
             rows={4}
           />
         </label>
       </section>
 
       {/* Especificações */}
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Especificações</h2>
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Especificações</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Ano de fabricação</span>
+            <span className="font-medium text-[var(--text-primary)]">Ano de fabricação</span>
             <input
               type="number"
               value={formState.ano_fabricacao}
               onChange={handleChange("ano_fabricacao")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
               min={1900}
               max={9999}
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Ano do modelo</span>
+            <span className="font-medium text-[var(--text-primary)]">Ano do modelo</span>
             <input
               type="number"
               value={formState.ano_modelo}
               onChange={handleChange("ano_modelo")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
               min={1900}
               max={9999}
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Hodômetro</span>
+            <span className="font-medium text-[var(--text-primary)]">Hodômetro</span>
             <input
               type="number"
               value={formState.hodometro}
               onChange={handleChange("hodometro")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
               min={0}
               required
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Preço venal</span>
+            <span className="font-medium text-[var(--text-primary)]">Preço venal</span>
             <input
               type="number"
               value={formState.preco_venal}
               onChange={handleChange("preco_venal")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
               min={0}
               step="0.01"
             />
@@ -618,15 +624,15 @@ function EditMode({
       </section>
 
       {/* Status e localização */}
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Status e localização</h2>
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Status e localização</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Estado de venda</span>
+            <span className="font-medium text-[var(--text-primary)]">Estado de venda</span>
             <select
               value={formState.estado_venda}
               onChange={handleChange("estado_venda")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
               required
             >
               {estadoVendaOptions.map((option) => (
@@ -637,11 +643,11 @@ function EditMode({
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Estado do veículo</span>
+            <span className="font-medium text-[var(--text-primary)]">Estado do veículo</span>
             <select
               value={formState.estado_veiculo}
               onChange={handleChange("estado_veiculo")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
             >
               <option value="">Sem definição</option>
               {estadoVeiculoOptions.map((option) => (
@@ -652,19 +658,19 @@ function EditMode({
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Estágio da documentação</span>
+            <span className="font-medium text-[var(--text-primary)]">Estágio da documentação</span>
             <input
               value={formState.estagio_documentacao}
               onChange={handleChange("estagio_documentacao")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Modelo</span>
+            <span className="font-medium text-[var(--text-primary)]">Modelo</span>
             <select
               value={formState.modelo_id}
               onChange={handleChange("modelo_id")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
             >
               <option value="">Selecione um modelo</option>
               {modelosComNomeCompleto
@@ -675,18 +681,18 @@ function EditMode({
                   </option>
                 ))}
             </select>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-[var(--text-secondary)]">
               {formState.modelo_id
                 ? modeloSelecionado?.nomeCompleto ?? "Modelo não encontrado nas configurações."
                 : "Selecione um modelo para ver o nome completo."}
             </span>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700">Local</span>
+            <span className="font-medium text-[var(--text-primary)]">Local</span>
             <select
               value={formState.local_id}
               onChange={handleChange("local_id")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`${inputBaseClasses} h-11`}
             >
               <option value="">Selecione um local</option>
               {localOptions.map((option) => (
@@ -700,8 +706,8 @@ function EditMode({
       </section>
 
       {/* Características */}
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Características</h2>
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Características</h2>
         <ul className="grid gap-2 sm:grid-cols-2">
           {caracteristicasDisponiveis.map((caracteristica) => (
             <li key={caracteristica.id}>
@@ -715,7 +721,7 @@ function EditMode({
                     id: caracteristica.id,
                     nome: caracteristica.nome,
                   })}
-                  className="rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
+                  className={checkboxClasses}
                 />
                 {caracteristica.nome}
               </label>

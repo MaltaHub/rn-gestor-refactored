@@ -22,6 +22,9 @@ export function QuickAddModal({ isOpen, onClose, title, fields, onSave }: QuickA
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const inputClasses =
+    "rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)] focus:outline-none transition-all duration-150";
+
   const handleChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -55,7 +58,7 @@ export function QuickAddModal({ isOpen, onClose, title, fields, onSave }: QuickA
       <form onSubmit={handleSubmit}>
         <ModalContent>
           {error && (
-            <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {error}
             </div>
           )}
@@ -75,7 +78,7 @@ export function QuickAddModal({ isOpen, onClose, title, fields, onSave }: QuickA
                     onChange={(e) => handleChange(field.name, e.target.value)}
                     required={field.required}
                     placeholder={field.placeholder}
-                    className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                    className={inputClasses}
                     disabled={isLoading}
                   />
                 ) : (
@@ -83,7 +86,7 @@ export function QuickAddModal({ isOpen, onClose, title, fields, onSave }: QuickA
                     value={formData[field.name] || ''}
                     onChange={(e) => handleChange(field.name, e.target.value)}
                     required={field.required}
-                    className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--purple-magic)] focus:outline-none focus:ring-1 focus:ring-[var(--purple-magic)]"
+                    className={inputClasses}
                     disabled={isLoading}
                   >
                     <option value="">Selecione...</option>

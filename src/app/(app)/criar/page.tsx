@@ -101,6 +101,17 @@ export default function CriarVeiculoPage() {
   const [isCaracteristicaModalOpen, setIsCaracteristicaModalOpen] = useState(false);
   const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
 
+  const sectionClasses =
+    "rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg hover:border-[var(--border-strong)]";
+  const sectionTitleClasses =
+    "flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)] mb-4";
+  const labelCaptionClasses = "font-medium text-[var(--text-secondary)] text-xs";
+  const helperCaptionClasses = "text-[var(--text-muted)] font-normal ml-1";
+  const inputBaseClasses =
+    "rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)] focus:outline-none transition-all duration-150";
+  const checkboxClasses =
+    "rounded border-[var(--border-default)] bg-[var(--surface-dark)] text-[var(--purple-magic)] focus:ring-[var(--purple-magic)] transition-all duration-150";
+
   const estadoVendaOptionsOrdenadas = useMemo(
     () => sortEnumOptions(ESTADO_VENDA_OPTIONS),
     []
@@ -261,19 +272,21 @@ export default function CriarVeiculoPage() {
   };
 
   const getPlacaBorderClass = () => {
-    if (placaValida === null) return "border-gray-200";
-    return placaValida ? "border-green-500" : "border-red-500";
+    if (placaValida === null) return "";
+    return placaValida
+      ? "border-emerald-400 focus:border-emerald-400 focus:ring-emerald-400/40"
+      : "border-red-500 focus:border-red-500 focus:ring-red-500/40";
   };
 
   return (
-    <div className="min-h-screen bg-white px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+    <div className="min-h-screen bg-[var(--surface-dark)] px-4 py-6 text-[var(--foreground)] sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <div className="mx-auto w-full max-w-4xl">
         <header className="mb-8">
           <Button
             variant="ghost"
             leftIcon={<ArrowLeft className="w-4 h-4" />}
             onClick={() => router.push('/estoque')}
-            className="mb-4"
+            className="mb-4 text-[var(--foreground)] hover:bg-white/10"
           >
             Voltar para estoque
           </Button>
@@ -286,50 +299,51 @@ export default function CriarVeiculoPage() {
         <form onSubmit={handleSubmit} className="space-y-8 pb-24">
           {feedback && (
             <div
-              className={`rounded-md px-4 py-3 text-sm shadow-sm ${feedback.type === "success"
-                ? "bg-green-50 text-green-700 border border-green-200"
-                : "bg-red-50 text-red-700 border border-red-200"
+              className={`rounded-md px-4 py-3 text-sm shadow-sm border ${
+                feedback.type === "success"
+                  ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                  : "border-red-500/40 bg-red-500/10 text-red-200"
                 }`}
             >
               {feedback.message}
             </div>
           )}
 
-          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)] mb-4">
+          <section className={sectionClasses}>
+            <h3 className={sectionTitleClasses}>
               <Car className="w-5 h-5" />
               Dados principais
             </h3>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">
+                <span className={labelCaptionClasses}>
                   Placa <span className="text-red-500">*</span>
-                  <span className="text-gray-400 font-normal ml-1">(obrigatório)</span>
+                  <span className={helperCaptionClasses}>(obrigatório)</span>
                 </span>
                 <input
                   value={formState.placa}
                   onChange={handlePlacaChange}
-                  className={`h-11 rounded-md border ${getPlacaBorderClass()} px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150`}
+                  className={`${inputBaseClasses} h-11 ${getPlacaBorderClass()}`}
                   placeholder="ABC-1234 ou ABC1D23"
                   required
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Chassi</span>
+                <span className={labelCaptionClasses}>Chassi</span>
                 <input
                   value={formState.chassi}
                   onChange={handleChange("chassi")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   placeholder="9BWZZZ377VT004251"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Cor</span>
+                <span className={labelCaptionClasses}>Cor</span>
                 <input
                   value={formState.cor}
                   onChange={handleChange("cor")}
                   list="cores-comuns"
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   placeholder="Vermelho, Prata, Preto..."
                 />
                 <datalist id="cores-comuns">
@@ -341,19 +355,19 @@ export default function CriarVeiculoPage() {
             </div>
           </section>
 
-          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)] mb-4">
+          <section className={sectionClasses}>
+            <h3 className={sectionTitleClasses}>
               <Settings className="w-5 h-5" />
               Especificações
             </h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Ano fabricação</span>
+                <span className={labelCaptionClasses}>Ano fabricação</span>
                 <input
                   type="number"
                   value={formState.ano_fabricacao}
                   onChange={handleChange("ano_fabricacao")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   min={1900}
                   max={2099}
                   step={1}
@@ -361,12 +375,12 @@ export default function CriarVeiculoPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Ano modelo</span>
+                <span className={labelCaptionClasses}>Ano modelo</span>
                 <input
                   type="number"
                   value={formState.ano_modelo}
                   onChange={handleChange("ano_modelo")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   min={1900}
                   max={2099}
                   step={1}
@@ -374,15 +388,15 @@ export default function CriarVeiculoPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">
+                <span className={labelCaptionClasses}>
                   Hodômetro <span className="text-red-500">*</span>
-                  <span className="text-gray-400 font-normal ml-1">(obrigatório)</span>
+                  <span className={helperCaptionClasses}>(obrigatório)</span>
                 </span>
                 <input
                   type="number"
                   value={formState.hodometro}
                   onChange={handleChange("hodometro")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   min={0}
                   max={999999}
                   step={1000}
@@ -391,12 +405,12 @@ export default function CriarVeiculoPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Preço venal</span>
+                <span className={labelCaptionClasses}>Preço venal</span>
                 <input
                   type="number"
                   value={formState.preco_venal}
                   onChange={handleChange("preco_venal")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   min={0}
                   step={100}
                   placeholder="45000"
@@ -405,21 +419,21 @@ export default function CriarVeiculoPage() {
             </div>
           </section>
 
-          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)] mb-4">
+          <section className={sectionClasses}>
+            <h3 className={sectionTitleClasses}>
               <MapPin className="w-5 h-5" />
               Status e localização
             </h3>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">
+                <span className={labelCaptionClasses}>
                   Estado de venda <span className="text-red-500">*</span>
-                  <span className="text-gray-400 font-normal ml-1">(obrigatório)</span>
+                  <span className={helperCaptionClasses}>(obrigatório)</span>
                 </span>
                 <select
                   value={formState.estado_venda}
                   onChange={handleChange("estado_venda")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   required
                 >
                   {estadoVendaOptionsOrdenadas.map((option) => (
@@ -430,11 +444,11 @@ export default function CriarVeiculoPage() {
                 </select>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Estado do veículo</span>
+                <span className={labelCaptionClasses}>Estado do veículo</span>
                 <select
                   value={formState.estado_veiculo}
                   onChange={handleChange("estado_veiculo")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                 >
                   <option value="">Sem definição</option>
                   {estadoVeiculoOptionsOrdenadas.map((option) => (
@@ -445,21 +459,21 @@ export default function CriarVeiculoPage() {
                 </select>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Documentação</span>
+                <span className={labelCaptionClasses}>Documentação</span>
                 <input
                   value={formState.estagio_documentacao}
                   onChange={handleChange("estagio_documentacao")}
-                  className="h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                  className={`${inputBaseClasses} h-11`}
                   placeholder="Em dia, Pendente..."
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Modelo</span>
+                <span className={labelCaptionClasses}>Modelo</span>
                 <div className="flex gap-2">
                   <select
                     value={formState.modelo_id}
                     onChange={handleChange("modelo_id")}
-                    className="flex-1 h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                    className={`${inputBaseClasses} h-11 flex-1`}
                   >
                     <option value="">Selecione um modelo</option>
                     {modelosComNomeCompleto
@@ -475,7 +489,7 @@ export default function CriarVeiculoPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsModeloModalOpen(true)}
-                    className="px-2"
+                    className="px-2 text-[var(--foreground)] hover:bg-white/10"
                     aria-label="Adicionar novo modelo"
                   >
                     <Plus className="w-4 h-4" />
@@ -483,12 +497,12 @@ export default function CriarVeiculoPage() {
                 </div>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-medium text-[var(--text-secondary)] text-xs">Local</span>
+                <span className={labelCaptionClasses}>Local</span>
                 <div className="flex gap-2">
                   <select
                     value={formState.local_id}
                     onChange={handleChange("local_id")}
-                    className="flex-1 h-11 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                    className={`${inputBaseClasses} h-11 flex-1`}
                   >
                     <option value="">Selecione um local</option>
                     {localOptions.map((option) => (
@@ -502,7 +516,7 @@ export default function CriarVeiculoPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsLocalModalOpen(true)}
-                    className="px-2"
+                    className="px-2 text-[var(--foreground)] hover:bg-white/10"
                     aria-label="Adicionar novo local"
                   >
                     <Plus className="w-4 h-4" />
@@ -512,7 +526,7 @@ export default function CriarVeiculoPage() {
             </div>
           </section>
 
-          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+          <section className={sectionClasses}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
                 <List className="w-5 h-5" />
@@ -542,7 +556,7 @@ export default function CriarVeiculoPage() {
                         id: caracteristica.id,
                         nome: caracteristica.nome,
                       })}
-                      className="rounded border-gray-300 text-[var(--purple-magic)] focus:ring-[var(--purple-magic)] transition-all duration-150"
+                      className={checkboxClasses}
                     />
                     <span className="text-[var(--text-primary)]">{caracteristica.nome}</span>
                   </label>
@@ -551,7 +565,7 @@ export default function CriarVeiculoPage() {
             </ul>
           </section>
 
-          <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+          <section className={sectionClasses}>
             <label className="flex flex-col gap-2">
               <span className="flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
                 <FileText className="w-5 h-5" />
@@ -560,7 +574,7 @@ export default function CriarVeiculoPage() {
               <textarea
                 value={formState.observacao}
                 onChange={handleChange("observacao")}
-                className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-gray-300 focus:border-[var(--purple-magic)] focus:outline-none focus:ring-2 focus:ring-[var(--purple-magic)] focus:ring-offset-1 transition-all duration-150"
+                className={`${inputBaseClasses} min-h-[150px] resize-y leading-relaxed`}
                 rows={4}
                 placeholder="Informações adicionais sobre o veículo..."
               />
@@ -573,7 +587,7 @@ export default function CriarVeiculoPage() {
               variant="ghost"
               onClick={() => router.push('/estoque')}
               disabled={isSaving}
-              className="pointer-events-auto shadow-2xl bg-white"
+              className="pointer-events-auto shadow-2xl bg-[var(--surface-elevated)] text-[var(--foreground)] hover:bg-white/10"
             >
               Cancelar
             </Button>

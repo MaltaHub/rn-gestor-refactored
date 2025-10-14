@@ -93,6 +93,9 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
     carroceria: 'hatch',
   });
 
+  const inputClasses =
+    "rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)] focus:outline-none transition-all duration-150";
+
   const columns = useMemo<Column<Modelo>[]>(() => [
     {
       key: 'marca',
@@ -357,7 +360,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
             type="text"
             value={formData.marca}
             onChange={(e) => setFormData(prev => ({ ...prev, marca: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
             required
           />
         </label>
@@ -370,7 +373,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
             type="text"
             value={formData.nome}
             onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
             required
           />
         </label>
@@ -382,7 +385,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
           <select
             value={formData.combustivel}
             onChange={(e) => setFormData(prev => ({ ...prev, combustivel: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
           >
             {combustivelOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -395,7 +398,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
           <select
             value={formData.tipo_cambio}
             onChange={(e) => setFormData(prev => ({ ...prev, tipo_cambio: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
           >
             {tipoCambioOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -411,7 +414,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
             type="text"
             value={formData.motor}
             onChange={(e) => setFormData(prev => ({ ...prev, motor: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
           />
         </label>
 
@@ -421,7 +424,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
             type="text"
             value={formData.edicao}
             onChange={(e) => setFormData(prev => ({ ...prev, edicao: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
             placeholder="Ex.: Sport, Limited"
           />
         </label>
@@ -432,7 +435,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
             type="number"
             value={formData.lugares}
             onChange={(e) => setFormData(prev => ({ ...prev, lugares: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
           />
         </label>
 
@@ -442,7 +445,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
             type="number"
             value={formData.portas}
             onChange={(e) => setFormData(prev => ({ ...prev, portas: e.target.value }))}
-            className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+            className={inputClasses}
           />
         </label>
       </div>
@@ -452,7 +455,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
         <select
           value={formData.carroceria}
           onChange={(e) => setFormData(prev => ({ ...prev, carroceria: e.target.value }))}
-          className="rounded-md border border-[var(--border-default)] bg-white px-3 py-2 text-sm"
+          className={inputClasses}
         >
           {carroceriaOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -465,7 +468,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title="Gerenciar Modelos" size="xl">
-        <div className="p-6 bg-white">
+        <div className="p-6 bg-[var(--surface-elevated)]">
           <RenderTables
             data={modelos}
             columns={columns}
@@ -490,7 +493,7 @@ export function ModeloTableModal({ isOpen, onClose, onModeloCreated }: ModeloTab
         title={editingModelo ? 'Editar Modelo' : 'Criar Modelo'}
         size="lg"
       >
-        <div className="p-6 bg-white">
+        <div className="p-6 bg-[var(--surface-elevated)]">
           {renderForm()}
         </div>
         <ModalFooter>

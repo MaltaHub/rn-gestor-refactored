@@ -17,6 +17,7 @@ import { CharacteristicsInfo } from "@/components/vitrine/CharacteristicsInfo";
 import { QuickActions } from "@/components/vitrine/QuickActions";
 import { ShareImagesButton } from "@/components/vitrine/ShareImagesButton";
 import { Badge } from "@/components/ui/badge";
+import { isEstadoVendido } from "@/utils/status";
 
 type EstadoVenda = NonNullable<VeiculoLojaUI["veiculo"]>["estado_venda"];
 
@@ -36,6 +37,8 @@ export default function VitrineDetalhePage() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const veiculo = veiculoLoja?.veiculo ?? null;
+  const estadoVendaDisplay = veiculo?.estadoVendaLabel ?? "Sem status";
+  const estadoVendaVariant = isEstadoVendido(estadoVendaDisplay) ? "danger" : "info";
 
   const lojaNomePorId = useMemo(() => {
     const mapa = new Map<string, string>();
@@ -178,8 +181,8 @@ export default function VitrineDetalhePage() {
                   fotos={fotos} 
                   vehicleDisplay={veiculo.veiculoDisplay} 
                 />
-                <Badge variant="info" className="font-semibold">
-                  {veiculo.estadoVendaLabel}
+                <Badge variant={estadoVendaVariant} className="font-semibold">
+                  {estadoVendaDisplay}
                 </Badge>
                 <span className="text-xl font-bold text-purple-600 dark:text-purple-400">
                   {veiculoLoja.precoLojaFormatado ?? veiculo.precoFormatado ?? "Sem preço"}
