@@ -248,7 +248,7 @@ export default function EstoquePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-950 px-4 py-6 flex items-center justify-center">
-        <p className="text-[var(--text-secondary)]">Carregando estoque...</p>
+        <p className="text-gray-600 dark:text-gray-300">Carregando estoque...</p>
       </div>
     );
   }
@@ -258,8 +258,8 @@ export default function EstoquePage() {
       <div className="mx-auto w-full max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--text-primary)]">Estoque de Veículos</h1>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Estoque de Veículos</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               Visualize, edite e cadastre veículos disponíveis nas lojas.
             </p>
           </div>
