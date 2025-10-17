@@ -9,7 +9,7 @@ export function FirebaseRegister() {
       navigator.serviceWorker
         .register("/firebase-messaging-sw.js")
         .then((registration) => {
-          console.log("[FirebaseRegister] Service Worker registrado com sucesso:", registration.scope);
+          console.warn("[FirebaseRegister] Service Worker registrado:", registration.scope);
         })
         .catch((error) => {
           console.error("[FirebaseRegister] Erro ao registrar Service Worker:", error);

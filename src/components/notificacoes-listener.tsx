@@ -13,7 +13,7 @@ export function NotificacoesListener() {
 
     // Listener para mensagens em foreground (quando o app está aberto)
     const unsubscribe = onMessage(messaging, (payload) => {
-      console.log("[NotificacoesListener] Mensagem recebida em foreground:", payload);
+      console.warn("[NotificacoesListener] Mensagem recebida em foreground:", payload);
 
       const titulo = payload.notification?.title || "Nova notificação";
       const mensagem = payload.notification?.body || "";

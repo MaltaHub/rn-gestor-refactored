@@ -17,7 +17,7 @@ export function PriceInfo({ precoLoja, precoVeiculo }: PriceInfoProps) {
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="space-y-2">
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
-            Preço na loja
+            Preço no anúncio
           </span>
           <p className="text-3xl font-bold text-green-600 dark:text-green-400">
             {precoLoja ?? "Não definido"}

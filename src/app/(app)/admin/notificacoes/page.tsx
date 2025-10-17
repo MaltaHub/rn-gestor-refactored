@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useAuth } from "@/hooks/use-auth";
-import { Send, Bell, AlertCircle } from "lucide-react";
+import { Send, Bell, Users, User, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 
@@ -14,18 +14,20 @@ export default function EnviarNotificacoesPage() {
   const { data: empresa, isLoading } = useEmpresaDoUsuario(isAuthenticated);
   const { mostrarToast } = useToast();
 
+  const [destinatario, setDestinatario] = useState<"todos" | "user">("todos");
+  const [userId, setUserId] = useState("");
+  const [titulo, setTitulo] = useState("");
+  const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  // Verificar se é proprietário
+  // Apenas proprietários podem enviar
   const isProprietario = empresa?.papel === "proprietario";
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
-        </div>
+      <div className="max-w-4xl mx-auto p-6 animate-pulse">
+        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+        <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded mt-4"></div>
       </div>
     );
   }
@@ -52,77 +54,102 @@ export default function EnviarNotificacoesPage() {
     );
   }
 
-  async function handleNotificarTodos() {
+  // Função principal de envio
+  async function handleEnviar() {
+    if (!titulo || !mensagem) {
+      mostrarToast({
+        titulo: "Erro",
+        mensagem: "Preencha o título e a mensagem",
+        tipo: "error",
+      });
+      return;
+    }
+
     setEnviando(true);
 
     try {
-      // Buscar todos os membros da empresa
-      const { data: membros, error: membrosError } = await supabase
-        .from("membros_empresa")
-        .select("usuario_id")
-        .eq("empresa_id", empresa?.empresa_id)
-        .eq("ativo", true);
-
-      if (membrosError) throw membrosError;
-
-      if (!membros || membros.length === 0) {
-        mostrarToast({
-          titulo: "Aviso",
-          mensagem: "Nenhum membro encontrado na empresa",
-          tipo: "warning",
-        });
-        return;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("Sessão inválida ou expirada");
       }
 
-      // Função auxiliar para enviar notificação via fetch
-      const enviarNotificacao = async (targetUserId: string) => {
-        const payload = {
-          user_id: targetUserId,
-          titulo: "Notificação Geral",
-          mensagem: "Você tem uma nova notificação do sistema",
-          tipo: "info",
-        };
+      const token = sessionData.session.access_token;
 
+      // Função genérica de envio
+      const enviarNotificacao = async (targetUserId: string) => {
         const response = await fetch(
           "https://udzrkapsvgqgsbjpgkxe.supabase.co/functions/v1/enviar_notificacao",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+              user_id: targetUserId,
+              titulo,
+              mensagem,
+            }),
           }
         );
-
         if (!response.ok) {
-          const responseText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${responseText}`);
+          const text = await response.text();
+          throw new Error(`Erro HTTP ${response.status}: ${text}`);
         }
-
         return response.json();
       };
 
-      // Enviar para todos os membros
-      const promises = membros.map((membro) =>
-        enviarNotificacao(membro.usuario_id)
-      );
+      if (destinatario === "todos") {
+        const { data: membros, error: membrosError } = await supabase
+          .from("membros_empresa")
+          .select("usuario_id")
+          .eq("empresa_id", empresa?.empresa_id)
+          .eq("ativo", true);
 
-      const results = await Promise.allSettled(promises);
+        if (membrosError) throw membrosError;
+        if (!membros?.length) throw new Error("Nenhum membro ativo encontrado.");
 
-      const successCount = results.filter((r) => r.status === "fulfilled").length;
-      const failedCount = results.filter((r) => r.status === "rejected").length;
+        const results = await Promise.allSettled(
+          membros.map((m) => enviarNotificacao(m.usuario_id))
+        );
 
-      mostrarToast({
-        titulo: "Concluído!",
-        mensagem: `${successCount} notificações enviadas com sucesso${failedCount > 0 ? `, ${failedCount} falharam` : ""}`,
-        tipo: successCount > 0 ? "success" : "error",
-      });
-    } catch (error) {
-      console.error("Erro ao enviar notificações:", error);
-      const errorMessage = error instanceof Error ? error.message : "Erro ao enviar notificações";
+        const success = results.filter((r) => r.status === "fulfilled").length;
+        const fail = results.filter((r) => r.status === "rejected").length;
+
+        mostrarToast({
+          titulo: "Envio concluído",
+          mensagem: `${success} notificações enviadas com sucesso${
+            fail ? `, ${fail} falharam` : ""
+          }.`,
+          tipo: success ? "success" : "error",
+        });
+      } else {
+        if (!userId) {
+          mostrarToast({
+            titulo: "Erro",
+            mensagem: "Informe o ID do usuário destinatário",
+            tipo: "error",
+          });
+          return;
+        }
+        await enviarNotificacao(userId);
+        mostrarToast({
+          titulo: "Sucesso!",
+          mensagem: "Notificação enviada para o usuário selecionado.",
+          tipo: "success",
+        });
+      }
+
+      // Limpa os campos
+      setTitulo("");
+      setMensagem("");
+      setUserId("");
+    } catch (err: unknown) {
+      console.error("Erro ao enviar:", err);
+      const mensagemErro = err instanceof Error ? err.message : "Falha ao enviar notificações";
       mostrarToast({
         titulo: "Erro",
-        mensagem: errorMessage,
+        mensagem: mensagemErro,
         tipo: "error",
       });
     } finally {
@@ -131,103 +158,101 @@ export default function EnviarNotificacoesPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Bell className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+    <div className="max-w-3xl mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-3">
+        <Bell className="w-8 h-8 text-purple-600" />
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Central de Notificações
         </h1>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
-        <div className="text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-purple-100 dark:bg-purple-900/30">
-            <Bell className="w-10 h-10 text-purple-600 dark:text-purple-400" />
-          </div>
-
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Enviar Notificação para Todos
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Envie uma notificação instantânea para todos os membros ativos da empresa
-            </p>
-          </div>
-
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-sm text-gray-600 dark:text-gray-400">
-            <p className="font-medium mb-2">ℹ️ Informações:</p>
-            <ul className="text-left space-y-1">
-              <li>• Será enviada para todos os membros ativos</li>
-              <li>• Notificação via Firebase Cloud Messaging</li>
-              <li>• Disponível apenas para proprietários</li>
-            </ul>
-          </div>
-
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md p-6 space-y-6">
+        {/* Tipo de destinatário */}
+        <div className="flex gap-4 justify-center">
           <button
-            onClick={handleNotificarTodos}
-            disabled={enviando}
-            className={`
-              inline-flex items-center gap-3 px-8 py-4 rounded-lg font-semibold text-lg
-              transition-all duration-200 shadow-lg
-              ${
-                enviando
-                  ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
-                  : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white hover:shadow-xl hover:scale-105"
-              }
-            `}
+            onClick={() => setDestinatario("todos")}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg font-medium transition ${
+              destinatario === "todos"
+                ? "bg-purple-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            }`}
           >
-            {enviando ? (
-              <>
-                <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Enviando...</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-6 h-6" />
-                <span>Notificar Todos</span>
-              </>
-            )}
+            <Users className="w-5 h-5" /> Todos os membros
+          </button>
+          <button
+            onClick={() => setDestinatario("user")}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg font-medium transition ${
+              destinatario === "user"
+                ? "bg-purple-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            <User className="w-5 h-5" /> Usuário específico
           </button>
         </div>
-      </div>
 
-      {/* Card de estatísticas ou informações adicionais */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center">
-              <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Status</p>
-              <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Sistema Ativo</p>
-            </div>
+        {destinatario === "user" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              ID do Usuário
+            </label>
+            <input
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="UUID do usuário"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-600 outline-none"
+            />
           </div>
+        )}
+
+        {/* Campos de notificação */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Título
+          </label>
+          <input
+            type="text"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Ex: Atualização no sistema"
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-600 outline-none"
+          />
         </div>
 
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
-              <Send className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p className="text-xs text-green-600 dark:text-green-400 font-medium">Método</p>
-              <p className="text-sm font-bold text-green-900 dark:text-green-100">FCM Push</p>
-            </div>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Mensagem
+          </label>
+          <textarea
+            value={mensagem}
+            onChange={(e) => setMensagem(e.target.value)}
+            rows={4}
+            placeholder="Digite o conteúdo da notificação..."
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-600 outline-none"
+          />
         </div>
 
-        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Permissão</p>
-              <p className="text-sm font-bold text-purple-900 dark:text-purple-100">Admin Only</p>
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={handleEnviar}
+          disabled={enviando}
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-lg transition ${
+            enviando
+              ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white hover:scale-[1.02]"
+          }`}
+        >
+          {enviando ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Enviando...
+            </>
+          ) : (
+            <>
+              <Send className="w-5 h-5" /> Enviar Notificação
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

@@ -43,13 +43,13 @@ export async function solicitarPermissaoNotificacao() {
     return null;
   }
 
-  console.log("VAPID Key:", vapidKey.substring(0, 20) + "...");
+  console.warn("VAPID Key:", vapidKey.substring(0, 20) + "...");
 
   const token = await getToken(messaging, {
     vapidKey,
     serviceWorkerRegistration: await navigator.serviceWorker.ready,
   });
 
-  console.log("Token FCM:", token);
+  console.warn("Token FCM:", token);
   return token;
 }

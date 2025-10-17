@@ -31,6 +31,10 @@ export function useToast() {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  const fecharToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
   const mostrarToast = useCallback((toast: Omit<Toast, "id">) => {
     const id = Math.random().toString(36).substring(2, 11);
     const novoToast: Toast = { ...toast, id };
@@ -44,11 +48,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         fecharToast(id);
       }, duracao);
     }
-  }, []);
-
-  const fecharToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
+  }, [fecharToast]);
 
   return (
     <ToastContext.Provider value={{ mostrarToast, fecharToast }}>

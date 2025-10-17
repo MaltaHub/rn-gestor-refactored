@@ -26,7 +26,7 @@ export function NotificacoesSetup() {
               atualizado_em: new Date().toISOString()
             });
 
-          console.log("[NotificacoesSetup] Token FCM salvo com sucesso");
+          console.warn("[NotificacoesSetup] Token FCM salvo com sucesso");
         }
       } catch (error) {
         console.error("[NotificacoesSetup] Erro ao configurar notificações:", error);
