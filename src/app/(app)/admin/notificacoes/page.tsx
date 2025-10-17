@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useAuth } from "@/hooks/use-auth";
@@ -28,6 +28,7 @@ export default function EnviarNotificacoesPage() {
   const [enviando, setEnviando] = useState(false);
   const [membrosOptions, setMembrosOptions] = useState<MembroOption[]>([]);
   const [carregandoMembros, setCarregandoMembros] = useState(false);
+  const enviandoRef = useRef(false);
 
   // Apenas proprietários podem enviar
   const isProprietario = empresa?.papel === "proprietario";
@@ -182,6 +183,16 @@ export default function EnviarNotificacoesPage() {
       return;
     }
 
+    if (enviandoRef.current) {
+      mostrarToast({
+        titulo: "Aviso",
+        mensagem: "Uma notificação já está sendo enviada.",
+        tipo: "warning",
+      });
+      return;
+    }
+
+    enviandoRef.current = true;
     setEnviando(true);
 
     try {
@@ -224,10 +235,14 @@ export default function EnviarNotificacoesPage() {
           .eq("ativo", true);
 
         if (membrosError) throw membrosError;
-        if (!membros?.length) throw new Error("Nenhum membro ativo encontrado.");
+        const usuariosUnicos = Array.from(
+          new Set((membros ?? []).map((m) => m.usuario_id).filter((id): id is string => Boolean(id)))
+        );
+
+        if (!usuariosUnicos.length) throw new Error("Nenhum membro ativo encontrado.");
 
         const results = await Promise.allSettled(
-          membros.map((m) => enviarNotificacao(m.usuario_id))
+          usuariosUnicos.map((usuarioId) => enviarNotificacao(usuarioId))
         );
 
         const success = results.filter((r) => r.status === "fulfilled").length;
@@ -279,6 +294,7 @@ export default function EnviarNotificacoesPage() {
       });
     } finally {
       setEnviando(false);
+      enviandoRef.current = false;
     }
   }
 

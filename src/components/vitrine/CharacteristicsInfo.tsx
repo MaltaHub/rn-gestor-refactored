@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import type { Caracteristica } from "@/types";
 import type { VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useCaracteristicas } from "@/hooks/use-configuracoes";
+import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
 
 interface CharacteristicsInfoProps {
   veiculo: VeiculoUI;
@@ -16,6 +17,8 @@ const sortCaracteristicas = (lista: string[]) =>
 export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
   const [mostrarTodas, setMostrarTodas] = useState(false);
   const [editarCaracteristicas, setEditarCaracteristicas] = useState(false);
+  const [editedCaracteristicas, setEditedCaracteristicas] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const {
     data: caracteristicasDisponiveis = [],
@@ -55,10 +58,36 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
     0
   );
 
-  const handleAdicionarCaracteristica = (id: string) => {
-    const caracteristica = caracteristicasDisponiveis.find((c) => c.id === id);
-    if (caracteristica) {
-      adicionarCaracteristica(caracteristica.nome);
+  useEffect(() => {
+    setEditedCaracteristicas(todasCaracteristicas);
+  }, [todasCaracteristicas]);
+
+  const handleAdicionarCaracteristica = (id: string, nome: string) => {
+    if (!editedCaracteristicas.includes(nome)) {
+      setEditedCaracteristicas([...editedCaracteristicas, nome]);
+    }
+  };
+
+  const handleRemoverCaracteristica = (nome: string) => {
+    setEditedCaracteristicas(editedCaracteristicas.filter(item => item !== nome));
+  };
+
+  const handleSalvar = async () => {
+    if (!veiculo || !veiculo.id) return;
+    setIsSaving(true);
+    const original = todasCaracteristicas.map(nome => ({ id: nome, nome }));
+    const updated = editedCaracteristicas.map(nome => ({ id: nome, nome }));
+    const diff = calcularDiffCaracteristicas(original, updated);
+    try {
+      await atualizarVeiculo(veiculo.id, {
+        adicionar_caracteristicas: diff.adicionar.map(item => ({ id: item.id, nome: item.nome })),
+        remover_caracteristicas: diff.remover.map(item => ({ id: item.id, nome: item.nome }))
+      });
+      setEditarCaracteristicas(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -73,51 +102,76 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
         </h2>
         <button
           type="button"
-          onClick={() => setEditarCaracteristicas((prev) => !prev)}
+          onClick={() => {
+            if (editarCaracteristicas) {
+              handleSalvar();
+            } else {
+              setEditarCaracteristicas(true);
+            }
+          }}
           className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition"
         >
-          {editarCaracteristicas ? "Salvar" : "Editar"}
+          {editarCaracteristicas ? (isSaving ? "Salvando..." : "Salvar") : "Editar"}
         </button>
       </div>
-      {caracteristicasVisiveis.length === 0 ? (
-        <>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Nenhuma característica cadastrada.
-          </p>
-
-          {editarCaracteristicas && (
-            <div className="mt-4">
-              <label
-                htmlFor="caracteristicas"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Adicionar Características
-              </label>
-              <ul
-                id="caracteristicas"
-                className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
-              >
-                {caracteristicasOrdenadas.map((caracteristica) => (
-                  <li
-                    key={caracteristica.id}
-                    className="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
-                    onClick={() => handleAdicionarCaracteristica(caracteristica.id)}
-                  >
-                    {caracteristica.nome}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                Clique em uma característica para adicioná-la.
-              </p>
-            </div>
-          )}
-        </>
-      ) : (
+      {editarCaracteristicas ? (
         <>
           <div className="flex flex-wrap gap-2">
-            {!editarCaracteristicas &&
-              caracteristicasVisiveis.map((item: string) => (
+            {editedCaracteristicas.map(item => (
+              <span
+                key={item}
+                className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-4 py-2 text-sm font-medium text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+              >
+                {item}
+                <button
+                  type="button"
+                  onClick={() => handleRemoverCaracteristica(item)}
+                  className="ml-1 text-red-500"
+                >
+                  x
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="mt-4">
+            <label
+              htmlFor="caracteristicas"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Adicionar Características
+            </label>
+            <ul
+              id="caracteristicas"
+              className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+            >
+              {caracteristicasOrdenadas
+                .filter(c => !editedCaracteristicas.includes(c.nome))
+                .map(c => (
+                  <li
+                    key={c.id}
+                    className="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    onClick={() => handleAdicionarCaracteristica(c.id, c.nome)}
+                  >
+                    {c.nome}
+                  </li>
+                ))}
+            </ul>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Clique em uma característica para adicioná-la.
+            </p>
+          </div>
+        </>
+      ) : (
+        todasCaracteristicas.length === 0 ? (
+          <>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Nenhuma característica cadastrada.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {caracteristicasVisiveis.map((item: string) => (
                 <span
                   key={item}
                   className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-4 py-2 text-sm font-medium text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
@@ -125,32 +179,33 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
                   {item}
                 </span>
               ))}
-          </div>
-          {extrasDisponiveis > 0 && (
-            <button
-              type="button"
-              onClick={() => setMostrarTodas((prev) => !prev)}
-              aria-expanded={mostrarTodas}
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-purple-600 dark:text-purple-400 transition hover:text-purple-700 dark:hover:text-purple-300"
-            >
-              {mostrarTodas ? (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
-                  Mostrar menos características
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                  Ver todas (+{extrasDisponiveis})
-                </>
-              )}
-            </button>
-          )}
-        </>
+            </div>
+            {extrasDisponiveis > 0 && (
+              <button
+                type="button"
+                onClick={() => setMostrarTodas((prev) => !prev)}
+                aria-expanded={mostrarTodas}
+                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-purple-600 dark:text-purple-400 transition hover:text-purple-700 dark:hover:text-purple-300"
+              >
+                {mostrarTodas ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                    Mostrar menos características
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Ver todas (+{extrasDisponiveis})
+                  </>
+                )}
+              </button>
+            )}
+          </>
+        )
       )}
       {veiculo.observacao && (
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">

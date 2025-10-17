@@ -60,7 +60,7 @@ const DEFAULT_FILTERS: VitrineFilters = {
 };
 
 const DEFAULT_VIEW_CONFIG: VitrineViewConfig = {
-  viewMode: 'cards-info',
+  viewMode: 'cards-photo',
   ordenacao: 'recentes',
   scrollPosition: 0,
 };
