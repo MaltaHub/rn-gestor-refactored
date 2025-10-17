@@ -4,16 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutGrid, 
-  Package, 
-  Settings, 
-  Shield, 
-  Menu, 
+import {
+  LayoutGrid,
+  Package,
+  Settings,
+  Shield,
+  Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useEmpresaDoUsuario } from '@/hooks/use-empresa';
@@ -34,35 +35,41 @@ export function Sidebar() {
   const { data: empresa, isLoading: empresaLoading } = useEmpresaDoUsuario(isAuthenticated);
 
   const navItems: NavItem[] = [
-    { 
-      href: '/vitrine', 
-      label: 'Vitrine', 
-      icon: LayoutGrid 
+    {
+      href: '/vitrine',
+      label: 'Vitrine',
+      icon: LayoutGrid
     },
-    { 
-      href: '/estoque', 
-      label: 'Estoque', 
+    {
+      href: '/estoque',
+      label: 'Estoque',
       icon: Package,
       requiresAuth: true,
       requiresProprietario: true
     },
-    { 
-      href: '/admin', 
-      label: 'Admin', 
+    {
+      href: '/notificacoes',
+      label: 'Notificações',
+      icon: Bell,
+      requiresAuth: true
+    },
+    {
+      href: '/admin',
+      label: 'Admin',
       icon: Shield,
       requiresAuth: true,
       requiresProprietario: true
     },
-    { 
-      href: '/configuracoes', 
-      label: 'Configurações', 
+    {
+      href: '/configuracoes',
+      label: 'Configurações',
       icon: Settings,
       requiresAuth: true,
       requiresProprietario: true
     },
-    { 
-      href: '/perfil', 
-      label: 'Perfil', 
+    {
+      href: '/perfil',
+      label: 'Perfil',
       icon: User,
       requiresAuth: true
     },

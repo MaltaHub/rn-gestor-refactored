@@ -112,3 +112,47 @@ export async function criarEmpresa({ nome, dominio }: CriarEmpresaPayload) {
 
   return data;
 }
+
+export async function atualizarPapelMembro(
+  membroId: string,
+  papel: MembroEmpresa["papel"],
+): Promise<MembroEmpresa> {
+  const { data, error } = await supabase
+    .from("membros_empresa")
+    .update({ papel })
+    .eq("id", membroId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("Não foi possível atualizar o papel do membro.");
+  }
+
+  return data as MembroEmpresa;
+}
+
+export async function atualizarStatusMembro(
+  membroId: string,
+  ativo: boolean,
+): Promise<MembroEmpresa> {
+  const { data, error } = await supabase
+    .from("membros_empresa")
+    .update({ ativo })
+    .eq("id", membroId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("Não foi possível atualizar o status do membro.");
+  }
+
+  return data as MembroEmpresa;
+}

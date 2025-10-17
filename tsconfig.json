@@ -26,5 +26,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", ".next/types/**/*.ts", "src/lib/supabase.ts", "public/sw.js"],
-  "exclude": ["node_modules", ".next", "public", "**/node_modules/*"]
+  "exclude": ["node_modules", ".next", "public", "**/node_modules/*", "supabase/functions/**/*"]
 }

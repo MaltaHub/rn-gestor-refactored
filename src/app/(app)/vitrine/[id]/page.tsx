@@ -167,26 +167,25 @@ export default function VitrineDetalhePage() {
           />
 
           <section className="flex flex-col gap-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                   {veiculo.veiculoDisplay}
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Loja {veiculoLoja.lojaNome ?? "não informada"} • Placa {veiculo.placa}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="font-medium">Loja: {veiculoLoja.lojaNome ?? "não informada"}</span>
+                  <span>•</span>
+                  <span className="font-mono">Placa: {veiculo.placa}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <ShareImagesButton 
-                  fotos={fotos} 
-                  vehicleDisplay={veiculo.veiculoDisplay} 
+              <div className="flex flex-wrap items-center gap-3">
+                <ShareImagesButton
+                  fotos={fotos}
+                  vehicleDisplay={veiculo.veiculoDisplay}
                 />
-                <Badge variant={estadoVendaVariant} className="font-semibold">
+                <Badge variant={estadoVendaVariant} className="font-semibold text-sm px-3 py-1">
                   {estadoVendaDisplay}
                 </Badge>
-                <span className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                  {veiculoLoja.precoLojaFormatado ?? veiculo.precoFormatado ?? "Sem preço"}
-                </span>
               </div>
             </div>
 
@@ -208,6 +207,7 @@ export default function VitrineDetalhePage() {
             statusAtual={veiculo.estado_venda as EstadoVenda}
             precoLojaAtual={veiculoLoja.precoLoja}
             precoLojaFormatado={veiculoLoja.precoLojaFormatado}
+            precoEstoque={veiculo?.preco_venal ?? null}
             locais={localOptions}
             lojaNome={veiculoLoja.loja?.nome}
           />

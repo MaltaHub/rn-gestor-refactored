@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Loja, Plataforma, Caracteristica, Modelo, Local, UnidadeLoja } from "@/types";
 import { listar_tabela } from "@/services";
 import { QUERY_CONFIG } from "@/config";
+import { salvarConfiguracao } from "@/services/configuracoes";
 
 const configuracoesKeys = {
   lojas: ["configuracoes", "loja"] as const,
@@ -31,11 +32,24 @@ export function usePlataformas() {
 }
 
 export function useCaracteristicas() {
-  return useQuery<Caracteristica[]>({
+  const query = useQuery<Caracteristica[]>({
     queryKey: configuracoesKeys.caracteristicas,
     queryFn: () => listar_tabela("caracteristicas"),
     ...QUERY_CONFIG.configuracoes,
   });
+
+  return {
+    ...query,
+    add: (nome: string) => salvarConfiguracao("caracteristica",
+      { nome: nome }),
+    remove: (id: string) => listar_tabela("caracteristicas", {
+      column: "id",
+      operator: "neq",
+      value: id,
+    }),
+    update: (id: string, nome: string) => salvarConfiguracao("caracteristica",
+      { id: id, nome: nome })
+  }
 }
 
 export function useModelos() {
@@ -157,5 +171,3 @@ export function useUnidadesLoja() {
     ...QUERY_CONFIG.configuracoes,
   });
 }
-
-

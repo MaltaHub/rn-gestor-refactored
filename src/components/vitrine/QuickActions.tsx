@@ -10,6 +10,7 @@ import { atualizarVeiculo } from "@/services/estoque";
 import { atualizarPrecoVeiculoLoja } from "@/services/vitrine";
 import { veiculosLojaKeys } from "@/adapters/adaptador-vitrine";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
+import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 
 const ESTADOS_VENDA = [
   "disponivel",
@@ -30,6 +31,7 @@ interface QuickActionsProps {
   statusAtual?: EstadoVenda;
   precoLojaAtual?: number | null;
   precoLojaFormatado?: string | null;
+  precoEstoque?: number | null;
   locais: Array<{
     value: string;
     label: string;
@@ -54,9 +56,11 @@ export function QuickActions({
   statusAtual,
   precoLojaAtual,
   precoLojaFormatado,
+  precoEstoque,
   locais,
   lojaNome,
 }: QuickActionsProps) {
+  const { data: empresa } = useEmpresaDoUsuario();
   const queryClient = useQueryClient();
   const [activeAction, setActiveAction] = useState<ActionType | null>(null);
   const [localSelecionado, setLocalSelecionado] = useState<string>(localAtualId ?? "");
@@ -72,6 +76,9 @@ export function QuickActions({
   const [isSaving, setIsSaving] = useState<ActionType | null>(null);
 
   const possuiUnidadeDaLoja = locais.some((option) => option.pertenceALoja);
+
+  // Verifica se o usuário é consultor
+  const isConsultor = empresa?.papel === "consultor" || empresa?.papel === "administrador";
 
   const invalidateVitrineQueries = useCallback(async () => {
     await Promise.all([
@@ -151,6 +158,12 @@ export function QuickActions({
       if (numero !== null && Number.isNaN(numero)) {
         throw new Error("Informe um valor numérico válido.");
       }
+
+      // Validação: preço da loja não pode ser menor que o preço do estoque
+      if (numero !== null && precoEstoque !== null && precoEstoque !== undefined && numero < precoEstoque) {
+        throw new Error("O preço da loja não pode ser menor que o preço do estoque.");
+      }
+
       await atualizarPrecoVeiculoLoja(veiculoLojaId, numero);
       await invalidateVitrineQueries();
       setPrecoLoja(numero === null ? "" : String(numero));
@@ -176,8 +189,13 @@ export function QuickActions({
     setActiveAction((current) => (current === action ? null : action));
   };
 
+  // Se não for consultor, não exibe o componente
+  if (!isConsultor) {
+    return null;
+  }
+
   return (
-    <Card className="transition-shadow duration-300 hover:shadow-xl">
+    <Card className="transition-shadow duration-300 hover:shadow-xl border-l-4 border-l-purple-500">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">

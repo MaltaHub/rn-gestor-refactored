@@ -102,3 +102,37 @@ export function useRemoverEmpresaDoUsuario() {
     },
   });
 }
+
+export function useAtualizarPapelMembro() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ membroId, papel }: { membroId: string; papel: MembroEmpresa["papel"] }) => {
+      const { atualizarPapelMembro } = await import("@/services/admin");
+      return atualizarPapelMembro(membroId, papel);
+    },
+    onSuccess: (membro) => {
+      queryClient.setQueryData(adminKeys.membros, (prev?: MembroEmpresa[]) => {
+        if (!prev) return prev;
+        return prev.map((item) => (item.id === membro.id ? membro : item));
+      });
+    },
+  });
+}
+
+export function useAtualizarStatusMembro() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ membroId, ativo }: { membroId: string; ativo: boolean }) => {
+      const { atualizarStatusMembro } = await import("@/services/admin");
+      return atualizarStatusMembro(membroId, ativo);
+    },
+    onSuccess: (membro) => {
+      queryClient.setQueryData(adminKeys.membros, (prev?: MembroEmpresa[]) => {
+        if (!prev) return prev;
+        return prev.map((item) => (item.id === membro.id ? membro : item));
+      });
+    },
+  });
+}

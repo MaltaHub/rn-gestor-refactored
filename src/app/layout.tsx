@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactQueryProvider } from "../components/react-query-provider";
 import { PWARegister } from "../components/pwa-register";
+import { FirebaseRegister } from "../components/firebase-register";
 import { ThemeProvider } from "@/contexts/theme";
+import { ToastProvider } from "@/components/ui/toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,10 +52,13 @@ export default function RootLayout({
     <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased theme-surface`}>
         <ThemeProvider defaultMode="light">
-          <ReactQueryProvider>
-            {children}
-            <PWARegister />
-          </ReactQueryProvider>
+          <ToastProvider>
+            <ReactQueryProvider>
+              {children}
+              <PWARegister />
+              <FirebaseRegister />
+            </ReactQueryProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

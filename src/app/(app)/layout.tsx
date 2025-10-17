@@ -1,4 +1,6 @@
 import { Sidebar } from '@/components/sidebar';
+import { NotificacoesSetup } from '@/components/notificacoes-setup';
+import { NotificacoesListener } from '@/components/notificacoes-listener';
 
 export default function AppLayout({
   children,
@@ -11,6 +13,8 @@ export default function AppLayout({
       <main className="flex-1 overflow-auto">
         {children}
       </main>
+      <NotificacoesSetup />
+      <NotificacoesListener />
     </div>
   );
 }
