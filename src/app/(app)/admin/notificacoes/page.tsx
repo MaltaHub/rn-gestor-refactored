@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useAuth } from "@/hooks/use-auth";
 import { Send, Bell, Users, User, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+
+type MembroOption = {
+  id: string;
+  label: string;
+  email: string | null;
+  name: string | null;
+};
 
 export default function EnviarNotificacoesPage() {
   const router = useRouter();
@@ -19,9 +26,119 @@ export default function EnviarNotificacoesPage() {
   const [titulo, setTitulo] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [membrosOptions, setMembrosOptions] = useState<MembroOption[]>([]);
+  const [carregandoMembros, setCarregandoMembros] = useState(false);
 
   // Apenas proprietários podem enviar
   const isProprietario = empresa?.papel === "proprietario";
+
+  useEffect(() => {
+    if (!empresa?.empresa_id || !isProprietario || destinatario !== "user") {
+      if (destinatario !== "user") {
+        setCarregandoMembros(false);
+      }
+      if (!empresa?.empresa_id || !isProprietario) {
+        setMembrosOptions([]);
+      }
+      return;
+    }
+
+    let ativo = true;
+    setCarregandoMembros(true);
+
+    async function carregarMembros() {
+      try {
+        const { data: membros, error: membrosError } = await supabase
+          .from("membros_empresa")
+          .select("usuario_id")
+          .eq("empresa_id", empresa?.empresa_id)
+          .eq("ativo", true);
+
+        if (membrosError) throw membrosError;
+
+        const usuarioIds = (membros ?? [])
+          .map((item) => item.usuario_id)
+          .filter((id): id is string => Boolean(id));
+
+        if (!usuarioIds.length) {
+          if (ativo) {
+            setMembrosOptions([]);
+          }
+          return;
+        }
+
+        const { data: usuariosData, error: usuariosError } = await supabase.rpc(
+          "listar_usuarios"
+        );
+
+        if (usuariosError) throw usuariosError;
+
+        const usuarios = (usuariosData ?? []) as Array<{
+          id: string;
+          email: string | null;
+          name: string | null;
+        }>;
+
+        const usuariosMap = new Map(usuarios.map((usuario) => [usuario.id, usuario]));
+
+        const options = usuarioIds
+          .map((id) => {
+            const usuario = usuariosMap.get(id);
+            if (!usuario) {
+              return {
+                id,
+                label: id,
+                email: null,
+                name: null,
+              } satisfies MembroOption;
+            }
+
+            const label = usuario.name?.trim() || usuario.email?.trim() || id;
+            return {
+              id,
+              label,
+              email: usuario.email,
+              name: usuario.name,
+            } satisfies MembroOption;
+          })
+          .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
+
+        if (ativo) {
+          setMembrosOptions(options);
+        }
+      } catch (error) {
+        console.error("[Notificacoes] Erro ao carregar membros:", error);
+        if (ativo) {
+          setMembrosOptions([]);
+          mostrarToast({
+            titulo: "Erro",
+            mensagem: "Não foi possível carregar os membros da empresa.",
+            tipo: "error",
+          });
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoMembros(false);
+        }
+      }
+    }
+
+    carregarMembros();
+
+    return () => {
+      ativo = false;
+    };
+  }, [destinatario, empresa?.empresa_id, isProprietario, mostrarToast]);
+
+  useEffect(() => {
+    if (userId && !membrosOptions.some((option) => option.id === userId)) {
+      setUserId("");
+    }
+  }, [membrosOptions, userId]);
+
+  const envioDesabilitado =
+    enviando ||
+    (destinatario === "user" && (carregandoMembros || !userId || membrosOptions.length === 0));
 
   if (isLoading) {
     return (
@@ -124,10 +241,18 @@ export default function EnviarNotificacoesPage() {
           tipo: success ? "success" : "error",
         });
       } else {
+        if (carregandoMembros) {
+          mostrarToast({
+            titulo: "Aviso",
+            mensagem: "Aguarde o carregamento dos membros antes de enviar.",
+            tipo: "warning",
+          });
+          return;
+        }
         if (!userId) {
           mostrarToast({
             titulo: "Erro",
-            mensagem: "Informe o ID do usuário destinatário",
+            mensagem: "Selecione o usuário destinatário",
             tipo: "error",
           });
           return;
@@ -194,15 +319,32 @@ export default function EnviarNotificacoesPage() {
         {destinatario === "user" && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              ID do Usuário
+              Selecionar membro
             </label>
-            <input
-              type="text"
+            <select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="UUID do usuário"
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-600 outline-none"
-            />
+              disabled={carregandoMembros || enviando || membrosOptions.length === 0}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-600 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {carregandoMembros
+                  ? "Carregando membros..."
+                  : membrosOptions.length === 0
+                    ? "Nenhum membro disponível"
+                    : "Selecione um membro"}
+              </option>
+              {membrosOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {!carregandoMembros && membrosOptions.length === 0 && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Não encontramos membros ativos para a empresa.
+              </p>
+            )}
           </div>
         )}
 
@@ -235,9 +377,9 @@ export default function EnviarNotificacoesPage() {
 
         <button
           onClick={handleEnviar}
-          disabled={enviando}
+          disabled={envioDesabilitado}
           className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold text-lg transition ${
-            enviando
+            envioDesabilitado
               ? "bg-gray-400 dark:bg-gray-600 cursor-not-allowed"
               : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white hover:scale-[1.02]"
           }`}

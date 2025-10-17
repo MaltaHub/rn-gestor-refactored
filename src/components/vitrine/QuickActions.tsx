@@ -316,7 +316,7 @@ export function QuickActions({
               placeholder="Informe o valor"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Valor atual: {precoLojaFormatado ?? "não definido"}
+              Preço em estoque: {precoEstoque ?? "não definido"}
             </p>
           </div>
           <Button type="submit" variant="primary" disabled={isSaving === "preco"}>
