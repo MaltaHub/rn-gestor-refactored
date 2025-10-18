@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import type { Database } from "@/types/supabase";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useAuth } from "@/hooks/use-auth";
 import { Send, Bell, Users, User, AlertCircle } from "lucide-react";
@@ -197,34 +198,33 @@ export default function EnviarNotificacoesPage() {
 
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
+      const remetente = sessionData.session?.user;
+      if (sessionError || !remetente) {
         throw new Error("Sessão inválida ou expirada");
       }
 
-      const token = sessionData.session.access_token;
+      const nowIso = new Date().toISOString();
+      const salvarNotificacao = async (destinatarios: string[] | null, destino: "todos" | "user") => {
+        const payload = {
+          titulo,
+          mensagem,
+          tipo: "manual",
+          destinatario_id: destinatarios && destinatarios.length > 0 ? destinatarios : null,
+          remetente_id: remetente.id,
+          enviado: true,
+          enviado_em: nowIso,
+          data: {
+            origem: "painel_admin",
+            destino,
+            empresa_id: empresa?.empresa_id ?? null,
+            destinatario_count: destinatarios?.length ?? null,
+          },
+        } satisfies Partial<Database["public"]["Tables"]["notificacoes"]["Insert"]>;
 
-      // Função genérica de envio
-      const enviarNotificacao = async (targetUserId: string) => {
-        const response = await fetch(
-          "https://udzrkapsvgqgsbjpgkxe.supabase.co/functions/v1/enviar_notificacao",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              user_id: targetUserId,
-              titulo,
-              mensagem,
-            }),
-          }
-        );
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`Erro HTTP ${response.status}: ${text}`);
+        const { error } = await supabase.from("notificacoes").insert(payload);
+        if (error) {
+          throw error;
         }
-        return response.json();
       };
 
       if (destinatario === "todos") {
@@ -241,19 +241,12 @@ export default function EnviarNotificacoesPage() {
 
         if (!usuariosUnicos.length) throw new Error("Nenhum membro ativo encontrado.");
 
-        const results = await Promise.allSettled(
-          usuariosUnicos.map((usuarioId) => enviarNotificacao(usuarioId))
-        );
-
-        const success = results.filter((r) => r.status === "fulfilled").length;
-        const fail = results.filter((r) => r.status === "rejected").length;
+        await salvarNotificacao(usuariosUnicos, "todos");
 
         mostrarToast({
           titulo: "Envio concluído",
-          mensagem: `${success} notificações enviadas com sucesso${
-            fail ? `, ${fail} falharam` : ""
-          }.`,
-          tipo: success ? "success" : "error",
+          mensagem: `${usuariosUnicos.length} destinatários registrados para a notificação.`,
+          tipo: "success",
         });
       } else {
         if (carregandoMembros) {
@@ -272,10 +265,10 @@ export default function EnviarNotificacoesPage() {
           });
           return;
         }
-        await enviarNotificacao(userId);
+        await salvarNotificacao([userId], "user");
         mostrarToast({
           titulo: "Sucesso!",
-          mensagem: "Notificação enviada para o usuário selecionado.",
+          mensagem: "Notificação registrada para o usuário selecionado.",
           tipo: "success",
         });
       }
