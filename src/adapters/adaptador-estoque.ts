@@ -109,7 +109,8 @@ export const adaptVeiculo = (
   const modeloMarca = modelo?.marca ?? null;
 
   const localNome = local?.nome ?? null;
-  const localLojaId = local?.loja_id ?? null;
+  // Nota: 'locais' não tem loja_id, apenas 'unidades_loja' tem
+  const localLojaId = null; // TODO: Buscar de unidades_loja se necessário
   const estaEmUnidade = Boolean(localLojaId);
   const localCategoria: "showroom" | "fora" = estaEmUnidade ? "showroom" : "fora";
   const localDisplay = localNome ?? "Sem local vinculado";

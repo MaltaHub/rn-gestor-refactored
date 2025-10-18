@@ -62,6 +62,7 @@ export function useModelos() {
 
 export type LocalComOrigem = Local & {
   origem: "local" | "unidade";
+  loja_id?: string | null;
   loja_nome?: string | null;
   label?: string;
   prioridade?: number;
@@ -92,11 +93,11 @@ export function useLocais() {
       const locaisAdaptados: LocalComOrigem[] = locais.map((local) => ({
         ...local,
         origem: "local",
-        loja_nome: local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null,
-        label: local.loja_id
-          ? `${lojaNomePorId.get(local.loja_id) ?? "Loja desconhecida"} • ${local.nome}`
-          : local.nome,
-        prioridade: local.loja_id ? 1 : 2,
+        loja_id: null,
+        loja_nome: null,
+        label: local.nome,
+        prioridade: 2,
+        pertenceALoja: false,
       }));
 
       // 🔹 Unidades
@@ -107,6 +108,7 @@ export function useLocais() {
         return {
           ...unidade,
           origem: "unidade",
+          loja_id: unidade.loja_id ?? null,
           loja_nome: lojaNome,
           label,
           prioridade: 0,

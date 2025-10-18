@@ -55,7 +55,7 @@ export function QuickActions({
   localAtualId,
   statusAtual,
   precoLojaAtual,
-  precoLojaFormatado,
+  // precoLojaFormatado, // Não usado atualmente
   precoEstoque,
   locais,
   lojaNome,

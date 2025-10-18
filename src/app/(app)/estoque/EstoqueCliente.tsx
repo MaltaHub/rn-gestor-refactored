@@ -79,11 +79,9 @@ export default function EstoquePage() {
       if (!local?.id || !local.nome) return;
       const option = { value: local.id, label: local.nome };
       todos.push(option);
-      if (local.loja_id) {
-        showroom.push(option);
-      } else {
-        fora.push(option);
-      }
+      // Nota: tabela 'locais' não possui loja_id
+      // Por padrão, coloca todos em 'fora' por enquanto
+      fora.push(option);
     });
 
     const sortedShowroom = orderByLabel(showroom);

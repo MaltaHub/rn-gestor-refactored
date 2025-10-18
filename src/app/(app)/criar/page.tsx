@@ -14,6 +14,8 @@ import { ArrowLeft, Save, Plus, Car, Settings, MapPin, List, FileText } from "lu
 import { QuickAddModal } from "@/components/QuickAddModal";
 import { ModeloTableModal } from "@/components/ModeloTableModal";
 import type { VeiculoResumo } from "@/types/estoque";
+import { PagePermissionGuard } from "@/components/PagePermissionGuard";
+import { Permission } from "@/types/rbac";
 
 type EstadoVendaOption = VeiculoResumo["estado_venda"];
 type EstadoVeiculoOption = NonNullable<VeiculoResumo["estado_veiculo"]>;
@@ -82,7 +84,7 @@ const validatePlaca = (placa: string): boolean => {
   return regex.test(placa);
 };
 
-export default function CriarVeiculoPage() {
+function CriarVeiculoPageContent() {
   const router = useRouter();
   const { data: modelos = [] } = useModelos();
   const { data: locais = [] } = useLocais();
@@ -90,7 +92,7 @@ export default function CriarVeiculoPage() {
   const { data: caracteristicasDisponiveis = [] } =
     useCaracteristicas() as { data: CaracteristicaFormValue[] };
   const queryClient = useQueryClient();
-  const lojaSelecionadaId = useLojaStore((s) => s.lojaSelecionada?.id ?? null);
+  // const lojaSelecionadaId = useLojaStore((s) => s.lojaSelecionada?.id ?? null); // Não usado após remoção de loja_id
 
   const [formState, setFormState] = useState<VehicleFormState>({ ...INITIAL_FORM_STATE });
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -130,23 +132,24 @@ export default function CriarVeiculoPage() {
     [caracteristicasDisponiveis]
   );
 
-  const lojaNomePorId = useMemo(() => {
-    const map = new Map<string, string>();
-    lojas.forEach((l) => l.id && map.set(l.id, l.nome));
-    return map;
-  }, [lojas]);
+  // lojaNomePorId não mais necessário após remoção de loja_id de locais
+  // const lojaNomePorId = useMemo(() => {
+  //   const map = new Map<string, string>();
+  //   lojas.forEach((l) => l.id && map.set(l.id, l.nome));
+  //   return map;
+  // }, [lojas]);
 
   const localOptions = useMemo(() => {
     return locais
       .map((local) => {
-        const pertence = lojaSelecionadaId ? local.loja_id === lojaSelecionadaId : false;
-        const lojaNome = local.loja_id ? lojaNomePorId.get(local.loja_id) ?? null : null;
-        const label = lojaNome ? `${lojaNome} • ${local.nome}` : local.nome;
-        const prioridade = pertence ? 0 : local.loja_id ? 1 : 2;
-        return { value: local.id, label, pertence, prioridade } as const;
+        // Nota: tabela 'locais' não possui campo loja_id
+        // A relação com lojas é feita através de 'unidades_loja'
+        const label = local.nome;
+        const prioridade = 0; // Todos com mesma prioridade por enquanto
+        return { value: local.id, label, pertence: false, prioridade } as const;
       })
       .sort((a, b) => a.prioridade - b.prioridade || a.label.localeCompare(b.label, "pt-BR"));
-  }, [locais, lojaNomePorId, lojaSelecionadaId]);
+  }, [locais]);
 
   const modelosComNomeCompleto = useMemo(
     () =>
@@ -156,14 +159,7 @@ export default function CriarVeiculoPage() {
     [modelos]
   );
 
-  const lojasOptionsOrdenadas = useMemo(
-    () =>
-      lojas
-        .slice()
-        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-        .map((loja) => ({ value: loja.id || "", label: loja.nome })),
-    [lojas]
-  );
+  // lojasOptionsOrdenadas removido - não mais necessário após remoção do campo loja_id de locais
 
   const handleChange =
     (field: keyof VehicleFormState) =>
@@ -205,9 +201,9 @@ export default function CriarVeiculoPage() {
   };
 
   const handleSaveLocal = async (data: Record<string, string>) => {
-    await salvarConfiguracao('local', { nome: data.nome, loja_id: data.loja_id || null });
+    await salvarConfiguracao('local', { nome: data.nome });
     await queryClient.refetchQueries({ queryKey: ['configuracoes', 'local'] });
-    const updatedLocais = queryClient.getQueryData<Array<{ id: string; nome: string; loja_id?: string | null }>>(['configuracoes', 'local']) || [];
+    const updatedLocais = queryClient.getQueryData<Array<{ id: string; nome: string }>>(['configuracoes', 'local']) || [];
     const newLocal = updatedLocais.find(l => l.nome === data.nome);
     if (newLocal?.id) {
       setFormState(prev => ({ ...prev, local_id: newLocal.id }));
@@ -629,17 +625,21 @@ export default function CriarVeiculoPage() {
           title="Adicionar Novo Local"
           fields={[
             { type: 'text', name: 'nome', label: 'Nome', required: true, placeholder: 'Ex: Estacionamento A' },
-            { 
-              type: 'select', 
-              name: 'loja_id', 
-              label: 'Loja (opcional)', 
-              required: false,
-              options: lojasOptionsOrdenadas
-            }
+            // Nota: loja_id removido - tabela 'locais' não possui este campo
+            // A relação com lojas é feita através de 'unidades_loja'
           ]}
           onSave={handleSaveLocal}
         />
       </div>
     </div>
+  );
+}
+
+// Wrap with permission guard
+export default function CriarVeiculoPage() {
+  return (
+    <PagePermissionGuard permission={Permission.ESTOQUE_CRIAR}>
+      <CriarVeiculoPageContent />
+    </PagePermissionGuard>
   );
 }

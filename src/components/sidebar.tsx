@@ -5,83 +5,39 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutGrid,
-  Package,
-  Settings,
-  Shield,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  User,
-  Bell
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { useEmpresaDoUsuario } from '@/hooks/use-empresa';
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ElementType;
-  requiresAuth?: boolean;
-  requiresProprietario?: boolean;
-}
+import { usePermissions } from '@/hooks/use-permissions';
+import { NAV_ITEMS, filterNavItems } from '@/config/navigation.config';
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const { data: empresa, isLoading: empresaLoading } = useEmpresaDoUsuario(isAuthenticated);
+  const {
+    hasPermission,
+    hasAnyPermission,
+    isAdmin,
+    isOwner,
+    isLoading: permissionsLoading,
+  } = usePermissions();
 
-  const navItems: NavItem[] = [
-    {
-      href: '/vitrine',
-      label: 'Vitrine',
-      icon: LayoutGrid
-    },
-    {
-      href: '/estoque',
-      label: 'Estoque',
-      icon: Package,
-      requiresAuth: true,
-      requiresProprietario: true
-    },
-    {
-      href: '/notificacoes',
-      label: 'Notificações',
-      icon: Bell,
-      requiresAuth: true
-    },
-    {
-      href: '/admin',
-      label: 'Admin',
-      icon: Shield,
-      requiresAuth: true,
-      requiresProprietario: true
-    },
-    {
-      href: '/configuracoes',
-      label: 'Configurações',
-      icon: Settings,
-      requiresAuth: true,
-      requiresProprietario: true
-    },
-    {
-      href: '/perfil',
-      label: 'Perfil',
-      icon: User,
-      requiresAuth: true
-    },
-  ];
-
-  const isProprietario = empresa?.papel === 'proprietario';
-
-  const visibleItems = navItems.filter(item => {
-    if (item.requiresAuth && (!isAuthenticated || authLoading)) return false;
-    if (item.requiresProprietario && (!isProprietario || empresaLoading)) return false;
-    return true;
+  // Filtra itens de navegação baseado em permissões
+  const visibleItems = filterNavItems(NAV_ITEMS, {
+    isAuthenticated,
+    hasPermission,
+    hasAnyPermission,
+    isAdmin,
+    isOwner,
   });
+
+  // Mostra loading enquanto carrega permissões
+  const isLoading = authLoading || permissionsLoading;
 
   useEffect(() => {
     setIsOpen(false);
@@ -171,37 +127,51 @@ export function Sidebar() {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-6">
-            <ul className="space-y-1 px-3">
-              {visibleItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      {...(isCollapsed ? { 'aria-label': item.label } : {})}
-                      className={`
-                        flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
-                        ${isActive 
-                          ? 'bg-white/10 text-white font-semibold shadow-sm' 
-                          : 'text-white/80 hover:bg-white/10'
-                        }
-                        ${isCollapsed ? 'lg:justify-center lg:px-3' : ''}
-                      `}
-                    >
-                      <Icon
-                        className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-white/70'}`}
-                        aria-hidden="true"
-                      />
-                      <span className={`${isCollapsed ? 'lg:hidden' : ''}`}>
-                        {item.label}
-                      </span>
-                    </Link>
+            {isLoading ? (
+              // Loading skeleton
+              <ul className="space-y-1 px-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <li key={i} className="animate-pulse">
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
+                      <div className="w-5 h-5 bg-white/10 rounded" />
+                      {!isCollapsed && <div className="h-4 w-24 bg-white/10 rounded" />}
+                    </div>
                   </li>
-                );
-              })}
-            </ul>
+                ))}
+              </ul>
+            ) : (
+              <ul className="space-y-1 px-3">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        {...(isCollapsed ? { 'aria-label': item.label } : {})}
+                        className={`
+                          flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+                          ${isActive
+                            ? 'bg-white/10 text-white font-semibold shadow-sm'
+                            : 'text-white/80 hover:bg-white/10'
+                          }
+                          ${isCollapsed ? 'lg:justify-center lg:px-3' : ''}
+                        `}
+                      >
+                        <Icon
+                          className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-white/70'}`}
+                          aria-hidden="true"
+                        />
+                        <span className={`${isCollapsed ? 'lg:hidden' : ''}`}>
+                          {item.label}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </nav>
 
           {/* Footer Info */}

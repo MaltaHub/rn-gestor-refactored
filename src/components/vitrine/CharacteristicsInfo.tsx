@@ -22,7 +22,7 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
 
   const {
     data: caracteristicasDisponiveis = [],
-    add: adicionarCaracteristica,
+    // add: adicionarCaracteristica, // Não usado atualmente
   } = useCaracteristicas();
 
   const caracteristicasOrdenadas = useMemo(
