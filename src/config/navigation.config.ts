@@ -11,6 +11,7 @@ import {
   Bell,
   User,
   Plus,
+  LineChart,
   type LucideIcon,
 } from 'lucide-react';
 import { Permission } from '@/types/rbac';
@@ -38,6 +39,13 @@ export const NAV_ITEMS: NavConfig[] = [
     label: 'Estoque',
     icon: Package,
     permissions: [Permission.ESTOQUE_VISUALIZAR],
+    showWhen: 'authenticated',
+  },
+  {
+    href: '/vendas',
+    label: 'Vendas',
+    icon: LineChart,
+    permissions: [Permission.VENDAS_VISUALIZAR],
     showWhen: 'authenticated',
   },
   {

@@ -8,7 +8,6 @@ import { criarVeiculo } from "@/services/estoque";
 import { salvarConfiguracao } from "@/services/configuracoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
-import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Plus, Car, Settings, MapPin, List, FileText } from "lucide-react";
 import { QuickAddModal } from "@/components/QuickAddModal";
@@ -88,11 +87,9 @@ function CriarVeiculoPageContent() {
   const router = useRouter();
   const { data: modelos = [] } = useModelos();
   const { data: locais = [] } = useLocais();
-  const { data: lojas = [] } = useLojas();
   const { data: caracteristicasDisponiveis = [] } =
     useCaracteristicas() as { data: CaracteristicaFormValue[] };
   const queryClient = useQueryClient();
-  // const lojaSelecionadaId = useLojaStore((s) => s.lojaSelecionada?.id ?? null); // Não usado após remoção de loja_id
 
   const [formState, setFormState] = useState<VehicleFormState>({ ...INITIAL_FORM_STATE });
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);

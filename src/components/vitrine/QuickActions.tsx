@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,8 @@ export function QuickActions({
   locais,
   lojaNome,
 }: QuickActionsProps) {
-  const { hasPermission, isAdmin } = usePermissions();
+  const router = useRouter();
+  const { hasPermission, isAdmin, role } = usePermissions();
   const queryClient = useQueryClient();
   const [activeAction, setActiveAction] = useState<ActionType | null>(null);
   const [localSelecionado, setLocalSelecionado] = useState<string>(localAtualId ?? "");
@@ -80,6 +82,9 @@ export function QuickActions({
   const possuiUnidadeDaLoja = locais.some((option) => option.pertenceALoja);
 
   // Permissões por ação
+  const podeVender =
+    hasPermission(Permission.VENDAS_CRIAR) &&
+    (role === "consultor" || role === "gerente" || isAdmin());
   const canAlterarLocal = hasPermission(Permission.VITRINE_EDITAR_LOCAL) || isAdmin();
   const canAlterarStatus = hasPermission(Permission.VITRINE_EDITAR_STATUS) || isAdmin();
   const canAlterarPreco = hasPermission(Permission.VITRINE_EDITAR_PRECO) || isAdmin();
@@ -194,7 +199,7 @@ export function QuickActions({
   };
 
   // Se não tiver nenhuma permissão relevante, não exibe o componente
-  if (!canAlterarLocal && !canAlterarStatus && !canAlterarPreco) {
+  if (!canAlterarLocal && !canAlterarStatus && !canAlterarPreco && !podeVender) {
     return null;
   }
 
@@ -210,6 +215,21 @@ export function QuickActions({
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
+          {podeVender && (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                const params = new URLSearchParams({ veiculoId });
+                if (typeof precoLojaAtual === "number") {
+                  params.set("preco", String(precoLojaAtual));
+                }
+                router.push(`/vendas/nova?${params.toString()}`);
+              }}
+            >
+              Vender
+            </Button>
+          )}
           {canAlterarLocal && (
             <Button
               type="button"

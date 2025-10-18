@@ -36,6 +36,12 @@ export const QUERY_CONFIG = {
     staleTime: CACHE_TIMES.STANDARD,
     retry: RETRY_CONFIG.DEFAULT,
   },
+
+  // Vendas
+  vendas: {
+    staleTime: CACHE_TIMES.SHORT,
+    retry: RETRY_CONFIG.DEFAULT,
+  },
   
   // Admin (dados mais voláteis)
   admin: {

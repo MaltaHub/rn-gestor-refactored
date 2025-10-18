@@ -169,7 +169,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VENDAS_EDITAR,
     Permission.VENDAS_CANCELAR,
     Permission.VENDAS_VISUALIZAR,
-    Permission.VENDAS_RELATORIOS,
     // Documentação
     Permission.DOCUMENTACAO_EDITAR,
     Permission.DOCUMENTACAO_VISUALIZAR,
@@ -187,26 +186,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.LOJAS_CRIAR,
     Permission.LOJAS_EDITAR,
     Permission.LOJAS_VISUALIZAR,
-    // Configurações
-    Permission.CONFIG_EDITAR,
-    Permission.CONFIG_VISUALIZAR,
-    Permission.CONFIG_MODELOS,
-    Permission.CONFIG_CARACTERISTICAS,
-    Permission.CONFIG_LOCAIS,
-    Permission.CONFIG_PLATAFORMAS,
-    // Membros (sem remover)
-    Permission.MEMBROS_CONVIDAR,
+    // Membros (visualizar)
     Permission.MEMBROS_VISUALIZAR,
   ],
   gerente: [
-    // Estoque completo
-    Permission.VEICULOS_CRIAR,
-    Permission.VEICULOS_EDITAR,
-    Permission.VEICULOS_VISUALIZAR,
-    Permission.ESTOQUE_CRIAR,
-    Permission.ESTOQUE_EDITAR,
-    Permission.ESTOQUE_VISUALIZAR,
-    Permission.ESTOQUE_EXPORTAR,
     // Vitrine
     Permission.VITRINE_ADICIONAR,
     Permission.VITRINE_REMOVER,
@@ -217,6 +200,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_VISUALIZAR,
     // Vendas
     Permission.VENDAS_CRIAR,
+    Permission.VENDAS_CANCELAR,
     Permission.VENDAS_EDITAR,
     Permission.VENDAS_VISUALIZAR,
     Permission.VENDAS_RELATORIOS,
@@ -227,26 +211,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Notificações
     Permission.NOTIFICACOES_VISUALIZAR,
     // Fotos
-    Permission.FOTOS_UPLOAD,
-    Permission.FOTOS_EDITAR_ORDEM,
     Permission.FOTOS_VISUALIZAR,
     // Lojas (visualizar)
     Permission.LOJAS_VISUALIZAR,
-    // Configurações (visualizar + modelos)
-    Permission.CONFIG_VISUALIZAR,
-    Permission.CONFIG_MODELOS,
-    Permission.CONFIG_CARACTERISTICAS,
     // Membros
     Permission.MEMBROS_VISUALIZAR,
   ],
   consultor: [
-    // Estoque (criar e editar apenas)
-    Permission.VEICULOS_CRIAR,
-    Permission.VEICULOS_EDITAR,
-    Permission.VEICULOS_VISUALIZAR,
-    Permission.ESTOQUE_CRIAR,
-    Permission.ESTOQUE_EDITAR,
-    Permission.ESTOQUE_VISUALIZAR,
     // Vitrine
     Permission.VITRINE_EDITAR_LOCAL,
     Permission.VITRINE_EDITAR_STATUS,
@@ -261,12 +232,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Notificações
     Permission.NOTIFICACOES_VISUALIZAR,
     // Fotos
-    Permission.FOTOS_UPLOAD,
     Permission.FOTOS_VISUALIZAR,
     // Lojas
     Permission.LOJAS_VISUALIZAR,
-    // Configurações
-    Permission.CONFIG_VISUALIZAR,
   ],
   usuario: [
     // Apenas visualizações básicas

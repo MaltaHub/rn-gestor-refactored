@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useVeiculoLojaUI, type VeiculoLojaUI } from "@/adapters/adaptador-vitrine";
 import { useFotosVeiculoLoja } from "@/hooks/use-fotos-veiculo-loja";
 import { useLocais, useLojas } from "@/hooks/use-configuracoes";
@@ -26,7 +25,6 @@ type EstadoVenda = NonNullable<VeiculoLojaUI["veiculo"]>["estado_venda"];
 export default function VitrineDetalhePage() {
   const params = useParams<{ id: string }>();
   const veiculoLojaId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const { data: empresa, isLoading: isLoadingEmpresa } = useEmpresaDoUsuario();
 
   const { data: veiculoLoja, isLoading } = useVeiculoLojaUI(veiculoLojaId);
   const { data: locais = [] } = useLocais();
