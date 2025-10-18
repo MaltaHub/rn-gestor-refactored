@@ -49,6 +49,7 @@ export default function AdminClient() {
   const [modalState, setModalState] = useState<ModalState>(null);
   const [selectedMembro, setSelectedMembro] = useState<typeof membros[number] | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteUsuarioId, setInviteUsuarioId] = useState<string>("");
   const [invitePapel, setInvitePapel] = useState<keyof typeof PAPEL_LABELS>("usuario");
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
@@ -78,13 +79,34 @@ export default function AdminClient() {
     );
   }, [usuariosComVinculo, empresaId]);
 
+  const usuariosDisponiveis = useMemo(() => {
+    return usuarios
+      .filter((usuario) => {
+        const membroVinculado = membrosPorUsuario.get(usuario.id);
+        return !(membroVinculado && membroVinculado.empresa_id === empresaId);
+      })
+      .sort((usuarioA, usuarioB) => {
+        const nomeA = (usuarioA.name ?? usuarioA.email ?? "").toLowerCase();
+        const nomeB = (usuarioB.name ?? usuarioB.email ?? "").toLowerCase();
+        return nomeA.localeCompare(nomeB);
+      });
+  }, [usuarios, membrosPorUsuario, empresaId]);
+
   const handleInviteMembro = async () => {
-    if (!inviteEmail.trim()) {
-      setFeedback({ type: "error", message: "Por favor, informe o e-mail do usuário" });
+    if (!inviteUsuarioId && !inviteEmail.trim()) {
+      setFeedback({
+        type: "error",
+        message: "Selecione um usuário listado ou informe o e-mail do usuário",
+      });
       return;
     }
 
-    const usuario = usuarios.find(u => u.email?.toLowerCase() === inviteEmail.toLowerCase());
+    let usuario = inviteUsuarioId ? usuarios.find((u) => u.id === inviteUsuarioId) : undefined;
+
+    if (!usuario && inviteEmail.trim()) {
+      const normalizedEmail = inviteEmail.trim().toLowerCase();
+      usuario = usuarios.find((u) => u.email?.toLowerCase() === normalizedEmail);
+    }
 
     if (!usuario) {
       setFeedback({ type: "error", message: "Usuário não encontrado no sistema" });
@@ -113,6 +135,7 @@ export default function AdminClient() {
           setFeedback({ type: "success", message: "Membro adicionado com sucesso!" });
           setModalState(null);
           setInviteEmail("");
+          setInviteUsuarioId("");
           setInvitePapel("usuario");
         },
         onError: (error) => {
@@ -427,12 +450,45 @@ export default function AdminClient() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Usuário listado
+                </label>
+                <select
+                  value={inviteUsuarioId}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setInviteUsuarioId(value);
+                    if (value) {
+                      setInviteEmail("");
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">
+                    {usuariosDisponiveis.length > 0
+                      ? "Selecione um usuário da lista"
+                      : "Nenhum usuário disponível"}
+                  </option>
+                  {usuariosDisponiveis.map(({ id, name, email }) => (
+                    <option key={id} value={id}>
+                      {name || email || "Usuário sem identificação"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   E-mail do usuário
                 </label>
                 <input
                   type="email"
                   value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onChange={(e) => {
+                    setInviteEmail(e.target.value);
+                    if (e.target.value) {
+                      setInviteUsuarioId("");
+                    }
+                  }}
                   placeholder="usuario@exemplo.com"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />

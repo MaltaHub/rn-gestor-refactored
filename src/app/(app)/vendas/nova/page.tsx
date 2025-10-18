@@ -418,44 +418,175 @@ function NovaVendaContent() {
 
   const lojaSelecionadaItem = lojas.find((item) => item.id === formState.loja_id) ?? null;
 
+  const pageWrapperClass =
+    "min-h-screen bg-gradient-to-br from-[#100924] via-[#161035] to-[#1f1747] px-4 py-8 text-slate-100 sm:px-6 lg:px-8";
+  const cardSurfaceClass =
+    "bg-white/95 text-slate-900 shadow-lg shadow-purple-900/10 dark:bg-[var(--surface-elevated)] dark:text-slate-100";
+  const labelMutedClass = "text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-300";
+
+  const parseMonetary = (value: string) => {
+    if (!value) return 0;
+    const normalized = Number(value.replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(normalized) ? normalized : 0;
+  };
+
+  const resumoFinanceiro = useMemo(() => {
+    const precoVenda = parseMonetary(formState.preco_venda);
+    const entrada = parseMonetary(formState.preco_entrada);
+    const financiadoInformado = parseMonetary(formState.valor_financiado);
+    const comissaoLoja = parseMonetary(formState.comissao_loja);
+    const comissaoVendedor = parseMonetary(formState.comissao_vendedor);
+    const parcelas = Number(formState.numero_parcelas) || 0;
+
+    const valorSugeridoFinanciado = Math.max(precoVenda - entrada, 0);
+    const valorFinanciado = financiadoInformado || valorSugeridoFinanciado;
+    const saldoAberto = Math.max(precoVenda - entrada - financiadoInformado, 0);
+    const parcelaSugerida =
+      parcelas > 0 ? Math.max((financiadoInformado || valorSugeridoFinanciado) / parcelas, 0) : 0;
+    const totalComissoes = comissaoLoja + comissaoVendedor;
+    const coberturaCompleta = precoVenda > 0 && entrada + financiadoInformado >= precoVenda;
+
+    return {
+      precoVenda,
+      entrada,
+      valorFinanciado,
+      valorSugeridoFinanciado,
+      saldoAberto,
+      parcelaSugerida,
+      parcelas,
+      totalComissoes,
+      coberturaCompleta,
+    };
+  }, [formState]);
+
   if (isLoadingEmpresa && !empresaId) {
     return (
-      <div className="min-h-screen bg-[var(--surface-dark)] px-6 py-10 text-[var(--foreground)]">
+      <div className={pageWrapperClass}>
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
-          <div className="h-6 w-40 animate-pulse rounded bg-white/10" />
-          <div className="h-36 rounded-2xl bg-white/5" />
+          <div className="h-6 w-40 animate-pulse rounded bg-white/20" />
+          <div className="h-36 rounded-2xl bg-white/10" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--surface-dark)] px-6 py-10 text-[var(--foreground)]">
+    <div className={pageWrapperClass}>
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
-        <header className="space-y-2">
-          <Link href="/vendas" className="text-sm font-medium text-[var(--purple-light)] hover:text-[var(--purple-bright)]">
+        <header className="space-y-3">
+          <Link
+            href="/vendas"
+            className="text-sm font-medium text-purple-200 transition-colors hover:text-purple-100"
+          >
             ← Voltar para o painel
           </Link>
-          <h1 className="text-3xl font-semibold text-[var(--text-primary)]">Registrar nova venda</h1>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Preencha os dados da venda e confirme para gerar a ficha completa.
-          </p>
+          <div>
+            <h1 className="text-3xl font-semibold text-slate-100">Registrar nova venda</h1>
+            <p className="mt-1 text-sm text-slate-300">
+              Preencha os dados da venda e confirme para gerar a ficha completa.
+            </p>
+          </div>
         </header>
 
+        <Card variant="default" className={cardSurfaceClass}>
+          <Card.Header
+            title="Resumo financeiro em tempo real"
+            subtitle="Os valores são atualizados conforme você preenche o formulário."
+          />
+          <Card.Body>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <span className={labelMutedClass}>Valor da venda</span>
+                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {resumoFinanceiro.precoVenda
+                    ? formatCurrency(resumoFinanceiro.precoVenda)
+                    : "Informe o valor da venda"}
+                </p>
+              </div>
+              <div>
+                <span className={labelMutedClass}>Entrada informada</span>
+                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {resumoFinanceiro.entrada ? formatCurrency(resumoFinanceiro.entrada) : "—"}
+                </p>
+              </div>
+              <div>
+                <span className={labelMutedClass}>Valor a financiar</span>
+                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {resumoFinanceiro.valorFinanciado
+                    ? formatCurrency(resumoFinanceiro.valorFinanciado)
+                    : "—"}
+                </p>
+                {resumoFinanceiro.valorSugeridoFinanciado > 0 &&
+                  resumoFinanceiro.valorFinanciado !== resumoFinanceiro.valorSugeridoFinanciado && (
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                      Sugestão com base na entrada:{" "}
+                      <span className="font-medium">
+                        {formatCurrency(resumoFinanceiro.valorSugeridoFinanciado)}
+                      </span>
+                    </p>
+                  )}
+              </div>
+              <div>
+                <span className={labelMutedClass}>Parcelas</span>
+                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {resumoFinanceiro.parcelas > 0 ? `${resumoFinanceiro.parcelas}x` : "—"}
+                </p>
+                {resumoFinanceiro.parcelaSugerida > 0 && (
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                    Parcela sugerida:{" "}
+                    <span className="font-medium">
+                      {formatCurrency(resumoFinanceiro.parcelaSugerida)}
+                    </span>
+                  </p>
+                )}
+              </div>
+              <div>
+                <span className={labelMutedClass}>Saldo em aberto</span>
+                <p
+                  className={`mt-1 text-lg font-semibold ${
+                    resumoFinanceiro.saldoAberto > 0
+                      ? "text-amber-600 dark:text-amber-300"
+                      : "text-emerald-600 dark:text-emerald-300"
+                  }`}
+                >
+                  {resumoFinanceiro.precoVenda === 0
+                    ? "—"
+                    : resumoFinanceiro.saldoAberto > 0
+                      ? formatCurrency(resumoFinanceiro.saldoAberto)
+                      : "Cobertura completa"}
+                </p>
+                {!resumoFinanceiro.coberturaCompleta && resumoFinanceiro.precoVenda > 0 && (
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                    Falta informar entrada ou financiamento total para cobrir a venda.
+                  </p>
+                )}
+              </div>
+              <div>
+                <span className={labelMutedClass}>Total de comissões</span>
+                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {resumoFinanceiro.totalComissoes
+                    ? formatCurrency(resumoFinanceiro.totalComissoes)
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Card variant="default">
+          <Card variant="default" className={cardSurfaceClass}>
             <Card.Header
               title="Informações do veículo"
               subtitle="Selecione o veículo e a loja de origem."
             />
             <Card.Body className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Veículo</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">Veículo</span>
                   <select
                     value={formState.veiculo_id}
                     onChange={handleChange("veiculo_id")}
-                    className="h-11 rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 text-sm focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]"
+                    className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:border-slate-700 dark:bg-[var(--surface-dark)] dark:text-slate-100"
                     required
                     disabled={carregandoAux}
                   >
@@ -467,17 +598,19 @@ function NovaVendaContent() {
                     ))}
                   </select>
                   {veiculoSelecionado && (
-                    <span className="text-xs text-[var(--text-secondary)]">
+                    <span className="text-xs text-slate-500 dark:text-slate-300">
                       Selecionado: {veiculoSelecionado.display}
                     </span>
                   )}
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Loja responsável</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Loja responsável
+                  </span>
                   <select
                     value={formState.loja_id}
                     onChange={handleChange("loja_id")}
-                    className="h-11 rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 text-sm focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]"
+                    className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:border-slate-700 dark:bg-[var(--surface-dark)] dark:text-slate-100"
                     required
                     disabled={carregandoAux}
                   >
@@ -489,15 +622,17 @@ function NovaVendaContent() {
                     ))}
                   </select>
                   {lojaSelecionadaItem && (
-                    <span className="text-xs text-[var(--text-secondary)]">
+                    <span className="text-xs text-slate-500 dark:text-slate-300">
                       {lojaSelecionadaItem.nome}
                     </span>
                   )}
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Preço da venda (R$)</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Preço da venda (R$)
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -511,7 +646,9 @@ function NovaVendaContent() {
                   {precoVenalReferencia !== null && (
                     <span
                       className={`text-xs ${
-                        precoAbaixoVenal ? "text-red-400" : "text-[var(--text-secondary)]"
+                        precoAbaixoVenal
+                          ? "text-red-500 dark:text-red-300"
+                          : "text-slate-500 dark:text-slate-300"
                       }`}
                     >
                       Preço venal: {formatCurrency(precoVenalReferencia)}
@@ -519,8 +656,10 @@ function NovaVendaContent() {
                     </span>
                   )}
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Entrada (R$)</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Entrada (R$)
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -530,12 +669,14 @@ function NovaVendaContent() {
                     placeholder="Opcional"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Forma de pagamento</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Forma de pagamento
+                  </span>
                   <select
                     value={formState.forma_pagamento}
                     onChange={handleChange("forma_pagamento")}
-                    className="h-11 rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 text-sm focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]"
+                    className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:border-slate-700 dark:bg-[var(--surface-dark)] dark:text-slate-100"
                   >
                     {FORMA_PAGAMENTO_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
@@ -548,15 +689,17 @@ function NovaVendaContent() {
             </Card.Body>
           </Card>
 
-          <Card variant="default">
+          <Card variant="default" className={cardSurfaceClass}>
             <Card.Header
               title="Dados do cliente"
               subtitle="Informações obrigatórias para emissão e contato."
             />
             <Card.Body className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Nome completo</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Nome completo
+                  </span>
                   <Input
                     value={formState.cliente_nome}
                     onChange={handleChange("cliente_nome")}
@@ -564,8 +707,8 @@ function NovaVendaContent() {
                     required
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">CPF ou CNPJ</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">CPF ou CNPJ</span>
                   <Input
                     value={formState.cliente_cpf_cnpj}
                     onChange={handleChange("cliente_cpf_cnpj")}
@@ -575,16 +718,16 @@ function NovaVendaContent() {
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Telefone</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">Telefone</span>
                   <Input
                     value={formState.cliente_telefone}
                     onChange={handleChange("cliente_telefone")}
                     placeholder="(00) 90000-0000"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">E-mail</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">E-mail</span>
                   <Input
                     type="email"
                     value={formState.cliente_email}
@@ -592,12 +735,14 @@ function NovaVendaContent() {
                     placeholder="cliente@email.com"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Status da venda</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Status da venda
+                  </span>
                   <select
                     value={formState.status_venda}
                     onChange={handleChange("status_venda")}
-                    className="h-11 rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 text-sm focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]"
+                    className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:border-slate-700 dark:bg-[var(--surface-dark)] dark:text-slate-100"
                   >
                     {STATUS_VENDA_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
@@ -607,28 +752,30 @@ function NovaVendaContent() {
                   </select>
                 </label>
               </div>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-[var(--text-primary)]">Endereço</span>
+              <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">Endereço</span>
                 <textarea
                   rows={2}
                   value={formState.cliente_endereco}
                   onChange={handleChange("cliente_endereco")}
                   placeholder="Rua, número, bairro, cidade..."
-                  className="min-h-[88px] w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]"
+                  className="min-h-[88px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:border-slate-700 dark:bg-[var(--surface-dark)] dark:text-slate-100 dark:placeholder:text-slate-400"
                 />
               </label>
             </Card.Body>
           </Card>
 
-          <Card variant="default">
+          <Card variant="default" className={cardSurfaceClass}>
             <Card.Header
               title="Financiamento e seguro"
               subtitle="Informe dados de financiamento, parcelas e coberturas."
             />
             <Card.Body className="space-y-4">
               <div className="grid gap-4 md:grid-cols-3">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Valor financiado (R$)</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Valor financiado (R$)
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -638,8 +785,10 @@ function NovaVendaContent() {
                     placeholder="Opcional"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Nº de parcelas</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Nº de parcelas
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -648,8 +797,10 @@ function NovaVendaContent() {
                     placeholder="Opcional"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Valor da parcela (R$)</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Valor da parcela (R$)
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -661,19 +812,21 @@ function NovaVendaContent() {
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex items-center gap-3 text-sm font-medium text-[var(--text-primary)]">
+                <label className="flex items-center gap-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
                   <input
                     type="checkbox"
                     checked={formState.tem_seguro}
                     onChange={(event) =>
                       setFormState((prev) => ({ ...prev, tem_seguro: event.target.checked }))
                     }
-                    className="h-4 w-4 rounded border border-[var(--border-default)] bg-[var(--surface-dark)] text-[var(--purple-magic)] focus:ring-[var(--purple-magic)]"
+                    className="h-4 w-4 rounded border border-slate-300 text-purple-600 shadow-sm focus:ring-purple-400 dark:border-slate-600 dark:bg-[var(--surface-dark)] dark:text-purple-300"
                   />
                   Venda inclui seguro
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Instituição financeira</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Instituição financeira
+                  </span>
                   <Input
                     value={formState.instituicao_financeira}
                     onChange={handleChange("instituicao_financeira")}
@@ -683,16 +836,18 @@ function NovaVendaContent() {
               </div>
               {formState.tem_seguro && (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-[var(--text-primary)]">Seguradora</span>
+                  <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">Seguradora</span>
                     <Input
                       value={formState.seguradora}
                       onChange={handleChange("seguradora")}
                       placeholder="Nome da seguradora"
                     />
                   </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="font-medium text-[var(--text-primary)]">Valor do seguro (R$)</span>
+                  <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">
+                      Valor do seguro (R$)
+                    </span>
                     <Input
                       type="number"
                       min="0"
@@ -707,15 +862,17 @@ function NovaVendaContent() {
             </Card.Body>
           </Card>
 
-          <Card variant="default">
+          <Card variant="default" className={cardSurfaceClass}>
             <Card.Header
               title="Comissões e entrega"
               subtitle="Controle de comissões e prazos de entrega."
             />
             <Card.Body className="space-y-4">
               <div className="grid gap-4 md:grid-cols-3">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Comissão da loja (R$)</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Comissão da loja (R$)
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -725,8 +882,10 @@ function NovaVendaContent() {
                     placeholder="Opcional"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Comissão do vendedor (R$)</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Comissão do vendedor (R$)
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -736,8 +895,10 @@ function NovaVendaContent() {
                     placeholder="Opcional"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Previsão de entrega</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Previsão de entrega
+                  </span>
                   <Input
                     type="date"
                     value={formState.data_previsao_entrega}
@@ -746,35 +907,42 @@ function NovaVendaContent() {
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Entrega realizada em</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    Entrega realizada em
+                  </span>
                   <Input
                     type="date"
                     value={formState.data_entrega}
                     onChange={handleChange("data_entrega")}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-[var(--text-primary)]">Observações</span>
+                <label className="flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">Observações</span>
                   <textarea
                     rows={3}
                     value={formState.observacoes}
                     onChange={handleChange("observacoes")}
                     placeholder="Informações adicionais, condições especiais, etc."
-                    className="min-h-[96px] w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-dark)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:border-[var(--purple-magic)] focus:ring-2 focus:ring-[var(--purple-magic)]"
+                    className="min-h-[96px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:border-slate-700 dark:bg-[var(--surface-dark)] dark:text-slate-100 dark:placeholder:text-slate-400"
                   />
                 </label>
               </div>
             </Card.Body>
             <Card.Footer align="between">
-              <div className="text-xs text-[var(--text-secondary)]">
+              <div className="text-xs text-slate-500 dark:text-slate-300">
                 Valor total da venda:{" "}
-                <span className="font-semibold text-[var(--text-primary)]">
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {formState.preco_venda ? formatCurrency(Number(formState.preco_venda)) : "—"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Button type="button" variant="ghost" onClick={() => router.back()}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+                  onClick={() => router.back()}
+                >
                   Cancelar
                 </Button>
                 <Button type="submit" variant="primary" disabled={registrarVenda.isPending}>
