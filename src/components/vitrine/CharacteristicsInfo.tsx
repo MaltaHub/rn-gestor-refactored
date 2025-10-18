@@ -6,23 +6,25 @@ import type { Caracteristica } from "@/types";
 import type { VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useCaracteristicas } from "@/hooks/use-configuracoes";
 import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
+import type { CaracteristicaPayload } from "@/services/estoque";
 import { Permission } from "@/types/rbac";
 import { usePermissions } from "@/hooks/use-permissions";
 
 interface CharacteristicsInfoProps {
   veiculo: VeiculoUI;
+  allowEditing?: boolean;
 }
 
 const sortCaracteristicas = (lista: string[]) =>
   [...lista].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
 
-export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
+export function CharacteristicsInfo({ veiculo, allowEditing = false }: CharacteristicsInfoProps) {
   const [mostrarTodas, setMostrarTodas] = useState(false);
   const [editarCaracteristicas, setEditarCaracteristicas] = useState(false);
-  const [editedCaracteristicas, setEditedCaracteristicas] = useState<string[]>([]);
+  const [editedCaracteristicas, setEditedCaracteristicas] = useState<CaracteristicaPayload[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const { hasPermission } = usePermissions();
-  const canEditarCaracteristicas = hasPermission(Permission.VITRINE_EDITAR_CARACTERISTICAS);
+  const podeEditar = allowEditing && hasPermission(Permission.VITRINE_EDITAR_CARACTERISTICAS);
 
   const {
     data: caracteristicasDisponiveis = [],
@@ -37,61 +39,87 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
     [caracteristicasDisponiveis]
   );
 
-  const todasCaracteristicas = useMemo(() => {
+  const caracteristicasDoVeiculo = useMemo<CaracteristicaPayload[]>(() => {
     const itens = (veiculo?.caracteristicas ?? []) as Caracteristica[];
-    const nomes = itens
-      .map((item: Caracteristica | null) => item?.nome ?? null)
-      .filter((nome: string | null): nome is string => Boolean(nome && nome.trim() !== ""));
+    const comId = itens
+      .filter((item): item is Caracteristica => Boolean(item && item.id))
+      .map((item) => ({
+        id: item.id!,
+        nome: (item.nome ?? "").trim(),
+      }))
+      .filter((item) => item.nome !== "");
 
-    if (nomes.length === 0) {
-      return sortCaracteristicas(veiculo?.caracteristicasPrincipais ?? []);
+    if (comId.length > 0) {
+      const mapa = new Map<string, CaracteristicaPayload>();
+      comId.forEach((item) => {
+        if (!mapa.has(item.id)) {
+          mapa.set(item.id, item);
+        }
+      });
+      return Array.from(mapa.values());
     }
 
-    const unicos = Array.from(new Set(nomes.map((nome) => nome.trim())));
-    return sortCaracteristicas(unicos);
-  }, [veiculo?.caracteristicas, veiculo?.caracteristicasPrincipais]);
+    const principalPorNome = (veiculo?.caracteristicasPrincipais ?? []).map((nome) => nome.trim()).filter(Boolean);
+    if (principalPorNome.length === 0) return [];
 
-  const caracteristicasVisiveis = useMemo(() => {
-    if (mostrarTodas) return todasCaracteristicas;
-    const principais = veiculo?.caracteristicasPrincipais ?? [];
-    return sortCaracteristicas(principais);
-  }, [mostrarTodas, todasCaracteristicas, veiculo?.caracteristicasPrincipais]);
+    const lookup = new Map(
+      caracteristicasOrdenadas
+        .filter((item) => item.id)
+        .map((item) => [item.nome.trim().toLowerCase(), { id: item.id!, nome: item.nome }])
+    );
 
-  const extrasDisponiveis = Math.max(
-    todasCaracteristicas.length - (veiculo?.caracteristicasPrincipais?.length ?? 0),
-    0
+    return principalPorNome
+      .map((nome) => lookup.get(nome.toLowerCase()))
+      .filter((item): item is CaracteristicaPayload => Boolean(item));
+  }, [veiculo?.caracteristicas, veiculo?.caracteristicasPrincipais, caracteristicasOrdenadas]);
+
+  const nomesOrdenados = useMemo(
+    () => sortCaracteristicas(caracteristicasDoVeiculo.map((item) => item.nome)),
+    [caracteristicasDoVeiculo]
   );
 
-  useEffect(() => {
-    setEditedCaracteristicas(todasCaracteristicas);
-  }, [todasCaracteristicas]);
+  const caracteristicasVisiveis = useMemo(() => {
+    if (mostrarTodas) return nomesOrdenados;
+    return nomesOrdenados.slice(0, 3);
+  }, [mostrarTodas, nomesOrdenados]);
+
+  const extrasDisponiveis = Math.max(nomesOrdenados.length - Math.min(3, nomesOrdenados.length), 0);
 
   useEffect(() => {
-    if (!canEditarCaracteristicas && editarCaracteristicas) {
+    setEditedCaracteristicas(caracteristicasDoVeiculo);
+  }, [caracteristicasDoVeiculo]);
+
+  useEffect(() => {
+    if (!podeEditar && editarCaracteristicas) {
       setEditarCaracteristicas(false);
     }
-  }, [canEditarCaracteristicas, editarCaracteristicas]);
+  }, [podeEditar, editarCaracteristicas]);
 
-  const handleAdicionarCaracteristica = (id: string, nome: string) => {
-    if (!editedCaracteristicas.includes(nome)) {
-      setEditedCaracteristicas([...editedCaracteristicas, nome]);
+  const handleAdicionarCaracteristica = (caracteristica: Caracteristica) => {
+    if (!caracteristica?.id) return;
+    const jaExiste = editedCaracteristicas.some((item) => item.id === caracteristica.id);
+    if (!jaExiste) {
+      setEditedCaracteristicas([
+        ...editedCaracteristicas,
+        { id: caracteristica.id, nome: caracteristica.nome ?? "" },
+      ]);
     }
   };
 
-  const handleRemoverCaracteristica = (nome: string) => {
-    setEditedCaracteristicas(editedCaracteristicas.filter(item => item !== nome));
+  const handleRemoverCaracteristica = (id: string) => {
+    setEditedCaracteristicas(editedCaracteristicas.filter((item) => item.id !== id));
   };
 
   const handleSalvar = async () => {
-    if (!canEditarCaracteristicas || !veiculo || !veiculo.id) return;
+    if (!podeEditar || !veiculo || !veiculo.id) return;
     setIsSaving(true);
-    const original = todasCaracteristicas.map(nome => ({ id: nome, nome }));
-    const updated = editedCaracteristicas.map(nome => ({ id: nome, nome }));
+    const original = caracteristicasDoVeiculo;
+    const updated = editedCaracteristicas;
     const diff = calcularDiffCaracteristicas(original, updated);
     try {
       await atualizarVeiculo(veiculo.id, {
-        adicionar_caracteristicas: diff.adicionar.map(item => ({ id: item.id, nome: item.nome })),
-        remover_caracteristicas: diff.remover.map(item => ({ id: item.id, nome: item.nome }))
+        adicionar_caracteristicas: diff.adicionar,
+        remover_caracteristicas: diff.remover,
       });
       setEditarCaracteristicas(false);
     } catch (error) {
@@ -110,7 +138,7 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
           </svg>
           Características
         </h2>
-        {canEditarCaracteristicas && (
+        {podeEditar && (
           <button
             type="button"
             onClick={() => {
@@ -132,13 +160,13 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
           <div className="flex flex-wrap gap-2">
             {editedCaracteristicas.map(item => (
               <span
-                key={item}
+                key={item.id}
                 className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-4 py-2 text-sm font-medium text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
               >
-                {item}
+                {item.nome}
                 <button
                   type="button"
-                  onClick={() => handleRemoverCaracteristica(item)}
+                  onClick={() => handleRemoverCaracteristica(item.id)}
                   className="ml-1 text-red-500"
                 >
                   x
@@ -158,12 +186,14 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
               className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
             >
               {caracteristicasOrdenadas
-                .filter(c => !editedCaracteristicas.includes(c.nome))
+                .filter(
+                  (c) => c.id && !editedCaracteristicas.some((item) => item.id === c.id)
+                )
                 .map(c => (
                   <li
                     key={c.id}
                     className="cursor-pointer p-2 hover:bg-gray-200 dark:hover:bg-gray-700"
-                    onClick={() => handleAdicionarCaracteristica(c.id, c.nome)}
+                    onClick={() => handleAdicionarCaracteristica(c)}
                   >
                     {c.nome}
                   </li>
@@ -175,7 +205,7 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
           </div>
         </>
       ) : (
-        todasCaracteristicas.length === 0 ? (
+        nomesOrdenados.length === 0 ? (
           <>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Nenhuma característica cadastrada.

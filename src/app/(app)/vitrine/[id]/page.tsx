@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Permission } from "@/types/rbac";
 import { isEstadoVendido } from "@/utils/status";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type EstadoVenda = NonNullable<VeiculoLojaUI["veiculo"]>["estado_venda"];
 
@@ -76,6 +77,10 @@ export default function VitrineDetalhePage() {
     }
   }, [veiculoLoja?.loja, setLojaSelecionada, lojaAtualId]);
 
+  const { hasPermission } = usePermissions();
+  const canSeeConsultantView = hasPermission(Permission.VITRINE_VISAO_CONSULTOR);
+  const [showConsultantView, setShowConsultantView] = useState(false);
+
   const {
     data: fotos = [],
     isLoading: isFotosLoading,
@@ -103,6 +108,22 @@ export default function VitrineDetalhePage() {
     if (!fotos.length) return;
     setLightboxIndex((prev) => (prev + 1) % fotos.length);
   }, [fotos.length]);
+
+  useEffect(() => {
+    if (!canSeeConsultantView) {
+      setShowConsultantView(false);
+    }
+  }, [canSeeConsultantView]);
+
+  const vendaHref = useMemo(() => {
+    if (!veiculoLoja?.veiculoId) return "/vendas/nova";
+    const params = new URLSearchParams();
+    params.set("veiculoId", veiculoLoja.veiculoId);
+    if (veiculoLoja?.precoLoja) {
+      params.set("preco", String(veiculoLoja.precoLoja));
+    }
+    return `/vendas/nova?${params.toString()}`;
+  }, [veiculoLoja?.veiculoId, veiculoLoja?.precoLoja]);
 
   if (!veiculoLojaId) {
     return (
@@ -178,39 +199,46 @@ export default function VitrineDetalhePage() {
                   <span className="font-mono">Placa: {veiculo.placa}</span>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <ShareImagesButton
-                  fotos={fotos}
-                  vehicleDisplay={veiculo.veiculoDisplay}
-                />
-                <Badge variant={estadoVendaVariant} className="font-semibold text-sm px-3 py-1">
-                  {estadoVendaDisplay}
-                </Badge>
-              </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <ShareImagesButton fotos={fotos} vehicleDisplay={veiculo.veiculoDisplay} />
+              <Badge variant={estadoVendaVariant} className="font-semibold text-sm px-3 py-1">
+                {estadoVendaDisplay}
+              </Badge>
             </div>
+          </div>
 
             <div className="flex min-w-0 flex-col gap-6">
               <VehicleInfo veiculo={veiculo} dataEntrada={veiculoLoja.dataEntradaFormatada ?? undefined} />
               <PriceInfo
                 precoLoja={veiculoLoja.precoLojaFormatado}
                 precoVeiculo={veiculo.precoFormatado}
+                showConsultantInfo={canSeeConsultantView}
+                consultantInfoVisible={showConsultantView}
+                onToggleConsultantInfo={() => setShowConsultantView((prev) => !prev)}
+                showSellButton={showConsultantView}
+                sellHref={vendaHref}
               />
-              <CharacteristicsInfo veiculo={veiculo} />
+              <CharacteristicsInfo
+                veiculo={veiculo}
+                allowEditing={showConsultantView && canSeeConsultantView}
+              />
             </div>
           </section>
 
-          <QuickActions
-            veiculoLojaId={veiculoLoja.id}
-            veiculoId={veiculoLoja.veiculoId}
-            lojaId={veiculoLoja.lojaId}
-            localAtualId={veiculo.local?.id}
-            statusAtual={veiculo.estado_venda as EstadoVenda}
-            precoLojaAtual={veiculoLoja.precoLoja}
-            precoLojaFormatado={veiculoLoja.precoLojaFormatado}
-            precoEstoque={veiculo?.preco_venal ?? null}
-            locais={localOptions}
-            lojaNome={veiculoLoja.loja?.nome}
-          />
+          {showConsultantView && (
+            <QuickActions
+              veiculoLojaId={veiculoLoja.id}
+              veiculoId={veiculoLoja.veiculoId}
+              lojaId={veiculoLoja.lojaId}
+              localAtualId={veiculo.local?.id}
+              statusAtual={veiculo.estado_venda as EstadoVenda}
+              precoLojaAtual={veiculoLoja.precoLoja}
+              precoLojaFormatado={veiculoLoja.precoLojaFormatado}
+              precoEstoque={veiculo?.preco_venal ?? null}
+              locais={localOptions}
+              lojaNome={veiculoLoja.loja?.nome}
+            />
+          )}
 
           <PermissionGuard permission={Permission.VITRINE_REMOVER}>
             <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">

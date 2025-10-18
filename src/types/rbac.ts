@@ -36,6 +36,7 @@ export enum Permission {
   VITRINE_EDITAR_STATUS = 'vitrine:editar_status',
   VITRINE_EDITAR_CARACTERISTICAS = 'vitrine:editar_caracteristicas',
   VITRINE_VISUALIZAR = 'vitrine:visualizar',
+  VITRINE_VISAO_CONSULTOR = 'vitrine:visao_consultor',
 
   // Vendas
   VENDAS_CRIAR = 'vendas:criar',
@@ -105,6 +106,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_EDITAR_STATUS,
     Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_VISUALIZAR,
+    Permission.VITRINE_VISAO_CONSULTOR,
     // Vendas
     Permission.VENDAS_CRIAR,
     Permission.VENDAS_EDITAR,
@@ -164,6 +166,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_EDITAR_STATUS,
     Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_VISUALIZAR,
+    Permission.VITRINE_VISAO_CONSULTOR,
     // Vendas
     Permission.VENDAS_CRIAR,
     Permission.VENDAS_EDITAR,
@@ -198,6 +201,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_EDITAR_STATUS,
     Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_VISUALIZAR,
+    Permission.VITRINE_VISAO_CONSULTOR,
     // Vendas
     Permission.VENDAS_CRIAR,
     Permission.VENDAS_CANCELAR,
@@ -224,6 +228,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_EDITAR_PRECO,
     Permission.VITRINE_VISUALIZAR,
+    Permission.VITRINE_VISAO_CONSULTOR,
     // Vendas
     Permission.VENDAS_CRIAR,
     Permission.VENDAS_VISUALIZAR,

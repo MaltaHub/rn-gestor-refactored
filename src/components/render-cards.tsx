@@ -56,6 +56,9 @@ const getDisplayPrice = (veiculo: VeiculoLojaUI | VeiculoUI) => {
 const getVehicleData = (item: VeiculoLojaUI | VeiculoUI, domain: Domain) => {
   if (domain === "vitrine" && 'veiculo' in item) {
     const vitrineItem = item as VeiculoLojaUI;
+    const precoLojaNumber = typeof vitrineItem.precoLoja === "number" ? vitrineItem.precoLoja : null;
+    const precoVenalNumber = typeof vitrineItem.veiculo?.preco_venal === "number" ? vitrineItem.veiculo.preco_venal : null;
+    const isPromocional = precoLojaNumber !== null && precoVenalNumber !== null && precoLojaNumber > precoVenalNumber;
     return {
       id: vitrineItem.id,
       display: vitrineItem.veiculo?.veiculoDisplay ?? "Veículo sem modelo",
@@ -69,6 +72,7 @@ const getVehicleData = (item: VeiculoLojaUI | VeiculoUI, domain: Domain) => {
       caracteristicas: vitrineItem.veiculo?.caracteristicasPrincipais ?? [],
       temFotos: vitrineItem.temFotos ?? false,
       detailUrl: `/vitrine/${vitrineItem.id}`,
+      isPromocional,
     };
   }
   
@@ -90,6 +94,7 @@ const getVehicleData = (item: VeiculoLojaUI | VeiculoUI, domain: Domain) => {
     caracteristicas: estoqueItem.caracteristicasPrincipais ?? [],
     temFotos: false,
     detailUrl: `/estoque/${estoqueItem.id}`,
+    isPromocional: false,
   };
 };
 
@@ -195,10 +200,17 @@ const GridCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
               )}
 
               <div className="flex flex-1 flex-col gap-4 p-6 min-h-0 break-words">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                  <Badge variant={isSold ? "danger" : "info"} className="font-semibold shrink-0">
-                    {data.estado}
-                  </Badge>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={isSold ? "danger" : "info"} className="font-semibold shrink-0">
+                      {data.estado}
+                    </Badge>
+                    {data.isPromocional && (
+                      <Badge variant="warning" size="sm" className="uppercase tracking-wide">
+                        Promoção
+                      </Badge>
+                    )}
+                  </div>
                   <span className="text-xl font-bold text-purple-600 dark:text-purple-400 break-words text-right sm:text-left min-w-0">
                     {getDisplayPrice(item)}
                   </span>
@@ -272,6 +284,11 @@ const InfoCards = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
                   <Badge variant={isSold ? "danger" : "info"} className="font-semibold">
                     {data.estado}
                   </Badge>
+                  {data.isPromocional && (
+                    <Badge variant="warning" size="sm" className="uppercase tracking-wide">
+                      Promoção
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-6 text-sm text-gray-600 dark:text-gray-400">
                   <span>
@@ -363,9 +380,16 @@ const TableView = ({ vehicles, domain }: { vehicles: (VeiculoLojaUI | VeiculoUI)
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
-                    <span className="block overflow-hidden text-ellipsis font-semibold text-purple-600 dark:text-purple-400">
-                      {getDisplayPrice(item)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="block overflow-hidden text-ellipsis font-semibold text-purple-600 dark:text-purple-400">
+                        {getDisplayPrice(item)}
+                      </span>
+                      {data.isPromocional && (
+                        <Badge variant="warning" size="sm">
+                          Promoção
+                        </Badge>
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
