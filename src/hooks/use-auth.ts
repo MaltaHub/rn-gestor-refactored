@@ -1,25 +1,17 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import type { User } from "@supabase/supabase-js";
+import { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, initialized } = useAuthStore(
+    useShallow((state) => ({
+      user: state.user,
+      loading: state.loading,
+      initialized: state.initialized,
+    }))
+  );
 
-  useEffect(() => {
-    // Carrega sessão inicial
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ?? null);
-      setLoading(false);
-    });
+  const isAuthenticated = useMemo(() => Boolean(user), [user]);
 
-    // Escuta mudanças na sessão
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.subscription.unsubscribe();
-  }, []);
-
-  return { user, loading, isAuthenticated: !!user };
+  return { user, loading, initialized, isAuthenticated };
 }

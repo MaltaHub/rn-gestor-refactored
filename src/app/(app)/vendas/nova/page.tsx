@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/toast";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { useLojaStore } from "@/stores/useLojaStore";
+import type { Database } from "@/types/supabase";
 
 const FORMA_PAGAMENTO_OPTIONS = [
   "dinheiro",
@@ -48,6 +49,12 @@ type LojaOption = {
   id: string;
   nome: string;
 };
+
+type VeiculoComModelo = Database["public"]["Tables"]["veiculos"]["Row"] & {
+  modelo: { nome: string | null } | { nome: string | null }[] | null;
+};
+
+type LojaRow = Database["public"]["Tables"]["lojas"]["Row"];
 
 function NovaVendaContent() {
   const router = useRouter();
@@ -130,25 +137,25 @@ function NovaVendaContent() {
         if (veiculosRes.error) throw veiculosRes.error;
         if (lojasRes.error) throw lojasRes.error;
 
-        const veiculosList: VeiculoOption[] =
-          (veiculosRes.data ?? []).map((item) => {
-            const modeloRelation = (item as any).modelo;
-            const modeloNome = Array.isArray(modeloRelation)
-              ? modeloRelation[0]?.nome
-              : modeloRelation?.nome;
-            const precoVenal = typeof (item as any).preco_venal === "number" ? (item as any).preco_venal : null;
-            return {
-              id: item.id,
-              display: `${modeloNome ?? "Modelo"} • ${item.placa ?? "sem placa"}`,
-              precoVenal,
-            };
-          }) ?? [];
-
-        const lojasList: LojaOption[] =
-          (lojasRes.data ?? []).map((item) => ({
+        const veiculosData = (veiculosRes.data ?? []) as VeiculoComModelo[];
+        const veiculosList: VeiculoOption[] = veiculosData.map((item) => {
+          const modeloRelation = item.modelo;
+          const modeloNome = Array.isArray(modeloRelation)
+            ? modeloRelation[0]?.nome ?? null
+            : modeloRelation?.nome ?? null;
+          const precoVenal = typeof item.preco_venal === "number" ? item.preco_venal : null;
+          return {
             id: item.id,
-            nome: item.nome,
-          })) ?? [];
+            display: `${modeloNome ?? "Modelo"} • ${item.placa ?? "sem placa"}`,
+            precoVenal,
+          };
+        });
+
+        const lojasData = (lojasRes.data ?? []) as LojaRow[];
+        const lojasList: LojaOption[] = lojasData.map((item) => ({
+          id: item.id,
+          nome: item.nome ?? "",
+        }));
 
         setVeiculos(veiculosList);
         setLojas(lojasList);

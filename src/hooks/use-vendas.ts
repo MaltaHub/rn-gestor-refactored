@@ -17,8 +17,6 @@ const vendasKeys = {
 };
 
 type VendaInsert = Database["public"]["Tables"]["vendas"]["Insert"];
-type VendaStatus = Database["public"]["Enums"]["status_venda"];
-
 export function useVendas(
   empresaId?: string | null,
   vendedorId?: string | null,

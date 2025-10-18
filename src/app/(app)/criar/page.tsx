@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
-import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
+import { useCaracteristicas, useLocais, useModelos } from "@/hooks/use-configuracoes";
 import { criarVeiculo } from "@/services/estoque";
 import { salvarConfiguracao } from "@/services/configuracoes";
 import { useQueryClient } from "@tanstack/react-query";

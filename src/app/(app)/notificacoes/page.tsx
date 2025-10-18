@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/types/supabase";
 import {
@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
 
 type NotificacaoRow = Database["public"]["Tables"]["notificacoes"]["Row"];
 type NotificacaoLeituraRow = Database["public"]["Tables"]["notificacoes_leituras"]["Row"];
@@ -21,21 +22,22 @@ type FilterType = "todas" | "nao_lidas" | "arquivadas";
 
 export default function NotificacoesPage() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoadingNotificacoes, setIsLoadingNotificacoes] = useState(true);
   const [filter, setFilter] = useState<FilterType>("todas");
 
   const router = useRouter();
-  const userRef = useRef<{ id: string } | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id;
 
   // Carregar notificações + leituras do usuário
   const carregarNotificacoes = useCallback(async () => {
-    if (!userRef.current) return;
+    if (!userId) return;
 
-    setLoading(true);
+    setIsLoadingNotificacoes(true);
     try {
       const [notificacoesRes, leiturasRes] = await Promise.all([
         supabase.from("notificacoes").select("*").order("created_at", { ascending: false }),
-        supabase.from("notificacoes_leituras").select("*").eq("user_id", userRef.current.id),
+        supabase.from("notificacoes_leituras").select("*").eq("user_id", userId),
       ]);
 
       if (notificacoesRes.error) throw notificacoesRes.error;
@@ -71,23 +73,20 @@ export default function NotificacoesPage() {
     } catch (error) {
       console.error("Erro ao carregar notificações:", error);
     } finally {
-      setLoading(false);
+      setIsLoadingNotificacoes(false);
     }
-  }, [filter]);
+  }, [filter, userId]);
 
   // Buscar user só uma vez
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error || !data.user) {
-        router.push("/login");
-        return;
-      }
-      userRef.current = data.user;
-      await carregarNotificacoes();
-    };
+    if (authLoading) return;
 
-    fetchUser();
+    if (!userId) {
+      router.push("/login");
+      return;
+    }
+
+    carregarNotificacoes();
 
     const channel = supabase
       .channel("notificacoes_changes")
@@ -103,11 +102,11 @@ export default function NotificacoesPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [router, carregarNotificacoes]);
+  }, [authLoading, userId, router, carregarNotificacoes]);
 
   // Marcar notificação como lida
   const marcarComoLida = useCallback(async (id: string) => {
-    if (!userRef.current) return;
+    if (!userId) return;
 
     try {
       // Verifica se já existe um registro
@@ -115,7 +114,7 @@ export default function NotificacoesPage() {
         .from("notificacoes_leituras")
         .select("id")
         .eq("notificacao_id", id)
-        .eq("user_id", userRef.current.id)
+        .eq("user_id", userId)
         .single();
 
       if (existing) {
@@ -128,7 +127,7 @@ export default function NotificacoesPage() {
         // Cria um novo registro
         await supabase.from("notificacoes_leituras").insert({
           notificacao_id: id,
-          user_id: userRef.current.id,
+          user_id: userId,
           lido_em: new Date().toISOString(),
         });
       }
@@ -139,11 +138,11 @@ export default function NotificacoesPage() {
     } catch (error) {
       console.error("Erro ao marcar como lida:", error);
     }
-  }, []);
+  }, [userId]);
 
   // Arquivar notificação
   const arquivarNotificacao = useCallback(async (id: string) => {
-    if (!userRef.current) return;
+    if (!userId) return;
 
     try {
       // Verifica se já existe um registro
@@ -151,7 +150,7 @@ export default function NotificacoesPage() {
         .from("notificacoes_leituras")
         .select("id")
         .eq("notificacao_id", id)
-        .eq("user_id", userRef.current.id)
+        .eq("user_id", userId)
         .single();
 
       if (existing) {
@@ -167,7 +166,7 @@ export default function NotificacoesPage() {
         // Cria um novo registro
         await supabase.from("notificacoes_leituras").insert({
           notificacao_id: id,
-          user_id: userRef.current.id,
+          user_id: userId,
           arquivado: true,
           arquivado_em: new Date().toISOString(),
         });
@@ -177,7 +176,7 @@ export default function NotificacoesPage() {
     } catch (error) {
       console.error("Erro ao arquivar:", error);
     }
-  }, []);
+  }, [userId]);
 
   const naoLidasCount = notificacoes.filter((n) => !n.lida).length;
 
@@ -222,7 +221,7 @@ export default function NotificacoesPage() {
       </div>
 
       {/* LISTA */}
-      {loading ? (
+      {authLoading || isLoadingNotificacoes ? (
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
           <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>

@@ -1,21 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ReactQueryProvider } from "../components/react-query-provider";
 import { PWARegister } from "../components/pwa-register";
 import { FirebaseRegister } from "../components/firebase-register";
 import { ThemeProvider } from "@/contexts/theme";
 import { ToastProvider } from "@/components/ui/toast";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const viewport: Viewport = {
   themeColor: [
@@ -50,7 +39,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased theme-surface`}>
+      <body className="antialiased theme-surface">
         <ThemeProvider defaultMode="light">
           <ToastProvider>
             <ReactQueryProvider>

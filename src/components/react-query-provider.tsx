@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { requestLogout, subscribeToLogout, isLogoutInProgress } from "@/lib/logout-events";
 import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function ReactQueryProvider({ children }: PropsWithChildren) {
   const [queryClient] = useState(
@@ -21,55 +22,54 @@ export function ReactQueryProvider({ children }: PropsWithChildren) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthStateEffect />
       <LogoutEffect />
       {children}
     </QueryClientProvider>
   );
 }
 
-function LogoutEffect() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const processingRef = useRef(false);
+function AuthStateEffect() {
+  const startLoading = useAuthStore((state) => state.startLoading);
+  const finishLoading = useAuthStore((state) => state.finishLoading);
+  const initialized = useAuthStore((state) => state.initialized);
 
   useEffect(() => {
-    const unsubscribe = subscribeToLogout(async (event) => {
-      if (processingRef.current) {
-        return;
-      }
+    if (initialized) {
+      return;
+    }
 
-      processingRef.current = true;
+    let active = true;
+    startLoading();
 
-      try {
-        await handleSupabaseSignOut();
-      } catch (error) {
-        console.error("Failed to sign out from Supabase", error);
-      }
+    supabase.auth
+      .getUser()
+      .then(({ data, error }) => {
+        if (!active) return;
 
-      try {
-        await queryClient.cancelQueries({ type: "all" });
-      } catch (error) {
-        console.error("Failed to cancel active React Query queries", error);
-      } finally {
-        queryClient.getMutationCache().clear();
-        queryClient.clear();
-      }
+        if (error) {
+          console.error("Failed to load authenticated user", error);
+          finishLoading(null);
+          return;
+        }
 
-      await clearClientState();
-
-      const redirectPath = event.redirectTo ?? "/login";
-      router.replace(redirectPath);
-
-      processingRef.current = false;
-    });
+        finishLoading(data.user ?? null);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error("Unexpected error while loading authenticated user", error);
+        finishLoading(null);
+      });
 
     return () => {
-      unsubscribe();
+      active = false;
     };
-  }, [queryClient, router]);
+  }, [initialized, startLoading, finishLoading]);
 
   useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      finishLoading(session?.user ?? null);
+
       if (event === "SIGNED_OUT" && !isLogoutInProgress()) {
         requestLogout({ reason: "forced", redirectTo: "/login" }).catch((error) => {
           console.error("Failed to process SIGNED_OUT event", error);
@@ -80,7 +80,55 @@ function LogoutEffect() {
     return () => {
       subscription?.subscription.unsubscribe();
     };
-  }, []);
+  }, [finishLoading]);
+
+  return null;
+}
+
+function LogoutEffect() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const processingRef = useRef(false);
+  const finishLoading = useAuthStore((state) => state.finishLoading);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToLogout(async (event) => {
+      if (processingRef.current) {
+        return;
+      }
+
+      processingRef.current = true;
+
+      try {
+        try {
+          await handleSupabaseSignOut();
+        } catch (error) {
+          console.error("Failed to sign out from Supabase", error);
+        }
+
+        try {
+          await queryClient.cancelQueries({ type: "all" });
+        } catch (error) {
+          console.error("Failed to cancel active React Query queries", error);
+        } finally {
+          queryClient.getMutationCache().clear();
+          queryClient.clear();
+        }
+
+        await clearClientState();
+        finishLoading(null);
+
+        const redirectPath = event.redirectTo ?? "/login";
+        router.replace(redirectPath);
+      } finally {
+        processingRef.current = false;
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [finishLoading, queryClient, router]);
 
   return null;
 }

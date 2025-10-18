@@ -3,21 +3,25 @@
 import { useEffect } from "react";
 import { solicitarPermissaoNotificacao } from "@/lib/firebase-client";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 
 export function NotificacoesSetup() {
+  const { user, loading } = useAuth();
+
   useEffect(() => {
+    if (loading) return;
+    if (!user) return;
+
+    let cancelled = false;
+
     async function setupNotificacoes() {
       try {
-
-        // Verificar se usuário está autenticado
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         // Solicitar permissão e obter token
         const token = await solicitarPermissaoNotificacao();
 
-        if (token) {
-          // Salvar token no banco de dados
+        if (cancelled || !token) return;
+
+        if (token && !cancelled && user) {
           await supabase
             .from("notificacoes_tokens")
             .upsert({
@@ -34,7 +38,11 @@ export function NotificacoesSetup() {
     }
 
     setupNotificacoes();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, user]);
 
   return null;
 }
