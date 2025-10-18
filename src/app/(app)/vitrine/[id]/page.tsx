@@ -17,6 +17,8 @@ import { CharacteristicsInfo } from "@/components/vitrine/CharacteristicsInfo";
 import { QuickActions } from "@/components/vitrine/QuickActions";
 import { ShareImagesButton } from "@/components/vitrine/ShareImagesButton";
 import { Badge } from "@/components/ui/badge";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import { Permission } from "@/types/rbac";
 import { isEstadoVendido } from "@/utils/status";
 
 type EstadoVenda = NonNullable<VeiculoLojaUI["veiculo"]>["estado_venda"];
@@ -212,7 +214,7 @@ export default function VitrineDetalhePage() {
             lojaNome={veiculoLoja.loja?.nome}
           />
 
-          {!isLoadingEmpresa && empresa?.papel === "proprietario" && (
+          <PermissionGuard permission={Permission.VITRINE_REMOVER}>
             <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -230,7 +232,7 @@ export default function VitrineDetalhePage() {
                 />
               </div>
             </div>
-          )}
+          </PermissionGuard>
         </div>
       </div>
     </>

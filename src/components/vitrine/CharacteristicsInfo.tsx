@@ -6,6 +6,8 @@ import type { Caracteristica } from "@/types";
 import type { VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useCaracteristicas } from "@/hooks/use-configuracoes";
 import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
+import { Permission } from "@/types/rbac";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface CharacteristicsInfoProps {
   veiculo: VeiculoUI;
@@ -19,6 +21,8 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
   const [editarCaracteristicas, setEditarCaracteristicas] = useState(false);
   const [editedCaracteristicas, setEditedCaracteristicas] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const { hasPermission } = usePermissions();
+  const canEditarCaracteristicas = hasPermission(Permission.VITRINE_EDITAR_CARACTERISTICAS);
 
   const {
     data: caracteristicasDisponiveis = [],
@@ -62,6 +66,12 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
     setEditedCaracteristicas(todasCaracteristicas);
   }, [todasCaracteristicas]);
 
+  useEffect(() => {
+    if (!canEditarCaracteristicas && editarCaracteristicas) {
+      setEditarCaracteristicas(false);
+    }
+  }, [canEditarCaracteristicas, editarCaracteristicas]);
+
   const handleAdicionarCaracteristica = (id: string, nome: string) => {
     if (!editedCaracteristicas.includes(nome)) {
       setEditedCaracteristicas([...editedCaracteristicas, nome]);
@@ -73,7 +83,7 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
   };
 
   const handleSalvar = async () => {
-    if (!veiculo || !veiculo.id) return;
+    if (!canEditarCaracteristicas || !veiculo || !veiculo.id) return;
     setIsSaving(true);
     const original = todasCaracteristicas.map(nome => ({ id: nome, nome }));
     const updated = editedCaracteristicas.map(nome => ({ id: nome, nome }));
@@ -100,19 +110,22 @@ export function CharacteristicsInfo({ veiculo }: CharacteristicsInfoProps) {
           </svg>
           Características
         </h2>
-        <button
-          type="button"
-          onClick={() => {
-            if (editarCaracteristicas) {
-              handleSalvar();
-            } else {
-              setEditarCaracteristicas(true);
-            }
-          }}
-          className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition"
-        >
-          {editarCaracteristicas ? (isSaving ? "Salvando..." : "Salvar") : "Editar"}
-        </button>
+        {canEditarCaracteristicas && (
+          <button
+            type="button"
+            onClick={() => {
+              if (editarCaracteristicas) {
+                handleSalvar();
+              } else {
+                setEditarCaracteristicas(true);
+              }
+            }}
+            disabled={isSaving}
+            className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {editarCaracteristicas ? (isSaving ? "Salvando..." : "Salvar") : "Editar"}
+          </button>
+        )}
       </div>
       {editarCaracteristicas ? (
         <>

@@ -10,7 +10,9 @@ import { atualizarVeiculo } from "@/services/estoque";
 import { atualizarPrecoVeiculoLoja } from "@/services/vitrine";
 import { veiculosLojaKeys } from "@/adapters/adaptador-vitrine";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
-import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
+import { Permission } from "@/types/rbac";
+import { usePermissions } from "@/hooks/use-permissions";
+import { PermissionGuard } from "@/components/PermissionGuard";
 
 const ESTADOS_VENDA = [
   "disponivel",
@@ -60,7 +62,7 @@ export function QuickActions({
   locais,
   lojaNome,
 }: QuickActionsProps) {
-  const { data: empresa } = useEmpresaDoUsuario();
+  const { hasPermission, isAdmin } = usePermissions();
   const queryClient = useQueryClient();
   const [activeAction, setActiveAction] = useState<ActionType | null>(null);
   const [localSelecionado, setLocalSelecionado] = useState<string>(localAtualId ?? "");
@@ -77,8 +79,10 @@ export function QuickActions({
 
   const possuiUnidadeDaLoja = locais.some((option) => option.pertenceALoja);
 
-  // Verifica se o usuário é consultor
-  const isConsultor = empresa?.papel === "consultor" || empresa?.papel === "administrador";
+  // Permissões por ação
+  const canAlterarLocal = hasPermission(Permission.VITRINE_EDITAR_LOCAL) || isAdmin();
+  const canAlterarStatus = hasPermission(Permission.VITRINE_EDITAR_STATUS) || isAdmin();
+  const canAlterarPreco = hasPermission(Permission.VITRINE_EDITAR_PRECO) || isAdmin();
 
   const invalidateVitrineQueries = useCallback(async () => {
     await Promise.all([
@@ -189,8 +193,8 @@ export function QuickActions({
     setActiveAction((current) => (current === action ? null : action));
   };
 
-  // Se não for consultor, não exibe o componente
-  if (!isConsultor) {
+  // Se não tiver nenhuma permissão relevante, não exibe o componente
+  if (!canAlterarLocal && !canAlterarStatus && !canAlterarPreco) {
     return null;
   }
 
@@ -206,27 +210,33 @@ export function QuickActions({
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
-          <Button
-            type="button"
-            variant={activeAction === "local" ? "primary" : "secondary"}
-            onClick={() => toggleAction("local")}
-          >
-            Alterar local
-          </Button>
-          <Button
-            type="button"
-            variant={activeAction === "status" ? "primary" : "secondary"}
-            onClick={() => toggleAction("status")}
-          >
-            Alterar status
-          </Button>
-          <Button
-            type="button"
-            variant={activeAction === "preco" ? "primary" : "secondary"}
-            onClick={() => toggleAction("preco")}
-          >
-            Alterar valor
-          </Button>
+          {canAlterarLocal && (
+            <Button
+              type="button"
+              variant={activeAction === "local" ? "primary" : "secondary"}
+              onClick={() => toggleAction("local")}
+            >
+              Alterar local
+            </Button>
+          )}
+          {canAlterarStatus && (
+            <Button
+              type="button"
+              variant={activeAction === "status" ? "primary" : "secondary"}
+              onClick={() => toggleAction("status")}
+            >
+              Alterar status
+            </Button>
+          )}
+          {canAlterarPreco && (
+            <Button
+              type="button"
+              variant={activeAction === "preco" ? "primary" : "secondary"}
+              onClick={() => toggleAction("preco")}
+            >
+              Alterar valor
+            </Button>
+          )}
         </div>
       </div>
 
@@ -240,7 +250,8 @@ export function QuickActions({
         </div>
       )}
 
-      {activeAction === "local" && (
+      {activeAction === "local" && canAlterarLocal && (
+        <PermissionGuard permission={Permission.VITRINE_EDITAR_LOCAL}>
         <form className="mt-6 space-y-4" onSubmit={handleUpdateLocal}>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300" htmlFor="local">
@@ -269,9 +280,11 @@ export function QuickActions({
             {isSaving === "local" ? "Salvando..." : "Salvar local"}
           </Button>
         </form>
+        </PermissionGuard>
       )}
 
-      {activeAction === "status" && (
+      {activeAction === "status" && canAlterarStatus && (
+        <PermissionGuard permission={Permission.VITRINE_EDITAR_STATUS}>
         <form className="mt-6 space-y-4" onSubmit={handleUpdateStatus}>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300" htmlFor="status">
@@ -298,9 +311,11 @@ export function QuickActions({
             {isSaving === "status" ? "Salvando..." : "Salvar status"}
           </Button>
         </form>
+        </PermissionGuard>
       )}
 
-      {activeAction === "preco" && (
+      {activeAction === "preco" && canAlterarPreco && (
+        <PermissionGuard permission={Permission.VITRINE_EDITAR_PRECO}>
         <form className="mt-6 space-y-4" onSubmit={handleUpdatePreco}>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300" htmlFor="preco">
@@ -323,6 +338,7 @@ export function QuickActions({
             {isSaving === "preco" ? "Salvando..." : "Salvar preço"}
           </Button>
         </form>
+        </PermissionGuard>
       )}
     </Card>
   );

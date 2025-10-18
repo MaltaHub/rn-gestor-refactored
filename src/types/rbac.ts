@@ -32,6 +32,9 @@ export enum Permission {
   VITRINE_ADICIONAR = 'vitrine:adicionar',
   VITRINE_REMOVER = 'vitrine:remover',
   VITRINE_EDITAR_PRECO = 'vitrine:editar_preco',
+  VITRINE_EDITAR_LOCAL = 'vitrine:editar_local',
+  VITRINE_EDITAR_STATUS = 'vitrine:editar_status',
+  VITRINE_EDITAR_CARACTERISTICAS = 'vitrine:editar_caracteristicas',
   VITRINE_VISUALIZAR = 'vitrine:visualizar',
 
   // Vendas
@@ -98,6 +101,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_ADICIONAR,
     Permission.VITRINE_REMOVER,
     Permission.VITRINE_EDITAR_PRECO,
+    Permission.VITRINE_EDITAR_LOCAL,
+    Permission.VITRINE_EDITAR_STATUS,
+    Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_VISUALIZAR,
     // Vendas
     Permission.VENDAS_CRIAR,
@@ -154,6 +160,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_ADICIONAR,
     Permission.VITRINE_REMOVER,
     Permission.VITRINE_EDITAR_PRECO,
+    Permission.VITRINE_EDITAR_LOCAL,
+    Permission.VITRINE_EDITAR_STATUS,
+    Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_VISUALIZAR,
     // Vendas
     Permission.VENDAS_CRIAR,
@@ -202,6 +211,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VITRINE_ADICIONAR,
     Permission.VITRINE_REMOVER,
     Permission.VITRINE_EDITAR_PRECO,
+    Permission.VITRINE_EDITAR_LOCAL,
+    Permission.VITRINE_EDITAR_STATUS,
+    Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_VISUALIZAR,
     // Vendas
     Permission.VENDAS_CRIAR,
@@ -235,7 +247,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.ESTOQUE_CRIAR,
     Permission.ESTOQUE_EDITAR,
     Permission.ESTOQUE_VISUALIZAR,
-    // Vitrine (editar preço)
+    // Vitrine
+    Permission.VITRINE_EDITAR_LOCAL,
+    Permission.VITRINE_EDITAR_STATUS,
+    Permission.VITRINE_EDITAR_CARACTERISTICAS,
     Permission.VITRINE_EDITAR_PRECO,
     Permission.VITRINE_VISUALIZAR,
     // Vendas

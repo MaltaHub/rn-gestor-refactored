@@ -208,7 +208,7 @@ export default function EnviarNotificacoesPage() {
         const payload = {
           titulo,
           mensagem,
-          tipo: "manual",
+          tipo: "info",
           destinatario_id: destinatarios && destinatarios.length > 0 ? destinatarios : null,
           remetente_id: remetente.id,
           enviado: true,
