@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, X, Plus } from 'lucide-react';
+import { Search, X, Plus, Printer } from 'lucide-react';
 
 import { useVeiculosUI, type VeiculoUI } from '@/adapters/adaptador-estoque';
 import { useLocais } from '@/hooks/use-configuracoes';
@@ -266,6 +266,15 @@ export default function EstoquePage() {
             <Badge variant="default" size="md">
               {totalVeiculos} de {totalVeiculos} veículos
             </Badge>
+            <Button
+              variant="outline"
+              leftIcon={<Printer className="w-4 h-4" />}
+              asChild
+            >
+              <Link href="/estoque/imprimir" target="_blank" rel="noopener noreferrer">
+                Imprimir
+              </Link>
+            </Button>
             <Button
               variant="primary"
               leftIcon={<Plus className="w-4 h-4" />}
