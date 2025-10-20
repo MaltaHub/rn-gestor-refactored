@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,6 @@ export function QuickActions({
   locais,
   lojaNome,
 }: QuickActionsProps) {
-  const router = useRouter();
   const { hasPermission, isAdmin, role } = usePermissions();
   const queryClient = useQueryClient();
   const [activeAction, setActiveAction] = useState<ActionType | null>(null);

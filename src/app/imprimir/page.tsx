@@ -288,20 +288,20 @@ export default function ImprimirVitrinePage() {
                   <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                        <th className="px-4 py-3">Modelo</th>
-                        <th className="px-4 py-3">Placa</th>
-                        <th className="px-4 py-3">Edição / Combustível / Câmbio</th>
-                        <th className="px-4 py-3">Ano</th>
-                        <th className="px-4 py-3">Cor</th>
-                        <th className="px-4 py-3">Hodômetro</th>
-                        <th className="px-4 py-3 text-right">Preço</th>
+                        <th className="px-3 py-2">Modelo</th>
+                        <th className="px-3 py-2">Placa</th>
+                        <th className="px-3 py-2">Edição / Combustível / Câmbio</th>
+                        <th className="px-3 py-2">Ano</th>
+                        <th className="px-3 py-2">Cor</th>
+                        <th className="px-3 py-2">Hodômetro</th>
+                        <th className="px-3 py-2 text-right">Preço</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {itens.length === 0 ? (
                         <tr>
                           <td
-                            className="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400"
+                            className="px-3 py-2 text-center text-sm text-gray-500 dark:text-gray-400"
                             colSpan={7}
                           >
                             Nenhum veículo disponível nesta unidade.
@@ -310,25 +310,25 @@ export default function ImprimirVitrinePage() {
                       ) : (
                         itens.map((item) => (
                           <tr key={item.registro.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
-                            <td className="px-4 py-2 font-medium text-gray-900 dark:text-gray-100">
+                            <td className="px-3 py-1.5 font-medium text-gray-900 dark:text-gray-100">
                               {item.modeloNome}
                             </td>
-                            <td className="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">
+                            <td className="px-3 py-1.5 font-mono text-gray-700 dark:text-gray-300">
                               {item.placa}
                             </td>
-                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
                               {item.edicaoCombustivelCambio}
                             </td>
-                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
                               {item.anoDisplay}
                             </td>
-                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
                               {item.cor}
                             </td>
-                            <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
+                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
                               {item.hodometro}
                             </td>
-                            <td className="px-4 py-2 text-right font-semibold text-gray-900 dark:text-gray-100">
+                            <td className="px-3 py-1.5 text-right font-semibold text-gray-900 dark:text-gray-100">
                               {item.precoDisplay}
                             </td>
                           </tr>

@@ -12,6 +12,7 @@ import {
   User,
   Plus,
   LineChart,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 import { Permission } from '@/types/rbac';
@@ -60,6 +61,13 @@ export const NAV_ITEMS: NavConfig[] = [
     label: 'Notificações',
     icon: Bell,
     permissions: [Permission.NOTIFICACOES_VISUALIZAR],
+    showWhen: 'authenticated',
+  },
+  {
+    href: '/documentacao',
+    label: 'Documentação',
+    icon: FileText,
+    permissions: [Permission.DOCUMENTACAO_VISUALIZAR],
     showWhen: 'authenticated',
   },
   {

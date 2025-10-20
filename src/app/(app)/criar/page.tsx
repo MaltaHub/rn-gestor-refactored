@@ -404,8 +404,8 @@ function CriarVeiculoPageContent() {
                   value={formState.preco_venal}
                   onChange={handleChange("preco_venal")}
                   className={`${inputBaseClasses} h-11`}
-                  min={0}
-                  step={100}
+                  step="any"
+                  inputMode="decimal"
                   placeholder="45000"
                 />
               </label>

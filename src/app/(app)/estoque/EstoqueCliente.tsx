@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, X, Plus, Printer } from 'lucide-react';
+import { Search, X, Plus } from 'lucide-react';
 
 import { useVeiculosUI, type VeiculoUI } from '@/adapters/adaptador-estoque';
 import { useLocais } from '@/hooks/use-configuracoes';

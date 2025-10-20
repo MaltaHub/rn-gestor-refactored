@@ -12,6 +12,7 @@ export const LIMITS = {
 // Buckets do Supabase Storage
 export const STORAGE_BUCKETS = {
   FOTOS_VEICULOS_LOJA: 'fotos_veiculos_loja',
+  DOCUMENTOS_VEICULOS: 'documentos_veiculos',
 } as const;
 
 // Nomes de RPC Functions do Supabase

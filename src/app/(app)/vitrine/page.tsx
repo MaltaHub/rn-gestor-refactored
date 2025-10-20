@@ -57,6 +57,8 @@ export default function VitrinePage() {
   const router = useRouter();
   const lojaSelecionada = useLojaStore((state) => state.lojaSelecionada);
   const lojaId = lojaSelecionada?.id;
+  const permissions = usePermissions();
+  const canPrint = permissions.hasPermission(Permission.VITRINE_VISAO_CONSULTOR);
 
   const { data: empresa } = useEmpresaDoUsuario();
   const { data: caracteristicas = [] } = useCaracteristicas();
@@ -248,14 +250,16 @@ export default function VitrinePage() {
                 <LojaSelector />
               </Card.Body>
             </Card>
-            {usePermissions().hasPermission(Permission.VITRINE_VISAO_CONSULTOR) && <Button
-              variant="outline"
-              size="md"
-              leftIcon={<Printer className="h-4 w-4" />}
-              onClick={() => router.push("/imprimir")}
-            >
-              Imprimir
-            </Button>}
+            {canPrint && (
+              <Button
+                variant="outline"
+                size="md"
+                leftIcon={<Printer className="h-4 w-4" />}
+                onClick={() => router.push("/imprimir")}
+              >
+                Imprimir
+              </Button>
+            )}
           </div>
         </div>
 
@@ -462,74 +466,91 @@ export default function VitrinePage() {
                 </Badge>
               </div>
             </Card.Header>
-            <Card.Body>
-            {!lojaSelecionada ? (
-              <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
-                Selecione uma loja para gerenciar a vitrine.
-              </div>
-            ) : isEstoqueLoading ? (
-              <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
-                Carregando veículos do estoque...
-              </div>
-            ) : veiculosDisponiveis.length === 0 ? (
-              <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
-                Todos os veículos do estoque já estão nesta vitrine.
-              </div>
-            ) : (
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {veiculosDisponiveis.map((veiculo) => (
-                  <li key={veiculo.id}>
-                    <article className="flex h-full flex-col gap-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 p-5 text-sm shadow-sm opacity-75 hover:opacity-100 transition-opacity duration-300">
-                      <div className="space-y-1">
-                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">
-                          {veiculo.veiculoDisplay}
-                        </h3>
-                        <p className="text-xs uppercase font-semibold text-gray-500 dark:text-gray-400">Placa {veiculo.placa}</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          Local atual: {veiculo.localDisplay ?? "Sem local"}
-                        </p>
-                      </div>
-                      <dl className="grid gap-3 text-xs sm:grid-cols-2">
-                        <div>
-                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Ano</dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.anoPrincipal ?? "—"}</dd>
-                        </div>
-                        <div>
-                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Hodômetro</dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.hodometroFormatado ?? "—"}</dd>
-                        </div>
-                        <div>
-                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Status</dt>
-                          <dd
-                            className={
-                              isEstadoVendido(veiculo.estadoVendaLabel)
-                                ? 'text-[var(--danger)] font-semibold'
-                                : 'text-gray-900 dark:text-gray-100'
-                            }
-                          >
-                            {veiculo.estadoVendaLabel}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="font-semibold text-gray-500 dark:text-gray-400 mb-1">Preço base</dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{veiculo.precoFormatado ?? "Não informado"}</dd>
-                        </div>
-                      </dl>
-                      <div className="mt-auto">
-                        <AddVehicleToStoreButton
-                          veiculoId={veiculo.id}
-                          empresaId={veiculo.empresa_id}
-                          preco={veiculo.preco_venal}
-                          onAdded={() => {
-                            /* keeps panel open, data revalida */
-                          }}
-                        />
-                      </div>
-                    </article>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <Card.Body className="space-y-4">
+              {!lojaSelecionada ? (
+                <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
+                  Selecione uma loja para gerenciar a vitrine.
+                </div>
+              ) : isEstoqueLoading ? (
+                <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
+                  Carregando veículos do estoque...
+                </div>
+              ) : veiculosDisponiveis.length === 0 ? (
+                <div className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-6 text-sm text-gray-600 dark:text-gray-400">
+                  Todos os veículos do estoque já estão nesta vitrine.
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50/80 text-[var(--text-secondary)] dark:bg-gray-900/60">
+                        <tr className="text-xs font-semibold uppercase tracking-wide">
+                          <th scope="col" className="px-4 py-3 text-left">Veículo</th>
+                          <th scope="col" className="px-4 py-3 text-left">Ano</th>
+                          <th scope="col" className="px-4 py-3 text-left">Hodômetro</th>
+                          <th scope="col" className="px-4 py-3 text-left">Status</th>
+                          <th scope="col" className="px-4 py-3 text-left">Local</th>
+                          <th scope="col" className="px-4 py-3 text-left">Preço base</th>
+                          <th scope="col" className="px-4 py-3 text-right">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 bg-white/95 text-sm dark:divide-gray-700 dark:bg-gray-900/70">
+                        {veiculosDisponiveis.map((veiculo) => {
+                          const statusLabel = veiculo.estadoVendaLabel ?? "Sem status";
+                          const sold = isEstadoVendido(statusLabel);
+                          const statusColors = sold
+                            ? { bg: 'var(--danger-pale)', text: 'var(--danger)' }
+                            : { bg: 'var(--purple-pale)', text: 'var(--purple-darker)' };
+                          return (
+                            <tr
+                              key={veiculo.id}
+                              className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                            >
+                              <td className="px-4 py-4 align-top">
+                                <div className="font-semibold text-gray-900 dark:text-gray-100">
+                                  {veiculo.veiculoDisplay}
+                                </div>
+                                <div className="mt-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                  Placa {veiculo.placa ?? "—"}
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 align-top text-gray-700 dark:text-gray-300">
+                                {veiculo.anoPrincipal ?? "—"}
+                              </td>
+                              <td className="px-4 py-4 align-top text-gray-700 dark:text-gray-300">
+                                {veiculo.hodometroFormatado ?? "—"}
+                              </td>
+                              <td className="px-4 py-4 align-top">
+                                <Badge size="sm" customColors={statusColors}>
+                                  {statusLabel}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-4 align-top text-gray-700 dark:text-gray-300">
+                                {veiculo.localDisplay ?? "Sem local"}
+                              </td>
+                              <td className="px-4 py-4 align-top font-medium text-gray-900 dark:text-gray-100">
+                                {veiculo.precoFormatado ?? "Não informado"}
+                              </td>
+                              <td className="px-4 py-4 align-top">
+                                <div className="flex justify-end">
+                                  <AddVehicleToStoreButton
+                                    veiculoId={veiculo.id}
+                                    empresaId={veiculo.empresa_id}
+                                    preco={veiculo.preco_venal}
+                                    onAdded={() => {
+                                      /* keeps panel open, data revalida */
+                                    }}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </Card.Body>
           </Card>
         )}

@@ -17,6 +17,8 @@ import { supabase } from "@/lib/supabase";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/hooks/use-permissions";
+import { Permission } from "@/types/rbac";
 import { QuickAddModal } from "@/components/QuickAddModal";
 import { ModeloTableModal } from "@/components/ModeloTableModal";
 
@@ -230,6 +232,9 @@ export default function VeiculoDetalhePage() {
     [formState?.modelo_id, modelosComNomeCompleto]
   );
 
+  const { hasPermission } = usePermissions();
+  const canViewDocs = hasPermission(Permission.DOCUMENTACAO_VISUALIZAR);
+
   // Inicializa o formulário quando o veículo carregou ou mudou de id.
   // Evita laço de atualização quando o objeto "veiculo" muda de identidade a cada render.
   useEffect(() => {
@@ -410,6 +415,11 @@ export default function VeiculoDetalhePage() {
           </div>
 
           <div className="flex gap-2">
+            {canViewDocs && (
+              <Button asChild variant="outline" size="md">
+                <Link href={`/documentacao/${veiculo.id}`}>Documentos</Link>
+              </Button>
+            )}
             {!isEditMode ? (
               <Button
                 variant="primary"

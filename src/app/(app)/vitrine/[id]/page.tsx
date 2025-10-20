@@ -16,6 +16,7 @@ import { CharacteristicsInfo } from "@/components/vitrine/CharacteristicsInfo";
 import { QuickActions } from "@/components/vitrine/QuickActions";
 import { ShareImagesButton } from "@/components/vitrine/ShareImagesButton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Permission } from "@/types/rbac";
 import { isEstadoVendido } from "@/utils/status";
@@ -78,6 +79,7 @@ export default function VitrineDetalhePage() {
   }, [veiculoLoja?.loja, setLojaSelecionada, lojaAtualId]);
 
   const { hasPermission } = usePermissions();
+  const canViewDocs = hasPermission(Permission.DOCUMENTACAO_VISUALIZAR);
   const canSeeConsultantView = hasPermission(Permission.VITRINE_VISAO_CONSULTOR);
   const [showConsultantView, setShowConsultantView] = useState(false);
 
@@ -200,6 +202,11 @@ export default function VitrineDetalhePage() {
                 </div>
               </div>
             <div className="flex flex-wrap items-center gap-3">
+              {canViewDocs && veiculo?.id && (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/documentacao/${veiculo.id}`}>Documentos</Link>
+                </Button>
+              )}
               <ShareImagesButton fotos={fotos} vehicleDisplay={veiculo.veiculoDisplay} />
               <Badge variant={estadoVendaVariant} className="font-semibold text-sm px-3 py-1">
                 {estadoVendaDisplay}
