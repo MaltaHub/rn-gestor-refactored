@@ -244,14 +244,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   usuario: [
     // Apenas visualizações básicas
     Permission.VEICULOS_VISUALIZAR,
-    Permission.ESTOQUE_VISUALIZAR,
     Permission.VITRINE_VISUALIZAR,
-    Permission.VENDAS_VISUALIZAR,
-    Permission.DOCUMENTACAO_VISUALIZAR,
-    Permission.NOTIFICACOES_VISUALIZAR,
     Permission.FOTOS_VISUALIZAR,
-    Permission.LOJAS_VISUALIZAR,
-    Permission.CONFIG_VISUALIZAR,
   ],
 };
 

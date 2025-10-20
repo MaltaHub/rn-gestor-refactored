@@ -215,21 +215,6 @@ export function QuickActions({
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
-          {podeVender && (
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => {
-                const params = new URLSearchParams({ veiculoId });
-                if (typeof precoLojaAtual === "number") {
-                  params.set("preco", String(precoLojaAtual));
-                }
-                router.push(`/vendas/nova?${params.toString()}`);
-              }}
-            >
-              Vender
-            </Button>
-          )}
           {canAlterarLocal && (
             <Button
               type="button"

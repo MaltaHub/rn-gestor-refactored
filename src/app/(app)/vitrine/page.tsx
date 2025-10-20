@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect } from "react";
-import { Search, X, Grid, Rows, Table, Filter, FileDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, X, Grid, Rows, Table, Filter, Printer } from "lucide-react";
 
 import { LojaSelector } from "@/components/LojaSelector";
 import { RenderCards } from "@/components/render-cards";
@@ -20,7 +21,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { usePermissions } from "@/hooks/use-permissions";
 import { isEstadoVendido } from "@/utils/status";
+import { Permission } from "@/types/rbac";
 type ViewMode = "cards-photo" | "cards-info" | "table";
 type Ordenacao = "recentes" | "preco-desc" | "preco-asc" | "modelo";
 
@@ -51,6 +54,7 @@ const normalizeText = (value: string | null | undefined) =>
 
 
 export default function VitrinePage() {
+  const router = useRouter();
   const lojaSelecionada = useLojaStore((state) => state.lojaSelecionada);
   const lojaId = lojaSelecionada?.id;
 
@@ -244,14 +248,14 @@ export default function VitrinePage() {
                 <LojaSelector />
               </Card.Body>
             </Card>
-            <Button
+            {usePermissions().hasPermission(Permission.VITRINE_VISAO_CONSULTOR) && <Button
               variant="outline"
               size="md"
-              leftIcon={<FileDown className="h-4 w-4" />}
-              onClick={() => alert('Gerar PDF em breve!')}
+              leftIcon={<Printer className="h-4 w-4" />}
+              onClick={() => router.push("/imprimir")}
             >
-              PDF
-            </Button>
+              Imprimir
+            </Button>}
           </div>
         </div>
 

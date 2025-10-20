@@ -267,15 +267,6 @@ export default function EstoquePage() {
               {totalVeiculos} de {totalVeiculos} veículos
             </Badge>
             <Button
-              variant="outline"
-              leftIcon={<Printer className="w-4 h-4" />}
-              asChild
-            >
-              <Link href="/estoque/imprimir" target="_blank" rel="noopener noreferrer">
-                Imprimir
-              </Link>
-            </Button>
-            <Button
               variant="primary"
               leftIcon={<Plus className="w-4 h-4" />}
               asChild
