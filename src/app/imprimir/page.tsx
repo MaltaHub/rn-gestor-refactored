@@ -329,7 +329,7 @@ export default function ImprimirVitrinePage() {
                               {item.hodometro}
                             </td>
                             <td className="px-3 py-1.5 text-right font-semibold text-gray-900 dark:text-gray-100">
-                              {item.precoDisplay}
+                              {item.precoReferencia}
                             </td>
                           </tr>
                         ))

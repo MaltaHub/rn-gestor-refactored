@@ -18,6 +18,22 @@ interface CharacteristicsInfoProps {
 const sortCaracteristicas = (lista: string[]) =>
   [...lista].sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
 
+const areCaracteristicasEqual = (
+  a: CaracteristicaPayload[],
+  b: CaracteristicaPayload[],
+) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const atual = a[i];
+    const proximo = b[i];
+    if (!proximo) return false;
+    if (atual.id !== proximo.id || atual.nome !== proximo.nome) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export function CharacteristicsInfo({ veiculo, allowEditing = false }: CharacteristicsInfoProps) {
   const [mostrarTodas, setMostrarTodas] = useState(false);
   const [editarCaracteristicas, setEditarCaracteristicas] = useState(false);
@@ -86,7 +102,12 @@ export function CharacteristicsInfo({ veiculo, allowEditing = false }: Character
   const extrasDisponiveis = Math.max(nomesOrdenados.length - Math.min(3, nomesOrdenados.length), 0);
 
   useEffect(() => {
-    setEditedCaracteristicas(caracteristicasDoVeiculo);
+    setEditedCaracteristicas((prev) => {
+      if (areCaracteristicasEqual(prev, caracteristicasDoVeiculo)) {
+        return prev;
+      }
+      return caracteristicasDoVeiculo;
+    });
   }, [caracteristicasDoVeiculo]);
 
   useEffect(() => {

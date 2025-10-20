@@ -87,15 +87,14 @@ export function QuickActions({
   const canAlterarStatus = hasPermission(Permission.VITRINE_EDITAR_STATUS) || isAdmin();
   const canAlterarPreco = hasPermission(Permission.VITRINE_EDITAR_PRECO) || isAdmin();
 
-  const invalidateVitrineQueries = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: veiculosLojaKeys.detalhe(veiculoLojaId),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: veiculosLojaKeys.lista(lojaId),
-      }),
-    ]);
+  // Dispara invalidações sem bloquear o fluxo da ação
+  const invalidateVitrineQueries = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: veiculosLojaKeys.detalhe(veiculoLojaId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: veiculosLojaKeys.lista(lojaId),
+    });
     invalidateVeiculos(queryClient);
   }, [queryClient, veiculoLojaId, lojaId]);
 
@@ -134,7 +133,8 @@ export function QuickActions({
       await atualizarVeiculo(veiculoId, {
         estado_venda: statusSelecionado,
       });
-      await invalidateVitrineQueries();
+      // Não bloquear em invalidações pesadas
+      invalidateVitrineQueries();
       setFeedback({
         action: "status",
         type: "success",
@@ -172,7 +172,8 @@ export function QuickActions({
       }
 
       await atualizarPrecoVeiculoLoja(veiculoLojaId, numero);
-      await invalidateVitrineQueries();
+      // Não bloquear em invalidações pesadas (refetch em background)
+      invalidateVitrineQueries();
       setPrecoLoja(numero === null ? "" : String(numero));
       setFeedback({
         action: "preco",
@@ -181,11 +182,17 @@ export function QuickActions({
       });
     } catch (error) {
       console.error(error);
+      const code = (error as any)?.code as string | undefined;
+      const rawMessage = (error as any)?.message as string | undefined;
+      const isTimeout = code === "57014" || /statement timeout/i.test(rawMessage ?? "");
       setFeedback({
         action: "preco",
         type: "error",
-        message:
-          error instanceof Error ? error.message : "Erro ao atualizar o preço.",
+        message: isTimeout
+          ? "A operação demorou além do esperado. Tente novamente em alguns segundos."
+          : error instanceof Error
+            ? error.message
+            : "Erro ao atualizar o preço.",
       });
     } finally {
       setIsSaving(null);
