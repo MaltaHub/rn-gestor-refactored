@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Edit2, X, Save, Plus } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Edit2, X, Save, Plus, Trash2 } from "lucide-react";
 
 import { useVeiculosUI, type VeiculoUI } from "@/adapters/adaptador-estoque";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos, useLojas } from "@/hooks/use-configuracoes";
-import { atualizarVeiculo, calcularDiffCaracteristicas } from "@/services/estoque";
+import { atualizarVeiculo, calcularDiffCaracteristicas, deletarVeiculo } from "@/services/estoque";
 import { salvarConfiguracao } from "@/services/configuracoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { PhotoGallery } from "@/components/Gallery";
@@ -135,6 +135,7 @@ const checkboxClasses =
 export default function VeiculoDetalhePage() {
   const params = useParams<{ id: string }>();
   const veiculoId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? "";
+  const router = useRouter();
 
   const { data: veiculoData, isLoading } = useVeiculosUI(veiculoId);
   const { data: modelos = [] } = useModelos();
@@ -151,6 +152,7 @@ export default function VeiculoDetalhePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isModeloModalOpen, setIsModeloModalOpen] = useState(false);
   const [isCaracteristicaModalOpen, setIsCaracteristicaModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showFeedbackMessage = (type: "success" | "error", message: string) => {
@@ -234,6 +236,7 @@ export default function VeiculoDetalhePage() {
 
   const { hasPermission } = usePermissions();
   const canViewDocs = hasPermission(Permission.DOCUMENTACAO_VISUALIZAR);
+  const canDeleteVehicle = hasPermission(Permission.EXCLUIR_VEICULO);
 
   // Inicializa o formulário quando o veículo carregou ou mudou de id.
   // Evita laço de atualização quando o objeto "veiculo" muda de identidade a cada render.
@@ -394,6 +397,28 @@ export default function VeiculoDetalhePage() {
     setFeedback(null);
   };
 
+  const handleDeleteVehicle = async () => {
+    if (!veiculo) return;
+    const placa = veiculo.placa ? veiculo.placa.toUpperCase() : "este veículo";
+    const confirmed = window.confirm(
+      `Deseja realmente remover ${placa} do estoque? Essa ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      await deletarVeiculo(veiculo.id);
+      invalidateVeiculos(queryClient);
+      router.push("/estoque");
+    } catch (err) {
+      showErrorMessage(
+        err instanceof Error ? err.message : "Erro ao excluir veículo."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const marca = veiculo.modelo?.marca ?? "Marca não informada";
   const modeloNome = veiculo.modelo?.nome ?? "Modelo não informado";
 
@@ -418,6 +443,17 @@ export default function VeiculoDetalhePage() {
             {canViewDocs && (
               <Button asChild variant="outline" size="md">
                 <Link href={`/documentacao/${veiculo.id}`}>Documentos</Link>
+              </Button>
+            )}
+            {canDeleteVehicle && !isEditMode && (
+              <Button
+                variant="danger"
+                size="md"
+                leftIcon={<Trash2 className="w-4 h-4" />}
+                onClick={handleDeleteVehicle}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Excluindo..." : "Excluir"}
               </Button>
             )}
             {!isEditMode ? (

@@ -20,6 +20,7 @@ export enum Permission {
   VEICULOS_EDITAR = 'veiculos:editar',
   VEICULOS_DELETAR = 'veiculos:deletar',
   VEICULOS_VISUALIZAR = 'veiculos:visualizar',
+  EXCLUIR_VEICULO = 'veiculos:excluir',
 
   // Estoque
   ESTOQUE_CRIAR = 'estoque:criar',
@@ -93,6 +94,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VEICULOS_EDITAR,
     Permission.VEICULOS_DELETAR,
     Permission.VEICULOS_VISUALIZAR,
+    Permission.EXCLUIR_VEICULO,
     Permission.ESTOQUE_CRIAR,
     Permission.ESTOQUE_EDITAR,
     Permission.ESTOQUE_DELETAR,
@@ -153,6 +155,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VEICULOS_EDITAR,
     Permission.VEICULOS_DELETAR,
     Permission.VEICULOS_VISUALIZAR,
+    Permission.EXCLUIR_VEICULO,
     Permission.ESTOQUE_CRIAR,
     Permission.ESTOQUE_EDITAR,
     Permission.ESTOQUE_DELETAR,

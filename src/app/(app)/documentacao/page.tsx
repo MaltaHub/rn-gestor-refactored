@@ -114,11 +114,12 @@ export default function DocumentacaoListaPage() {
     return pastas.map((item) => {
       const registro = documentacaoPorVeiculo.get(item.veiculoId) ?? null;
       const veiculo = registro?.veiculo ?? null;
-      const placa = (veiculo?.placa ?? "").toUpperCase() || "—";
+      const placaBruta = (veiculo?.placa ?? "").toUpperCase();
+      const placa = placaBruta || "Sem placa";
       const title =
         veiculo?.veiculo_display ??
         veiculo?.modelo?.nome ??
-        (placa !== "—" ? `Veículo ${placa}` : `Veículo ${item.veiculoId.slice(0, 8)}…`);
+        (placaBruta ? `Veículo ${placa}` : "Veículo sem placa definida");
       const lojaNome = registro?.loja?.nome ?? "Sem loja definida";
       const statusLabel = formatStatusLabel(registro?.status_geral);
       return {

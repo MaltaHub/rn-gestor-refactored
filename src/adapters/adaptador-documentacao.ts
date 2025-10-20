@@ -196,6 +196,51 @@ export function useDocumentacaoDetalhe(empresaId?: string, veiculoId?: string) {
   });
 }
 
+export function useCriarDocumentacao(empresaId?: string, veiculoId?: string) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!empresaId || !veiculoId) {
+        throw new Error("Empresa ou veículo inválido para iniciar documentação.");
+      }
+
+      const { data, error } = await supabase
+        .from("documentacao_veiculos")
+        .insert({
+          empresa_id: empresaId,
+          veiculo_id: veiculoId,
+        })
+        .select(
+          `*,
+          veiculo:veiculos (
+            id,
+            placa,
+            modelo_id,
+            estado_venda,
+            modelo:modelos ( id, nome )
+          ),
+          loja:lojas ( id, nome )
+        `,
+        )
+        .single();
+
+      if (error) throw error;
+      return data as DocumentacaoRegistro;
+    },
+    onSuccess: () => {
+      if (empresaId) {
+        qc.invalidateQueries({ queryKey: ["documentacao", empresaId] });
+      }
+      if (empresaId && veiculoId) {
+        qc.invalidateQueries({
+          queryKey: ["documentacao", empresaId, veiculoId, "detalhe"],
+        });
+      }
+    },
+  });
+}
+
 export function useVeiculoBasico(veiculoId?: string) {
   type VeiculoBasico = {
     id: string;

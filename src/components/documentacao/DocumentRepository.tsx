@@ -11,6 +11,7 @@ import {
   useDocumentacaoDetalhe,
   useDocumentosVeiculo,
   useRemoveDocumento,
+  useCriarDocumentacao,
   useVeiculoBasico,
   type DocumentoItem,
 } from "@/adapters/adaptador-documentacao";
@@ -59,11 +60,13 @@ export function DocumentRepository({ empresaId, veiculoId }: Props) {
   const loja = useLojaStore((s) => s.lojaSelecionada);
   const { hasPermission, isAdmin } = usePermissions();
   const canUpload = hasPermission(Permission.DOCUMENTACAO_ANEXOS) || isAdmin();
+  const canEditDocumentacao = hasPermission(Permission.DOCUMENTACAO_EDITAR) || isAdmin();
   const { data: documentos = [], isLoading } = useDocumentosVeiculo(empresaId, veiculoId);
   const { data: detalhes } = useDocumentacaoDetalhe(empresaId, veiculoId);
   const { data: veiculoBasico } = useVeiculoBasico(veiculoId);
   const mAdd = useAddDocumentos(empresaId, veiculoId);
   const mRemove = useRemoveDocumento(empresaId, veiculoId);
+  const mCriarDocumentacao = useCriarDocumentacao(empresaId, veiculoId);
 
   const [tipo, setTipo] = useState<string>("outros");
   const [observacao, setObservacao] = useState<string>("");
@@ -80,6 +83,22 @@ export function DocumentRepository({ empresaId, veiculoId }: Props) {
     () => documentos.map((d) => d.path).join("|"),
     [documentos]
   );
+
+  const handleCriarDocumentacao = () => {
+    if (mCriarDocumentacao.isPending) return;
+    mCriarDocumentacao.mutate(undefined, {
+      onSuccess: () => {
+        setFeedback({
+          type: "success",
+          message: "Documentação criada. Você já pode atualizar os dados deste veículo.",
+        });
+      },
+      onError: (err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        setFeedback({ type: "error", message });
+      },
+    });
+  };
 
   useEffect(() => {
     let alive = true;
@@ -250,10 +269,35 @@ export function DocumentRepository({ empresaId, veiculoId }: Props) {
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {documentos.length} documento(s)
               </div>
+              {!detalhes && canEditDocumentacao && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleCriarDocumentacao}
+                  disabled={mCriarDocumentacao.isPending}
+                >
+                  {mCriarDocumentacao.isPending ? "Criando..." : "Iniciar documentação"}
+                </Button>
+              )}
             </div>
           </div>
         </Card.Header>
         <Card.Body className="space-y-4">
+          {!detalhes && (
+            <div className="rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+              <p className="font-medium">Documentação ainda não foi iniciada.</p>
+              {canEditDocumentacao ? (
+                <p className="mt-1">
+                  Utilize o botão <span className="font-semibold">“Iniciar documentação”</span> para
+                  criar o registro e liberar a edição dos dados.
+                </p>
+              ) : (
+                <p className="mt-1">
+                  Solicite a um responsável com permissão para iniciar a documentação deste veículo.
+                </p>
+              )}
+            </div>
+          )}
           <PermissionGuard permission={Permission.DOCUMENTACAO_ANEXOS}>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               <div className="flex flex-col gap-1">
