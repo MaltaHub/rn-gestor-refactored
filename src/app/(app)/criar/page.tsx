@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
 import { useCaracteristicas, useLocais, useModelos } from "@/hooks/use-configuracoes";
@@ -15,6 +15,9 @@ import { ModeloTableModal } from "@/components/ModeloTableModal";
 import type { VeiculoResumo } from "@/types/estoque";
 import { PagePermissionGuard } from "@/components/PagePermissionGuard";
 import { Permission } from "@/types/rbac";
+import { useDebounce } from "@/hooks/use-debounce";
+import { consultarPlaca, ConsultaPlacaError } from "@/services/placas";
+import type { ConsultaPlacaResult } from "@/types/api-placas";
 
 type EstadoVendaOption = VeiculoResumo["estado_venda"];
 type EstadoVeiculoOption = NonNullable<VeiculoResumo["estado_veiculo"]>;
@@ -30,6 +33,8 @@ type VehicleFormState = {
   estado_venda: EstadoVendaOption;
   estado_veiculo: EstadoVeiculoOption | "";
   preco_venal: string;
+  valor_fipe: string;
+  codigo_fipe: string;
   observacao: string;
   modelo_id: string;
   local_id: string;
@@ -59,6 +64,8 @@ const INITIAL_FORM_STATE: VehicleFormState = {
   estado_venda: "disponivel",
   estado_veiculo: "",
   preco_venal: "",
+  valor_fipe: "",
+  codigo_fipe: "",
   observacao: "",
   modelo_id: "",
   local_id: "",
@@ -95,7 +102,14 @@ function CriarVeiculoPageContent() {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [placaValida, setPlacaValida] = useState<boolean | null>(null);
-  
+  const [consultaPlacaEstado, setConsultaPlacaEstado] = useState<{
+    status: "idle" | "loading" | "success" | "error";
+    message: string | null;
+  }>({ status: "idle", message: null });
+  const [consultaPlacaDados, setConsultaPlacaDados] = useState<ConsultaPlacaResult | null>(null);
+  const placaPrefilledRef = useRef<string | null>(null);
+  const debouncedPlaca = useDebounce(formState.placa.trim().toUpperCase(), 600);
+
   const [isModeloModalOpen, setIsModeloModalOpen] = useState(false);
   const [isCaracteristicaModalOpen, setIsCaracteristicaModalOpen] = useState(false);
   const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
@@ -165,8 +179,16 @@ function CriarVeiculoPageContent() {
 
   const handlePlacaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
-    setFormState((prev) => ({ ...prev, placa: value }));
-    
+    setFormState((prev) => ({
+      ...prev,
+      placa: value,
+      valor_fipe: "",
+      codigo_fipe: "",
+    }));
+    setConsultaPlacaEstado({ status: "idle", message: null });
+    setConsultaPlacaDados(null);
+    placaPrefilledRef.current = null;
+
     if (value.length > 0) {
       setPlacaValida(validatePlaca(value));
     } else {
@@ -230,7 +252,7 @@ function CriarVeiculoPageContent() {
       const hodometro = Number(formState.hodometro.trim());
       if (isNaN(hodometro)) throw new Error("Informe um valor numérico válido para o hodômetro.");
 
-      const payload: Parameters<typeof criarVeiculo>[0] = {
+      const payloadBase: Parameters<typeof criarVeiculo>[0] = {
         placa: formState.placa,
         cor: formState.cor,
         chassi: toValueOrNull(formState.chassi),
@@ -245,6 +267,15 @@ function CriarVeiculoPageContent() {
         local_id: formState.local_id || null,
         estagio_documentacao: toValueOrNull(formState.estagio_documentacao),
         caracteristicas: formState.caracteristicas,
+      };
+
+      const payload = {
+        ...payloadBase,
+        valor_fipe: toValueOrNull(formState.valor_fipe),
+        codigo_fipe: toValueOrNull(formState.codigo_fipe),
+      } as Parameters<typeof criarVeiculo>[0] & {
+        valor_fipe?: string | null;
+        codigo_fipe?: string | null;
       };
 
       await criarVeiculo(payload);
@@ -270,6 +301,168 @@ function CriarVeiculoPageContent() {
       ? "border-emerald-400 focus:border-emerald-400 focus:ring-emerald-400/40"
       : "border-red-500 focus:border-red-500 focus:ring-red-500/40";
   };
+
+  useEffect(() => {
+    const sanitized = debouncedPlaca.replace(/[^A-Z0-9]/gi, "");
+
+    if (!sanitized) {
+      setConsultaPlacaEstado({ status: "idle", message: null });
+      setConsultaPlacaDados(null);
+      placaPrefilledRef.current = null;
+      return;
+    }
+
+    if (!validatePlaca(debouncedPlaca)) {
+      setConsultaPlacaEstado({ status: "idle", message: null });
+      setConsultaPlacaDados(null);
+      placaPrefilledRef.current = null;
+      return;
+    }
+
+    let cancelado = false;
+    setConsultaPlacaEstado({
+      status: "loading",
+      message: "Consultando dados da placa...",
+    });
+
+    consultarPlaca(debouncedPlaca)
+      .then((dados) => {
+        if (cancelado) return;
+        if (!dados) {
+          setConsultaPlacaDados(null);
+          setConsultaPlacaEstado({
+            status: "error",
+            message: "Nenhum dado encontrado para essa placa.",
+          });
+          placaPrefilledRef.current = null;
+          return;
+        }
+
+        setConsultaPlacaDados(dados);
+        const bestFipe = dados.bestFipe ?? null;
+        const resumoPartes = [
+          dados.marca,
+          dados.modelo,
+          dados.cor,
+          dados.situacao,
+        ].filter(Boolean) as string[];
+
+        const fallbackMensagem =
+          resumoPartes.length > 0
+            ? resumoPartes.join(" • ")
+            : dados.mensagem ?? "Dados carregados automaticamente.";
+
+        const textoModelo =
+          typeof bestFipe?.texto_modelo === "string"
+            ? bestFipe.texto_modelo.trim()
+            : "";
+
+        const mensagem = textoModelo || fallbackMensagem;
+
+        setConsultaPlacaEstado({
+          status: "success",
+          message: mensagem,
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelado) return;
+        const mensagem =
+          error instanceof ConsultaPlacaError
+            ? error.message
+            : "Não foi possível consultar os dados da placa.";
+        setConsultaPlacaEstado({
+          status: "error",
+          message: mensagem,
+        });
+        setConsultaPlacaDados(null);
+        placaPrefilledRef.current = null;
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [debouncedPlaca]);
+
+  useEffect(() => {
+    if (!consultaPlacaDados) return;
+    const placaAtual =
+      consultaPlacaDados.placa?.toUpperCase() || debouncedPlaca || null;
+    if (!placaAtual) return;
+
+    if (placaPrefilledRef.current === placaAtual) {
+      return;
+    }
+
+    setFormState((prev) => {
+      const updates: Partial<VehicleFormState> = {};
+
+      if (!prev.cor && consultaPlacaDados.cor) {
+        updates.cor = consultaPlacaDados.cor;
+      }
+
+      const anoFabricacao =
+        consultaPlacaDados.extra?.ano_fabricacao ?? consultaPlacaDados.ano;
+      if (
+        !prev.ano_fabricacao &&
+        anoFabricacao !== undefined &&
+        anoFabricacao !== null &&
+        anoFabricacao !== ""
+      ) {
+        updates.ano_fabricacao = String(anoFabricacao);
+      }
+
+      const anoModelo =
+        consultaPlacaDados.extra?.ano_modelo ?? consultaPlacaDados.ano_modelo;
+      if (
+        !prev.ano_modelo &&
+        anoModelo !== undefined &&
+        anoModelo !== null &&
+        anoModelo !== ""
+      ) {
+        updates.ano_modelo = String(anoModelo);
+      }
+
+      const rawChassi = consultaPlacaDados.raw?.["chassi"];
+      const chassi =
+        typeof rawChassi === "string" && rawChassi.trim().length > 0
+          ? rawChassi.trim()
+          : null;
+      if (!prev.chassi && chassi) {
+        updates.chassi = chassi;
+      }
+
+      const bestFipe = consultaPlacaDados.bestFipe ?? null;
+      if (bestFipe) {
+        const nextCodigoFipe =
+          typeof bestFipe.codigo_fipe === "string" && bestFipe.codigo_fipe.trim().length > 0
+            ? bestFipe.codigo_fipe.trim()
+            : typeof bestFipe.codigo === "string"
+              ? bestFipe.codigo.trim()
+              : "";
+        if (nextCodigoFipe && nextCodigoFipe !== prev.codigo_fipe) {
+          updates.codigo_fipe = nextCodigoFipe;
+        }
+
+        const nextValorFipe =
+          typeof bestFipe.texto_valor === "string" && bestFipe.texto_valor.trim().length > 0
+            ? bestFipe.texto_valor.trim()
+            : typeof bestFipe.preco === "string"
+              ? bestFipe.preco.trim()
+              : "";
+        if (nextValorFipe && nextValorFipe !== prev.valor_fipe) {
+          updates.valor_fipe = nextValorFipe;
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        placaPrefilledRef.current = placaAtual;
+        return prev;
+      }
+
+      placaPrefilledRef.current = placaAtual;
+      return { ...prev, ...updates };
+    });
+  }, [consultaPlacaDados, debouncedPlaca, setFormState]);
 
   return (
     <div className="min-h-screen bg-[var(--surface-dark)] px-4 py-6 text-[var(--foreground)] sm:px-6 sm:py-8 lg:px-8 lg:py-10">
@@ -320,6 +513,21 @@ function CriarVeiculoPageContent() {
                   placeholder="ABC-1234 ou ABC1D23"
                   required
                 />
+                {consultaPlacaEstado.status === "loading" && (
+                  <span className="mt-1 text-xs text-[var(--text-secondary)]">
+                    Consultando dados da placa...
+                  </span>
+                )}
+                {consultaPlacaEstado.status === "success" && consultaPlacaEstado.message && (
+                  <span className="mt-1 text-xs text-emerald-300">
+                    {consultaPlacaEstado.message}
+                  </span>
+                )}
+                {consultaPlacaEstado.status === "error" && consultaPlacaEstado.message && (
+                  <span className="mt-1 text-xs text-red-300">
+                    {consultaPlacaEstado.message}
+                  </span>
+                )}
               </label>
               <label className="flex flex-col gap-1">
                 <span className={labelCaptionClasses}>Chassi</span>
@@ -344,6 +552,30 @@ function CriarVeiculoPageContent() {
                     <option key={cor} value={cor} />
                   ))}
                 </datalist>
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className={labelCaptionClasses}>
+                  Código FIPE
+                  <span className={helperCaptionClasses}> (auto)</span>
+                </span>
+                <input
+                  value={formState.codigo_fipe}
+                  onChange={handleChange("codigo_fipe")}
+                  className={`${inputBaseClasses} h-11`}
+                  placeholder="Carregado automaticamente"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className={labelCaptionClasses}>
+                  Valor FIPE
+                  <span className={helperCaptionClasses}> (auto)</span>
+                </span>
+                <input
+                  value={formState.valor_fipe}
+                  onChange={handleChange("valor_fipe")}
+                  className={`${inputBaseClasses} h-11`}
+                  placeholder="Carregado automaticamente"
+                />
               </label>
             </div>
           </section>
