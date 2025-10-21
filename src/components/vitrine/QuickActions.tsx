@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
-import { atualizarVeiculo } from "@/services/estoque";
+import { atualizarEstadoVendaVeiculo, atualizarVeiculo } from "@/services/estoque";
 import { atualizarPrecoVeiculoLoja } from "@/services/vitrine";
 import { veiculosLojaKeys } from "@/adapters/adaptador-vitrine";
 import { invalidateVeiculos } from "@/hooks/use-estoque";
@@ -49,6 +49,26 @@ const formatEnumLabel = (value?: string | null) =>
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ")
     : "Não informado";
+
+const extractErrorMetadata = (error: unknown): { code?: string; message?: string } => {
+  if (error instanceof Error) {
+    const withCode = error as { code?: unknown };
+    return {
+      code: typeof withCode.code === "string" ? withCode.code : undefined,
+      message: error.message,
+    };
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const possible = error as { code?: unknown; message?: unknown };
+    return {
+      code: typeof possible.code === "string" ? possible.code : undefined,
+      message: typeof possible.message === "string" ? possible.message : undefined,
+    };
+  }
+
+  return {};
+};
 
 export function QuickActions({
   veiculoLojaId,
@@ -130,9 +150,26 @@ export function QuickActions({
     setIsSaving("status");
     setFeedback(null);
     try {
-      await atualizarVeiculo(veiculoId, {
-        estado_venda: statusSelecionado,
-      });
+      let lastError: unknown | null = null;
+
+      try {
+        await atualizarEstadoVendaVeiculo(veiculoId, statusSelecionado);
+      } catch (erroAtualizacaoDireta) {
+        lastError = erroAtualizacaoDireta;
+        try {
+          await atualizarVeiculo(veiculoId, {
+            estado_venda: statusSelecionado,
+          });
+          lastError = null;
+        } catch (erroAtualizacaoRpc) {
+          lastError = erroAtualizacaoRpc;
+        }
+      }
+
+      if (lastError) {
+        throw lastError;
+      }
+
       // Não bloquear em invalidações pesadas
       invalidateVitrineQueries();
       setFeedback({
@@ -142,10 +179,14 @@ export function QuickActions({
       });
     } catch (error) {
       console.error(error);
+      const { code, message } = extractErrorMetadata(error);
+      const isTimeout = code === "57014" || /statement timeout/i.test(message ?? "");
       setFeedback({
         action: "status",
         type: "error",
-        message: "Não foi possível atualizar o status.",
+        message: isTimeout
+          ? "A operação demorou além do esperado. Tente novamente em alguns segundos."
+          : message ?? "Não foi possível atualizar o status.",
       });
     } finally {
       setIsSaving(null);
@@ -182,17 +223,14 @@ export function QuickActions({
       });
     } catch (error) {
       console.error(error);
-      const code = (error as any)?.code as string | undefined;
-      const rawMessage = (error as any)?.message as string | undefined;
-      const isTimeout = code === "57014" || /statement timeout/i.test(rawMessage ?? "");
+      const { code, message } = extractErrorMetadata(error);
+      const isTimeout = code === "57014" || /statement timeout/i.test(message ?? "");
       setFeedback({
         action: "preco",
         type: "error",
         message: isTimeout
           ? "A operação demorou além do esperado. Tente novamente em alguns segundos."
-          : error instanceof Error
-            ? error.message
-            : "Erro ao atualizar o preço.",
+          : message ?? "Erro ao atualizar o preço.",
       });
     } finally {
       setIsSaving(null);

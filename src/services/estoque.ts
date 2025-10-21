@@ -1,5 +1,5 @@
 import { Database } from "@/types/supabase";
-import { callRpc } from "@/lib/supabase";
+import { callRpc, supabase } from "@/lib/supabase";
 import { RPC_FUNCTIONS } from "@/config";
 
 type Veiculo = Database["public"]["Tables"]["veiculos"]["Row"];
@@ -66,4 +66,19 @@ export async function atualizarVeiculo(id: string, dados: VeiculoUpdatePayload) 
 
 export async function deletarVeiculo(id: string) {
   return callRpc(RPC_FUNCTIONS.VEICULOS, { operacao: "excluir", id });
+}
+
+export async function atualizarEstadoVendaVeiculo(
+  id: string,
+  estadoVenda: Veiculo["estado_venda"],
+) {
+  const { error } = await supabase
+    .from("veiculos")
+    .update({ estado_venda: estadoVenda })
+    .eq("id", id)
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { useVeiculosLojaUI, type VeiculoLojaUI } from "@/adapters/adaptador-vitrine";
 import { useUnidadesLojaQuery } from "@/hooks/use-unidades-loja-query";
+import { cn } from "@/lib/utils";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -51,8 +52,9 @@ type ModeloDetalhado = VeiculoDetalhado["modelo"];
 
 type VeiculoLinha = {
   registro: VeiculoLojaUI & { veiculo: VeiculoDetalhado };
-  precoReferencia: number;
-  precoDisplay: string;
+  precoReferencia: number | null;
+  precoOrdenacao: number;
+  precoDisplay: number | null;
   modeloNome: string;
   placa: string;
   edicaoCombustivelCambio: string;
@@ -61,12 +63,6 @@ type VeiculoLinha = {
   hodometro: string;
   localDisplay: string;
   localId: string | null;
-};
-
-const resolverPreco = (registro: VeiculoLojaUI): number | null => {
-  if (typeof registro.precoLoja === "number") return registro.precoLoja;
-  const precoVenal = registro.veiculo?.preco_venal;
-  return typeof precoVenal === "number" ? precoVenal : null;
 };
 
 const buildEdicaoCombustivelCambio = (modelo: ModeloDetalhado | null | undefined) => {
@@ -147,11 +143,19 @@ export default function ImprimirVitrinePage() {
         return veiculo.estado_venda === "disponivel";
       })
       .map<VeiculoLinha>((registro) => {
-        const preco = resolverPreco(registro);
         const veiculo = registro.veiculo;
+        const precoLojaValor =
+          typeof registro.precoLoja === "number" ? registro.precoLoja : null;
+        const precoEstoqueValor =
+          typeof veiculo.preco_venal === "number" ? veiculo.preco_venal : null;
         const localInfo = veiculo.local ?? null;
         const localId = localInfo?.id ?? veiculo.local_id ?? null;
-        const precoReferencia = typeof preco === "number" ? preco : Number.POSITIVE_INFINITY;
+        const precoOrdenacao =
+          precoEstoqueValor !== null
+            ? precoEstoqueValor
+            : precoLojaValor !== null
+              ? precoLojaValor
+              : Number.POSITIVE_INFINITY;
         const modeloNome = veiculo.modelo?.nome ?? veiculo.modeloDisplay ?? veiculo.veiculoDisplay ?? "—";
         const placa = veiculo.placa ?? "—";
         const anoModelo = veiculo.ano_modelo ?? null;
@@ -166,8 +170,9 @@ export default function ImprimirVitrinePage() {
 
         return {
           registro,
-          precoReferencia,
-          precoDisplay: formatCurrency(preco),
+          precoReferencia: precoEstoqueValor,
+          precoOrdenacao,
+          precoDisplay: precoLojaValor,
           modeloNome,
           placa,
           edicaoCombustivelCambio,
@@ -178,7 +183,7 @@ export default function ImprimirVitrinePage() {
           localId,
         };
       })
-      .sort((a, b) => a.precoReferencia - b.precoReferencia);
+      .sort((a, b) => a.precoOrdenacao - b.precoOrdenacao);
 
     disponiveisOrdenados.forEach((item) => {
       if (!item.localId) return;
@@ -270,11 +275,11 @@ export default function ImprimirVitrinePage() {
             Nenhum veículo disponível para impressão no momento.
           </div>
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-8">
             {agrupamento.porUnidade.map(({ id, nome, itens }, idx) => (
               <section
                 key={id}
-                className={idx > 0 ? "break-before-page space-y-3" : "space-y-3"}
+                className={idx > 0 ? "break-before-page space-y-2" : "space-y-2"}
               >
                 <header className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                   <h2 className="text-xl font-semibold">{nome}</h2>
@@ -285,54 +290,68 @@ export default function ImprimirVitrinePage() {
                   </div>
                 </header>
                 <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm dark:border-gray-700 print:shadow-none">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+                  <table className="min-w-full divide-y divide-gray-200 text-xs leading-tight dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                        <th className="px-3 py-2">Modelo</th>
-                        <th className="px-3 py-2">Placa</th>
-                        <th className="px-3 py-2">Edição / Combustível / Câmbio</th>
-                        <th className="px-3 py-2">Ano</th>
-                        <th className="px-3 py-2">Cor</th>
-                        <th className="px-3 py-2">Hodômetro</th>
-                        <th className="px-3 py-2 text-right">Preço</th>
+                      <tr className="whitespace-nowrap text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+                        <th className="px-2 py-1 whitespace-nowrap">Modelo</th>
+                        <th className="px-2 py-1 whitespace-nowrap">Placa</th>
+                        <th className="px-2 py-1 whitespace-nowrap">Edição / Combustível / Câmbio</th>
+                        <th className="px-2 py-1 whitespace-nowrap">Ano</th>
+                        <th className="px-2 py-1 whitespace-nowrap">Cor</th>
+                        <th className="px-2 py-1 whitespace-nowrap">Hodômetro</th>
+                        <th className="px-2 py-1 text-right whitespace-nowrap">Preço de Estoque</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {itens.length === 0 ? (
                         <tr>
                           <td
-                            className="px-3 py-2 text-center text-sm text-gray-500 dark:text-gray-400"
+                            className="whitespace-nowrap px-2 py-1 text-center text-xs text-gray-500 dark:text-gray-400"
                             colSpan={7}
                           >
                             Nenhum veículo disponível nesta unidade.
                           </td>
                         </tr>
                       ) : (
-                        itens.map((item) => (
-                          <tr key={item.registro.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
-                            <td className="px-3 py-1.5 font-medium text-gray-900 dark:text-gray-100">
-                              {item.modeloNome}
-                            </td>
-                            <td className="px-3 py-1.5 font-mono text-gray-700 dark:text-gray-300">
-                              {item.placa}
-                            </td>
-                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
-                              {item.edicaoCombustivelCambio}
-                            </td>
-                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
-                              {item.anoDisplay}
-                            </td>
-                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
-                              {item.cor}
-                            </td>
-                            <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">
-                              {item.hodometro}
-                            </td>
-                            <td className="px-3 py-1.5 text-right font-semibold text-gray-900 dark:text-gray-100">
-                              {item.precoReferencia}
-                            </td>
-                          </tr>
-                        ))
+                        itens.map((item) => {
+                          const highlightClass =
+                            item.precoDisplay !== null && item.precoReferencia !== null
+                              ? item.precoDisplay > item.precoReferencia
+                                ? "bg-green-100 dark:bg-green-900/70 hover:bg-green-100 dark:hover:bg-green-900/80"
+                                : item.precoDisplay < item.precoReferencia
+                                  ? "bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                              : "hover:bg-gray-50 dark:hover:bg-gray-800/60";
+
+                          return (
+                            <tr
+                              key={item.registro.id}
+                              className={cn("whitespace-nowrap transition-colors", highlightClass)}
+                            >
+                              <td className="whitespace-nowrap px-2 py-1 font-medium text-gray-900 dark:text-gray-100">
+                                {item.modeloNome}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-1 font-mono text-gray-700 dark:text-gray-300">
+                                {item.placa}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                                {item.edicaoCombustivelCambio}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                                {item.anoDisplay}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                                {item.cor}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                                {item.hodometro}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-1 text-right font-semibold text-gray-900 dark:text-gray-100">
+                                {formatCurrency(item.precoReferencia)}
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
