@@ -74,13 +74,16 @@ CREATE POLICY documentos_write_same_company
   USING (empresa_id = public.empresa_do_usuario())
   WITH CHECK (empresa_id = public.empresa_do_usuario());
 
--- Bucket privado de documentos
-DO $$ BEGIN
-  PERFORM 1 FROM storage.buckets WHERE id = 'documentos_veiculos';
-  IF NOT FOUND THEN
-    PERFORM storage.create_bucket('documentos_veiculos', false);
+-- Bucket privado de documentos (ignora em ambientes sem Storage, ex.: shadow DB da CLI)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'storage') THEN
+    PERFORM 1 FROM storage.buckets WHERE id = 'documentos_veiculos';
+    IF NOT FOUND THEN
+      PERFORM storage.create_bucket('documentos_veiculos', false);
+    END IF;
   END IF;
-END $$;
+END$$;
 
 -- Policies no storage (prefixo por empresa_id)
 DO $$ BEGIN
@@ -206,4 +209,3 @@ END;$$;
 
 GRANT ALL ON FUNCTION public.documentos_gerenciar(text, uuid, uuid, uuid, jsonb) TO service_role;
 GRANT ALL ON FUNCTION public.documentos_gerenciar(text, uuid, uuid, uuid, jsonb) TO authenticated;
-

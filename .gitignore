@@ -19,6 +19,9 @@
 /out/
 
 # production
+instructions-for-agent
+
+# production
 /build
 
 # misc

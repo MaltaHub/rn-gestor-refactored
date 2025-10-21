@@ -397,6 +397,86 @@ export type Database = {
           },
         ]
       }
+      documentos_veiculos: {
+        Row: {
+          content_type: string | null
+          criado_em: string
+          criado_por: string | null
+          documentacao_id: string | null
+          empresa_id: string
+          hash_sha256: string | null
+          id: string
+          loja_provocada_id: string | null
+          nome_original: string
+          observacao: string | null
+          path: string
+          tamanho_bytes: number | null
+          tipo: Database["public"]["Enums"]["tipo_documento_veiculo"]
+          veiculo_id: string
+        }
+        Insert: {
+          content_type?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documentacao_id?: string | null
+          empresa_id: string
+          hash_sha256?: string | null
+          id?: string
+          loja_provocada_id?: string | null
+          nome_original: string
+          observacao?: string | null
+          path: string
+          tamanho_bytes?: number | null
+          tipo: Database["public"]["Enums"]["tipo_documento_veiculo"]
+          veiculo_id: string
+        }
+        Update: {
+          content_type?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documentacao_id?: string | null
+          empresa_id?: string
+          hash_sha256?: string | null
+          id?: string
+          loja_provocada_id?: string | null
+          nome_original?: string
+          observacao?: string | null
+          path?: string
+          tamanho_bytes?: number | null
+          tipo?: Database["public"]["Enums"]["tipo_documento_veiculo"]
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_veiculos_documentacao_id_fkey"
+            columns: ["documentacao_id"]
+            isOneToOne: false
+            referencedRelation: "documentacao_veiculos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_veiculos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_veiculos_loja_provocada_id_fkey"
+            columns: ["loja_provocada_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
           ativo: boolean | null
@@ -658,7 +738,7 @@ export type Database = {
           enviado_em: string | null
           id: string
           mensagem: string
-          remetente_id: string
+          remetente_id: string | null
           tipo: string | null
           titulo: string
           updated_at: string
@@ -674,7 +754,7 @@ export type Database = {
           enviado_em?: string | null
           id?: string
           mensagem: string
-          remetente_id?: string
+          remetente_id?: string | null
           tipo?: string | null
           titulo: string
           updated_at?: string
@@ -690,7 +770,7 @@ export type Database = {
           enviado_em?: string | null
           id?: string
           mensagem?: string
-          remetente_id?: string
+          remetente_id?: string | null
           tipo?: string | null
           titulo?: string
           updated_at?: string
@@ -1169,7 +1249,7 @@ export type Database = {
         }
         Insert: {
           autor?: string | null
-          colunas: string[]
+          colunas?: string[]
           evento_em?: string | null
           id?: string
           operacao: string
@@ -1254,7 +1334,7 @@ export type Database = {
         }
         Insert: {
           autor?: string | null
-          colunas: string[]
+          colunas?: string[]
           evento_em?: string | null
           id?: string
           operacao: string
@@ -1467,6 +1547,16 @@ export type Database = {
         Args: { p_dominio?: string; p_nome: string }
         Returns: Json
       }
+      documentos_gerenciar: {
+        Args: {
+          p_empresa_id: string
+          p_loja_provocada_id?: string
+          p_operacao: string
+          p_payload?: Json
+          p_veiculo_id: string
+        }
+        Returns: Json
+      }
       empresa_do_usuario: {
         Args: Record<PropertyKey, never> | { p_empresa_id: string }
         Returns: boolean
@@ -1501,15 +1591,6 @@ export type Database = {
           p_dados: Json
           p_empresa_id: string
           p_operacao: string
-        }
-        Returns: Json
-      }
-      gerenciar_documentacao: {
-        Args: {
-          p_dados: Json
-          p_empresa_id: string
-          p_operacao: string
-          p_veiculo_id?: string
         }
         Returns: Json
       }
@@ -1658,6 +1739,16 @@ export type Database = {
         | "diesel"
         | "eletrico"
         | "hibrido"
+      tipo_documento_veiculo:
+        | "crlv"
+        | "crv"
+        | "manual"
+        | "nota_fiscal_compra"
+        | "vistoria"
+        | "laudo"
+        | "contrato"
+        | "comprovante"
+        | "outros"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1846,6 +1937,17 @@ export const Constants = {
         "diesel",
         "eletrico",
         "hibrido",
+      ],
+      tipo_documento_veiculo: [
+        "crlv",
+        "crv",
+        "manual",
+        "nota_fiscal_compra",
+        "vistoria",
+        "laudo",
+        "contrato",
+        "comprovante",
+        "outros",
       ],
     },
   },

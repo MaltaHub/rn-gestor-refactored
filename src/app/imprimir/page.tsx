@@ -299,7 +299,7 @@ export default function ImprimirVitrinePage() {
                         <th className="px-2 py-1 whitespace-nowrap">Ano</th>
                         <th className="px-2 py-1 whitespace-nowrap">Cor</th>
                         <th className="px-2 py-1 whitespace-nowrap">Hodômetro</th>
-                        <th className="px-2 py-1 text-right whitespace-nowrap">Preço de Estoque</th>
+                        <th className="px-2 py-1 text-right whitespace-nowrap">Preço</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
