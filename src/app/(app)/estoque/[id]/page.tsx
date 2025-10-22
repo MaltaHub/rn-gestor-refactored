@@ -568,32 +568,43 @@ export default function VeiculoDetalhePage() {
 }
 
 function ViewMode({ veiculo }: { veiculo: VeiculoUI }) {
-  const informacoesGerais = [
+  const dadosPrincipais = [
+    { label: "Placa", value: formatText(veiculo.placa?.toUpperCase()) },
+    { label: "Chassi", value: formatText(veiculo.chassi) },
+    { label: "Cor", value: formatText(veiculo.cor) },
+    { label: "Modelo", value: formatText(veiculo.modeloCompleto) },
+    { label: "Marca", value: formatText(veiculo.modelo?.marca) },
+    { label: "Local", value: formatText(veiculo.localDisplay) },
+  ];
+
+  const especificacoes = [
     { label: "Ano fabricação", value: formatText(veiculo.ano_fabricacao?.toString()) },
     { label: "Ano modelo", value: formatText(veiculo.ano_modelo?.toString()) },
-    { label: "Cor", value: formatText(veiculo.cor) },
     { label: "Hodômetro", value: formatNumber(veiculo.hodometro, "km") },
     { label: "Motor", value: formatText(veiculo.modelo?.motor) },
     { label: "Combustível", value: formatEnum(veiculo.modelo?.combustivel) },
     { label: "Câmbio", value: formatEnum(veiculo.modelo?.tipo_cambio) },
     { label: "Portas", value: formatText(veiculo.modelo?.portas?.toString()) },
     { label: "Lugares", value: formatText(veiculo.modelo?.lugares?.toString()) },
+    { label: "Preço venal", value: formatCurrency(veiculo.preco_venal) },
   ];
 
-  const resumoSituacao = [
+  const situacao = [
     { label: "Estado de venda", value: formatEnum(veiculo.estado_venda) },
     { label: "Estado do veículo", value: formatEnum(veiculo.estado_veiculo) },
-    { label: "Situação da documentação", value: formatEnum(veiculo.estagio_documentacao) },
+    { label: "Estágio da documentação", value: formatEnum(veiculo.estagio_documentacao) },
     { label: "Registrado em", value: formatDate(veiculo.registrado_em) },
     { label: "Última atualização", value: formatDate(veiculo.editado_em) },
   ];
 
+  const possuiCaracteristicas = Boolean(veiculo.caracteristicas?.length);
+
   return (
     <>
       <section className={sectionClasses}>
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Informações gerais</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Dados principais</h2>
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {informacoesGerais.map((item) => (
+          {dadosPrincipais.map((item) => (
             <div key={item.label}>
               <dt className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">{item.label}</dt>
               <dd className="mt-1 text-sm text-[var(--text-primary)]">{item.value}</dd>
@@ -603,43 +614,51 @@ function ViewMode({ veiculo }: { veiculo: VeiculoUI }) {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Situação</h2>
-        <dl className="grid gap-4 sm:grid-cols-2">
-          {resumoSituacao.map((item) => (
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Especificações</h2>
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {especificacoes.map((item) => (
             <div key={item.label}>
               <dt className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">{item.label}</dt>
               <dd className="mt-1 text-sm text-[var(--text-primary)]">{item.value}</dd>
             </div>
           ))}
         </dl>
-        {veiculo.preco_venal && (
-          <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
-            <dt className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">Preço vitrine</dt>
-            <dd className="mt-1 text-2xl font-bold text-emerald-300">{formatCurrency(veiculo.preco_venal)}</dd>
-          </div>
-        )}
       </section>
 
-      {veiculo.caracteristicas && veiculo.caracteristicas.length > 0 && (
-        <section className={sectionClasses}>
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Características</h2>
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Situação e localização</h2>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          {situacao.map((item) => (
+            <div key={item.label}>
+              <dt className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">{item.label}</dt>
+              <dd className="mt-1 text-sm text-[var(--text-primary)]">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Características</h2>
+        {possuiCaracteristicas ? (
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {veiculo.caracteristicas.map((c) => (
+            {veiculo.caracteristicas!.map((c) => (
               <li key={c.id} className="flex items-center gap-2 text-sm text-[var(--foreground)]">
                 <span className="text-[var(--foreground)] hover:text-[var(--purple-magic)]">✓</span>
                 {c.nome}
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="text-sm text-[var(--text-secondary)]">Nenhuma característica cadastrada.</p>
+        )}
+      </section>
 
-      {veiculo.observacao && (
-        <section className={sectionClasses}>
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Observações</h2>
-          <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{veiculo.observacao}</p>
-        </section>
-      )}
+      <section className={sectionClasses}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Observações</h2>
+        <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">
+          {formatText(veiculo.observacao)}
+        </p>
+      </section>
     </>
   );
 }
