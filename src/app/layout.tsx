@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { ReactQueryProvider } from "../lib/providers/react-query-provider";
+import { AppProviders } from "@/lib/providers/AppProviders";
 import { PWARegister } from "../components/pwa-register";
 import { FirebaseRegister } from "../components/firebase-register";
 import { ThemeProvider } from "@/contexts/theme";
@@ -42,11 +42,11 @@ export default function RootLayout({
       <body className="antialiased theme-surface">
         <ThemeProvider defaultMode="light">
           <ToastProvider>
-            <ReactQueryProvider>
+            <AppProviders>
               {children}
               <PWARegister />
               <FirebaseRegister />
-            </ReactQueryProvider>
+            </AppProviders>
           </ToastProvider>
         </ThemeProvider>
       </body>
