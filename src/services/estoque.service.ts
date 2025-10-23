@@ -2,7 +2,7 @@
  * EstoqueService - Nova camada usando Repository Pattern
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { VeiculoRepository } from '@/repositories';
 import type { VeiculoCreatePayload, VeiculoUpdatePayload } from '@/repositories/veiculo.repository';
 import { handleError } from '@/lib/errors';

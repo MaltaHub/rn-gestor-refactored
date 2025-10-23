@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useRegistrarVenda } from "@/hooks/use-vendas";
 import { useToast } from "@/components/ui/toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { formatCurrency } from "@/lib/utils";
 import { useLojaStore } from "@/stores/useLojaStore";
 import type { Database } from "@/types/supabase";

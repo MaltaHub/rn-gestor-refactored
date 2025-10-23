@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { QueryClient, useQuery } from "@tanstack/react-query";
 import type { Caracteristica } from "@/types";
 import type { VeiculoResumo } from "@/types/estoque";

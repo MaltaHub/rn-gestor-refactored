@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import type { Database } from "@/types/supabase";
 import { useEmpresaDoUsuario } from "@/hooks/use-empresa";
 import { useAuth } from "@/hooks/use-auth";

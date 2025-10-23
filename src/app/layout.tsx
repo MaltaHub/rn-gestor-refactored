@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { ReactQueryProvider } from "../components/react-query-provider";
+import { ReactQueryProvider } from "../lib/providers/react-query-provider";
 import { PWARegister } from "../components/pwa-register";
 import { FirebaseRegister } from "../components/firebase-register";
 import { ThemeProvider } from "@/contexts/theme";

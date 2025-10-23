@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import type { Database } from "@/types/supabase";
 import {
   Bell, Check, Trash2, Info, CheckCircle, AlertTriangle, AlertCircle,

@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import type { Database } from "@/types/supabase";
 
 type VendaRow = Database["public"]["Tables"]["vendas"]["Row"];

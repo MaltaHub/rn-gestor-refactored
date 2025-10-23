@@ -2,7 +2,7 @@
  * LojaService - Nova camada usando Repository Pattern
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { LojaRepository } from '@/repositories';
 import { handleError } from '@/lib/errors';
 import { Database } from '@/types/supabase';

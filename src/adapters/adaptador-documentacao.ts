@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { STORAGE_BUCKETS } from "@/config";
 import { useLojaStore } from "@/stores/useLojaStore";
 

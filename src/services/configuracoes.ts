@@ -1,4 +1,4 @@
-import { callRpc } from "@/lib/supabase";
+import { callRpc } from "@/lib/supabase-client";
 import { RPC_FUNCTIONS } from "@/config";
 
 type ConfiguracaoArea =

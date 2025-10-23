@@ -13,7 +13,7 @@ import { salvarConfiguracao } from "@/services/configuracoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { PhotoGallery } from "@/components/Gallery";
 import { LojaSelector } from "@/components/LojaSelector";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { buildModeloNomeCompletoOrDefault } from "@/utils/modelos";
 import { useLojaStore } from "@/stores/useLojaStore";
 import { Button } from "@/components/ui/button";

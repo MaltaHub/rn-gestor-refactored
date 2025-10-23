@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { solicitarPermissaoNotificacao } from "@/lib/firebase-client";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { useAuth } from "@/hooks/use-auth";
 
 export function NotificacoesSetup() {

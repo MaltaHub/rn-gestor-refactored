@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { adaptVeiculo } from "@/adapters/adaptador-estoque";
 import type { VeiculoUI } from "@/adapters/adaptador-estoque";
 import { useLocais, useModelos } from "@/hooks/use-configuracoes";

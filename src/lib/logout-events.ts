@@ -13,7 +13,9 @@ let inFlight: Promise<void> | null = null;
 
 export function subscribeToLogout(listener: LogoutListener) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function requestLogout(event: Partial<LogoutEvent> = {}): Promise<void> {

@@ -3,7 +3,7 @@
  * Serviço centralizado para verificação de permissões
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 import { PermissionRepository } from '@/repositories';
 import { 
   Permission, 

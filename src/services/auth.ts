@@ -1,5 +1,5 @@
 // src/services/auth.ts
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { requestLogout } from "@/lib/logout-events";
 
 export async function signIn(email: string, password: string) {

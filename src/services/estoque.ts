@@ -1,5 +1,5 @@
 import { Database } from "@/types/supabase";
-import { callRpc, supabase } from "@/lib/supabase";
+import { callRpc, supabase } from "@/lib/supabase-client";
 import { RPC_FUNCTIONS } from "@/config";
 
 type Veiculo = Database["public"]["Tables"]["veiculos"]["Row"];

@@ -151,19 +151,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   administrador: [
     // Estoque completo
-    Permission.VEICULOS_CRIAR,
-    Permission.VEICULOS_EDITAR,
-    Permission.VEICULOS_DELETAR,
     Permission.VEICULOS_VISUALIZAR,
-    Permission.EXCLUIR_VEICULO,
-    Permission.ESTOQUE_CRIAR,
-    Permission.ESTOQUE_EDITAR,
-    Permission.ESTOQUE_DELETAR,
     Permission.ESTOQUE_VISUALIZAR,
     Permission.ESTOQUE_EXPORTAR,
     // Vitrine
-    Permission.VITRINE_ADICIONAR,
-    Permission.VITRINE_REMOVER,
     Permission.VITRINE_EDITAR_PRECO,
     Permission.VITRINE_EDITAR_LOCAL,
     Permission.VITRINE_EDITAR_STATUS,

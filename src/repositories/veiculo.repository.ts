@@ -5,7 +5,7 @@
 
 import { BaseRepository } from './base.repository';
 import { Database } from '@/types/supabase';
-import { callRpc } from '@/lib/supabase';
+import { callRpc } from '@/lib/supabase-client';
 import { RPC_FUNCTIONS } from '@/config';
 import { RepositoryError } from './types';
 

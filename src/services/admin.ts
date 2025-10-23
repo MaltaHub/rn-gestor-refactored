@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { listar_tabela } from "@/services";
 import type { Empresa, MembroEmpresa } from "@/types";
 

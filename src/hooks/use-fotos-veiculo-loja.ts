@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { STORAGE_BUCKETS } from "@/config";
 
 export type FotoVeiculoLoja = {

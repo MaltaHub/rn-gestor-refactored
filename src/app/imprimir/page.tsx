@@ -66,11 +66,13 @@ type VeiculoLinha = {
 };
 
 const buildEdicaoCombustivelCambio = (modelo: ModeloDetalhado | null | undefined) => {
+  const motor = modelo?.motor?.trim() ? modelo.motor.trim() : null;
   const edicao = modelo?.edicao?.trim() ? modelo.edicao.trim() : null;
   const combustivel = formatEnumLabel(modelo?.combustivel ?? null);
   const cambio = formatEnumLabel(modelo?.tipo_cambio ?? null);
 
   const parts = [
+    motor,
     edicao,
     combustivel === "—" ? null : combustivel,
     cambio === "—" ? null : cambio,
