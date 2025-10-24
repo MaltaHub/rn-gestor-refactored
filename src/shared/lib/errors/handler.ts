@@ -70,12 +70,14 @@ export function handleSupabaseError(error: PostgrestError): AppError {
  * Converte erros do Zod para ValidationError
  */
 export function handleZodError(error: ZodError): ValidationError {
-  const firstError = error.errors[0]
-  const field = firstError.path.join('.')
-  const message = firstError.message
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const issues = error.issues || (error as any).errors || []
+  const firstError = issues[0]
+  const field = firstError?.path?.join('.') || 'field'
+  const message = firstError?.message || 'Validation error'
 
   return new ValidationError(`${field}: ${message}`, {
-    errors: error.errors,
+    errors: issues,
     formatted: error.format(),
   })
 }

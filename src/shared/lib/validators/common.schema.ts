@@ -24,20 +24,14 @@ export const optionalDateSchema = z.string().datetime().optional().nullable()
  * Schema para valores monetários (positivos)
  */
 export const currencySchema = z
-  .number({
-    required_error: 'Valor é obrigatório',
-    invalid_type_error: 'Valor deve ser um número',
-  })
+  .number({ message: 'Valor deve ser um número válido' })
   .positive('Valor deve ser positivo')
 
 /**
  * Schema para valores monetários (pode ser zero)
  */
 export const currencyNonNegativeSchema = z
-  .number({
-    required_error: 'Valor é obrigatório',
-    invalid_type_error: 'Valor deve ser um número',
-  })
+  .number({ message: 'Valor deve ser um número válido' })
   .nonnegative('Valor não pode ser negativo')
 
 /**
@@ -73,7 +67,7 @@ export const cnpjSchema = z
  * Schema para CPF ou CNPJ
  */
 export const documentSchema = z.union([cpfSchema, cnpjSchema], {
-  errorMap: () => ({ message: 'CPF ou CNPJ inválido' }),
+  message: 'CPF ou CNPJ inválido',
 })
 
 /**

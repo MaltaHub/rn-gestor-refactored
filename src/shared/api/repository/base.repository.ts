@@ -4,8 +4,11 @@
  * Implementa operações CRUD genéricas com segurança de tipos
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '../supabase/client'
+import type { Database as DatabaseType } from '@/types/supabase'
 import { handleError, NotFoundError } from '@/shared/lib/errors'
 
 export interface FindAllOptions<T> {
@@ -26,7 +29,7 @@ export interface FindAllOptions<T> {
  * @template T - Tipo da entidade
  */
 export abstract class BaseRepository<T extends Record<string, unknown>> {
-  protected client: SupabaseClient
+protected client: SupabaseClient<DatabaseType>
 
   constructor(
     protected readonly tableName: string,
@@ -41,7 +44,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async findAll(options: FindAllOptions<T> = {}): Promise<T[]> {
     try {
       let query = this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .select(options.select || '*')
 
       // Filtros
@@ -70,8 +73,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
 
       const { data, error } = await query
       if (error) throw handleError(error)
-
-      return (data ?? []) as T[]
+      return (data ?? []) as unknown as T[];
     } catch (error) {
       throw handleError(error)
     }
@@ -83,7 +85,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async findById(id: string, select = '*'): Promise<T> {
     try {
       const { data, error } = await this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .select(select)
         .eq('id', id)
         .single()
@@ -91,7 +93,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
       if (error) throw handleError(error)
       if (!data) throw new NotFoundError(`Registro não encontrado (ID: ${id})`)
 
-      return data as T
+      return data as unknown as T;
     } catch (error) {
       throw handleError(error)
     }
@@ -102,7 +104,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
    */
   async findOne(filters: Partial<Record<keyof T, unknown>>, select = '*'): Promise<T | null> {
     try {
-      let query = this.client.from(this.tableName).select(select)
+      let query = this.client.from(this.tableName as any).select(select)
 
       for (const [key, value] of Object.entries(filters)) {
         query = query.eq(key, value)
@@ -112,7 +114,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
       if (error?.code === 'PGRST116') return null
       if (error) throw handleError(error)
 
-      return data as T
+      return data as unknown as T;
     } catch (error) {
       throw handleError(error)
     }
@@ -124,7 +126,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async create(data: Partial<T>): Promise<T> {
     try {
       const { data: created, error } = await this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .insert([data]) // ✅ Array mantém o tipo genérico
         .select()
         .single()
@@ -132,7 +134,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
       if (error) throw handleError(error)
       if (!created) throw new Error('Falha ao criar registro')
 
-      return created as T
+      return created as unknown as T
     } catch (error) {
       throw handleError(error)
     }
@@ -144,12 +146,12 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async createMany(dataArray: Partial<T>[]): Promise<T[]> {
     try {
       const { data, error } = await this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .insert(dataArray)
         .select()
 
       if (error) throw handleError(error)
-      return (data ?? []) as T[]
+      return (data ?? []) as unknown as T[]
     } catch (error) {
       throw handleError(error)
     }
@@ -161,7 +163,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async update(id: string, data: Partial<T>): Promise<T> {
     try {
       const { data: updated, error } = await this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .update(data)
         .eq('id', id)
         .select()
@@ -170,7 +172,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
       if (error) throw handleError(error)
       if (!updated) throw new NotFoundError(`Registro não encontrado (ID: ${id})`)
 
-      return updated as T
+      return updated as unknown as T
     } catch (error) {
       throw handleError(error)
     }
@@ -181,7 +183,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
    */
   async updateMany(filters: Partial<Record<keyof T, unknown>>, data: Partial<T>): Promise<T[]> {
     try {
-      let query = this.client.from(this.tableName).update(data)
+      let query = this.client.from(this.tableName as any).update(data)
       for (const [key, value] of Object.entries(filters)) {
         query = query.eq(key, value)
       }
@@ -189,7 +191,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
       const { data: updated, error } = await query.select()
       if (error) throw handleError(error)
 
-      return (updated ?? []) as T[]
+      return (updated ?? []) as unknown as T[]
     } catch (error) {
       throw handleError(error)
     }
@@ -201,7 +203,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async delete(id: string): Promise<void> {
     try {
       const { error } = await this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .delete()
         .eq('id', id)
 
@@ -216,7 +218,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
    */
   async deleteMany(filters: Partial<Record<keyof T, unknown>>): Promise<number> {
     try {
-      let query = this.client.from(this.tableName).delete()
+      let query = this.client.from(this.tableName as any).delete()
       for (const [key, value] of Object.entries(filters)) {
         query = query.eq(key, value)
       }
@@ -236,7 +238,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async count(filters?: Partial<Record<keyof T, unknown>>): Promise<number> {
     try {
       let query = this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .select('*', { count: 'exact', head: true })
 
       if (filters) {
@@ -260,7 +262,7 @@ export abstract class BaseRepository<T extends Record<string, unknown>> {
   async exists(id: string): Promise<boolean> {
     try {
       const { count, error } = await this.client
-        .from(this.tableName)
+        .from(this.tableName as any)
         .select('id', { count: 'exact', head: true })
         .eq('id', id)
 

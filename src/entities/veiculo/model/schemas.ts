@@ -5,6 +5,7 @@
 
 import { z } from 'zod'
 import { placaSchema, yearSchema, currencyNonNegativeSchema, nonEmptyStringSchema, optionalStringSchema } from '@/shared/lib/validators'
+import type { VeiculoCreateInput, VeiculoUpdateInput, VeiculoFilters } from './types'
 
 /**
  * Enum de estados do veículo
@@ -51,7 +52,7 @@ export const veiculoCreateSchema = z.object({
   modelo_id: z.string().uuid().optional().nullable(),
 })
 
-export type VeiculoCreateInput = z.infer<typeof veiculoCreateSchema>
+// Export type removed to prevent conflict with types.ts
 
 /**
  * Schema para atualizar veículo
@@ -59,7 +60,7 @@ export type VeiculoCreateInput = z.infer<typeof veiculoCreateSchema>
  */
 export const veiculoUpdateSchema = veiculoCreateSchema.partial()
 
-export type VeiculoUpdateInput = z.infer<typeof veiculoUpdateSchema>
+// Export type removed to prevent conflict with types.ts
 
 /**
  * Schema para filtros de busca
@@ -77,7 +78,7 @@ export const veiculoFiltersSchema = z.object({
   search: z.string().optional(),
 })
 
-export type VeiculoFilters = z.infer<typeof veiculoFiltersSchema>
+// Export type removed to prevent conflict with types.ts
 
 /**
  * Validação com refinamentos (regras de negócio)

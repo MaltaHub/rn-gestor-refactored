@@ -7,8 +7,10 @@
 
 import { ErrorBoundary as ReactErrorBoundary, type FallbackProps } from 'react-error-boundary'
 import { type ReactNode } from 'react'
-import { handleError, logError, isAppError } from './handler'
+import { handleError, logError } from './handler'
+import { Link } from 'lucide-react'
 
+//const errorUse = new isAppError()
 /**
  * Componente de fallback padrão exibido quando há erro
  */
@@ -66,12 +68,12 @@ export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
         </button>
 
         {/* Link para home */}
-        <a
+        <Link
           href="/"
           className="mt-3 block text-center text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
         >
           Voltar para o início
-        </a>
+        </Link>
       </div>
     </div>
   )

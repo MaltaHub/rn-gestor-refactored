@@ -10,7 +10,7 @@ import type { BaseRepository, FindAllOptions } from '../repository/base.reposito
 /**
  * Opções para criar query hooks
  */
-export interface CreateQueryOptions<T> {
+export interface CreateQueryOptions<T extends Record<string, unknown>> {
   /**
    * Nome da entidade (usado nas query keys)
    */
@@ -47,7 +47,7 @@ export interface CreateQueryOptions<T> {
  * // Usar nos componentes:
  * const { useList, useById, useCreate } = veiculoQueries
  */
-export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
+export function createEntityQueries<T extends Record<string, unknown>>(options: CreateQueryOptions<T>) {
   const {
     entityName,
     repository,
@@ -59,7 +59,7 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
    * Hook para buscar lista
    */
   function useList(
-    findOptions?: FindAllOptions,
+    findOptions?: FindAllOptions<T>,
     queryOptions?: Omit<UseQueryOptions<T[], Error>, 'queryKey' | 'queryFn'>
   ) {
     return useQuery<T[], Error>({
@@ -93,7 +93,7 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
    * Hook para buscar um registro
    */
   function useOne(
-    filters: Record<string, unknown> | undefined,
+    filters: Partial<Record<keyof T, unknown>> | undefined,
     select = '*',
     queryOptions?: Omit<UseQueryOptions<T | null, Error>, 'queryKey' | 'queryFn'>
   ) {
@@ -111,7 +111,7 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
    * Hook para contar registros
    */
   function useCount(
-    filters?: Record<string, unknown>,
+    filters?: Partial<Record<keyof T, unknown>>,
     queryOptions?: Omit<UseQueryOptions<number, Error>, 'queryKey' | 'queryFn'>
   ) {
     return useQuery<number, Error>({
@@ -133,12 +133,12 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
 
     return useMutation<T, Error, Partial<T>>({
       mutationFn: (data) => repository.create(data),
-      onSuccess: (data, variables, context) => {
+      onSuccess: (data, variables, context, mutationFunctionContext) => {
         // Invalidar queries relacionadas
         queryClient.invalidateQueries({ queryKey: [entityName, 'list'] })
         queryClient.invalidateQueries({ queryKey: [entityName, 'count'] })
 
-        mutationOptions?.onSuccess?.(data, variables, context)
+        mutationOptions?.onSuccess?.(data, variables, context, mutationFunctionContext)
       },
       ...mutationOptions,
     })
@@ -154,11 +154,11 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
 
     return useMutation<T[], Error, Partial<T>[]>({
       mutationFn: (dataArray) => repository.createMany(dataArray),
-      onSuccess: (data, variables, context) => {
+      onSuccess: (data, variables, context, mutationFunctionContext) => {
         queryClient.invalidateQueries({ queryKey: [entityName, 'list'] })
         queryClient.invalidateQueries({ queryKey: [entityName, 'count'] })
 
-        mutationOptions?.onSuccess?.(data, variables, context)
+        mutationOptions?.onSuccess?.(data, variables, context, mutationFunctionContext)
       },
       ...mutationOptions,
     })
@@ -174,12 +174,12 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
 
     return useMutation<T, Error, { id: string; data: Partial<T> }>({
       mutationFn: ({ id, data }) => repository.update(id, data),
-      onSuccess: (data, variables, context) => {
+      onSuccess: (data, variables, context, mutationFunctionContext) => {
         // Invalidar queries relacionadas
         queryClient.invalidateQueries({ queryKey: [entityName, 'list'] })
         queryClient.invalidateQueries({ queryKey: [entityName, 'detail', variables.id] })
 
-        mutationOptions?.onSuccess?.(data, variables, context)
+        mutationOptions?.onSuccess?.(data, variables, context, mutationFunctionContext)
       },
       ...mutationOptions,
     })
@@ -195,13 +195,13 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
 
     return useMutation<void, Error, string>({
       mutationFn: (id) => repository.delete(id),
-      onSuccess: (data, id, context) => {
+      onSuccess: (data, id, context, mutationFunctionContext) => {
         // Invalidar queries relacionadas
         queryClient.invalidateQueries({ queryKey: [entityName, 'list'] })
         queryClient.invalidateQueries({ queryKey: [entityName, 'detail', id] })
         queryClient.invalidateQueries({ queryKey: [entityName, 'count'] })
 
-        mutationOptions?.onSuccess?.(data, id, context)
+        mutationOptions?.onSuccess?.(data, id, context, mutationFunctionContext)
       },
       ...mutationOptions,
     })
@@ -229,4 +229,4 @@ export function createEntityQueries<T>(options: CreateQueryOptions<T>) {
 /**
  * Type helper para inferir tipo do retorno de createEntityQueries
  */
-export type EntityQueries<T> = ReturnType<typeof createEntityQueries<T>>
+export type EntityQueries<T extends Record<string, unknown>> = ReturnType<typeof createEntityQueries<T>>

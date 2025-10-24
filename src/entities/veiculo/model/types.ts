@@ -18,7 +18,7 @@ export type EstadoVenda = Database['public']['Enums']['estado_venda']
  * Interface principal do Veiculo
  * Representa um veículo no sistema
  */
-export interface Veiculo {
+export interface Veiculo extends Record<string, unknown> {
   id: string
   placa: string
   chassi: string | null
@@ -61,17 +61,17 @@ export interface VeiculoFilters {
  */
 export interface VeiculoCreateInput {
   placa: string
-  chassi?: string
-  ano_fabricacao?: number
-  ano_modelo?: number
-  cor?: string
+  chassi?: string | null
+  ano_fabricacao?: number | null
+  ano_modelo?: number | null
+  cor?: string | null
   hodometro: number
-  estado_veiculo?: EstadoVeiculo
+  estado_veiculo?: EstadoVeiculo | null
   estado_venda: EstadoVenda
-  observacao?: string
-  preco_venal?: number
-  local_id?: string
-  modelo_id?: string
+  observacao?: string | null
+  preco_venal?: number | null
+  local_id?: string | null
+  modelo_id?: string | null
 }
 
 /**

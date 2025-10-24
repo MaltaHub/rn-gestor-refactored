@@ -7,6 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start -p 5000 -H 0.0.0.0",
     "lint": "eslint",
+    "type-check": "tsc --noEmit",
     "supabase:types": "npx supabase gen types typescript --project-id udzrkapsvgqgsbjpgkxe --schema public > src/types/supabase.ts"
   },
   "dependencies": {

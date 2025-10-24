@@ -47,7 +47,7 @@ export class VeiculoRepository extends BaseRepository<Veiculo> {
 
       // Extrair veículos do join
       return (data || [])
-        .map((item: any) => item.veiculos)
+        .map((item: { veiculo_id: string; veiculos: Veiculo | null }) => item.veiculos)
         .filter(Boolean) as Veiculo[]
     } catch (error) {
       throw handleError(error)
@@ -61,7 +61,7 @@ export class VeiculoRepository extends BaseRepository<Veiculo> {
    */
   async findWithFilters(filters: VeiculoFilters): Promise<Veiculo[]> {
     try {
-      let query = this.client.from(this.tableName).select('*')
+      let query = this.client.from(this.tableName as 'veiculos').select('*')
 
       // Aplicar filtros
       if (filters.placa) {
@@ -136,16 +136,18 @@ export class VeiculoRepository extends BaseRepository<Veiculo> {
   async countByEstadoVenda(): Promise<Record<string, number>> {
     try {
       const { data, error } = await this.client
-        .from(this.tableName)
+        .from(this.tableName as 'veiculos')
         .select('estado_venda')
 
       if (error) throw handleError(error)
 
       // Contar por estado
       const counts: Record<string, number> = {}
-      data?.forEach((item: any) => {
-        const estado = item.estado_venda
-        counts[estado] = (counts[estado] || 0) + 1
+      data?.forEach((item) => {
+        if (item && typeof item === 'object' && 'estado_venda' in item) {
+          const estado = item.estado_venda as string
+          counts[estado] = (counts[estado] || 0) + 1
+        }
       })
 
       return counts
@@ -165,7 +167,7 @@ export class VeiculoRepository extends BaseRepository<Veiculo> {
       const placaNormalizada = placa.replace(/[^A-Z0-9]/gi, '').toUpperCase()
 
       let query = this.client
-        .from(this.tableName)
+        .from(this.tableName as 'veiculos')
         .select('id', { count: 'exact', head: true })
         .eq('placa', placaNormalizada)
 
