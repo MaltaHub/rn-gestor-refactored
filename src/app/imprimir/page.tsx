@@ -221,8 +221,8 @@ export default function ImprimirVitrinePage() {
 
   if (!lojaId) {
     return (
-      <div className="min-h-screen bg-white px-4 py-6 text-gray-900 dark:bg-gray-950 dark:text-gray-100 sm:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+      <div className="min-h-screen bg-white px-2 py-3 text-gray-900 dark:bg-gray-950 dark:text-gray-100 sm:px-3 lg:px-4">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
           <header className="space-y-2">
             <h1 className="text-2xl font-bold">Impressão de vitrine</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -241,9 +241,9 @@ export default function ImprimirVitrinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-6 text-gray-900 dark:bg-gray-950 dark:text-gray-100 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 print:hidden sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-white px-2 py-3 text-gray-900 dark:bg-gray-950 dark:text-gray-100 sm:px-3 lg:px-4">
+      <div className="mx-auto w-full max-w-7xl space-y-3">
+        <header className="flex flex-col gap-2 print:hidden sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Relatório de Vitrine</h1>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
@@ -252,7 +252,7 @@ export default function ImprimirVitrinePage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button asChild variant="ghost">
               <Link href="/vitrine" className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
@@ -273,17 +273,17 @@ export default function ImprimirVitrinePage() {
         {estaCarregando ? (
           <div className="text-sm text-gray-600 dark:text-gray-300">Carregando veículos...</div>
         ) : agrupamento.totalDisponiveis === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
             Nenhum veículo disponível para impressão no momento.
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-4">
             {agrupamento.porUnidade.map(({ id, nome, itens }, idx) => (
               <section
                 key={id}
-                className={idx > 0 ? "break-before-page space-y-2" : "space-y-2"}
+                className={idx > 0 ? "break-before-page space-y-1" : "space-y-1"}
               >
-                <header className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                <header className="mb-1.5 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                   <h2 className="text-xl font-semibold">{nome}</h2>
                   <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                     <span>{dataHoraGeracao}</span>
@@ -295,20 +295,20 @@ export default function ImprimirVitrinePage() {
                   <table className="min-w-full divide-y divide-gray-200 text-xs leading-tight dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr className="whitespace-nowrap text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-                        <th className="px-2 py-1 whitespace-nowrap">Modelo</th>
-                        <th className="px-2 py-1 whitespace-nowrap">Placa</th>
-                        <th className="px-2 py-1 whitespace-nowrap">Edição / Combustível / Câmbio</th>
-                        <th className="px-2 py-1 whitespace-nowrap">Ano</th>
-                        <th className="px-2 py-1 whitespace-nowrap">Cor</th>
-                        <th className="px-2 py-1 whitespace-nowrap">Hodômetro</th>
-                        <th className="px-2 py-1 text-right whitespace-nowrap">Preço</th>
+                        <th className="px-1 py-0.5 whitespace-nowrap">Modelo</th>
+                        <th className="px-1 py-0.5 whitespace-nowrap">Placa</th>
+                        <th className="px-1 py-0.5 whitespace-nowrap">Edição / Combustível / Câmbio</th>
+                        <th className="px-1 py-0.5 whitespace-nowrap">Ano</th>
+                        <th className="px-1 py-0.5 whitespace-nowrap">Cor</th>
+                        <th className="px-1 py-0.5 whitespace-nowrap">Hodômetro</th>
+                        <th className="px-1 py-0.5 text-right whitespace-nowrap">Preço</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {itens.length === 0 ? (
                         <tr>
                           <td
-                            className="whitespace-nowrap px-2 py-1 text-center text-xs text-gray-500 dark:text-gray-400"
+                            className="whitespace-nowrap px-1 py-0.5 text-center text-xs text-gray-500 dark:text-gray-400"
                             colSpan={7}
                           >
                             Nenhum veículo disponível nesta unidade.
@@ -330,25 +330,25 @@ export default function ImprimirVitrinePage() {
                               key={item.registro.id}
                               className={cn("whitespace-nowrap transition-colors", highlightClass)}
                             >
-                              <td className="whitespace-nowrap px-2 py-1 font-medium text-gray-900 dark:text-gray-100">
+                              <td className="whitespace-nowrap px-1 py-0.5 font-medium text-gray-900 dark:text-gray-100">
                                 {item.modeloNome}
                               </td>
-                              <td className="whitespace-nowrap px-2 py-1 font-mono text-gray-700 dark:text-gray-300">
+                              <td className="whitespace-nowrap px-1 py-0.5 font-mono text-gray-700 dark:text-gray-300">
                                 {item.placa}
                               </td>
-                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                              <td className="whitespace-nowrap px-1 py-0.5 text-gray-700 dark:text-gray-300">
                                 {item.edicaoCombustivelCambio}
                               </td>
-                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                              <td className="whitespace-nowrap px-1 py-0.5 text-gray-700 dark:text-gray-300">
                                 {item.anoDisplay}
                               </td>
-                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                              <td className="whitespace-nowrap px-1 py-0.5 text-gray-700 dark:text-gray-300">
                                 {item.cor}
                               </td>
-                              <td className="whitespace-nowrap px-2 py-1 text-gray-700 dark:text-gray-300">
+                              <td className="whitespace-nowrap px-1 py-0.5 text-gray-700 dark:text-gray-300">
                                 {item.hodometro}
                               </td>
-                              <td className="whitespace-nowrap px-2 py-1 text-right font-semibold text-gray-900 dark:text-gray-100">
+                              <td className="whitespace-nowrap px-1 py-0.5 text-right font-semibold text-gray-900 dark:text-gray-100">
                                 {formatCurrency(item.precoReferencia)}
                               </td>
                             </tr>
@@ -370,7 +370,7 @@ export default function ImprimirVitrinePage() {
         }
 
         @page {
-          margin: 8mm;
+          margin: 4mm;
         }
 
         @media print {
