@@ -1,0 +1,158 @@
+'use client';
+
+import { create } from 'zustand';
+import { DataItem, SortConfig } from '@/app/components/estoque/line-list/types';
+
+export interface DataStoreState<T extends DataItem> {
+    data: T[];
+    keys: string[];
+    activeFilters: Record<string, string>;
+    sortConfig: SortConfig | null;
+    filteredAndSortedData: T[];
+    invalidKeyPath: boolean;
+
+    setData: (data: T[]) => void;
+    setKeys: (keys: string[]) => void;
+    setActiveFilters: (filters: Record<string, string>) => void;
+    setSortConfig: (config: SortConfig | null) => void;
+    setInvalidKeyPath: (invalid: boolean) => void;
+    addFilter: (key: string, value: string) => void;
+    removeFilter: (key: string) => void;
+    clearFilters: () => void;
+    addColumn: (columnName: string) => void;
+    removeColumn: (columnKey: string) => void;
+    updateRow: (rowId: string | number, updatedRow: T) => void;
+    deleteRow: (rowId: string | number) => void;
+    computeFilteredAndSorted: (data: T[], filters: Record<string, string>, sort: SortConfig | null) => T[];
+}
+
+const computeFilteredAndSorted = <T extends DataItem>(
+    data: T[],
+    filters: Record<string, string>,
+    sort: SortConfig | null
+): T[] => {
+    let result = [...data];
+
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+            result = result.filter((row) => String(row[key]).toLowerCase().includes(value.toLowerCase()));
+        }
+    });
+
+    if (sort) {
+        result.sort((a, b) => {
+            const aValue = String(a[sort.key]);
+            const bValue = String(b[sort.key]);
+            return sort.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        });
+    }
+
+    return result;
+};
+
+export const createDataStore = <T extends DataItem>() =>
+    create<DataStoreState<T>>((set, get) => ({
+    data: [],
+    keys: [],
+    activeFilters: {},
+    sortConfig: null,
+    filteredAndSortedData: [],
+    invalidKeyPath: false,
+
+        setData: (data) =>
+            set((state) => ({
+                data,
+                filteredAndSortedData: computeFilteredAndSorted(data, state.activeFilters, state.sortConfig),
+            })),
+
+        setKeys: (keys) => set({ keys }),
+
+        setActiveFilters: (filters) =>
+            set((state) => ({
+                activeFilters: filters,
+                filteredAndSortedData: computeFilteredAndSorted(state.data, filters, state.sortConfig),
+            })),
+
+        setSortConfig: (config) =>
+            set((state) => ({
+                sortConfig: config,
+                filteredAndSortedData: computeFilteredAndSorted(state.data, state.activeFilters, config),
+            })),
+
+        setInvalidKeyPath: (invalid) => set({ invalidKeyPath: invalid }),
+
+        addFilter: (key, value) => {
+            const state = get();
+            const newFilters = { ...state.activeFilters, [key]: value };
+            set({
+                activeFilters: newFilters,
+                filteredAndSortedData: computeFilteredAndSorted(state.data, newFilters, state.sortConfig),
+            });
+        },
+
+        removeFilter: (key) => {
+            const state = get();
+            const newFilters = { ...state.activeFilters };
+            delete newFilters[key];
+            set({
+                activeFilters: newFilters,
+                filteredAndSortedData: computeFilteredAndSorted(state.data, newFilters, state.sortConfig),
+            });
+        },
+
+        clearFilters: () => {
+            const state = get();
+            set({
+                activeFilters: {},
+                filteredAndSortedData: computeFilteredAndSorted(state.data, {}, state.sortConfig),
+            });
+        },
+
+        addColumn: (columnName) => {
+            const state = get();
+            if (!state.keys.includes(columnName)) {
+                const updatedKeys = [...state.keys, columnName];
+                const updatedData = state.data.map((row) => ({ ...row, [columnName]: '' })) as T[];
+                set({
+                    keys: updatedKeys,
+                    data: updatedData,
+                    filteredAndSortedData: computeFilteredAndSorted(updatedData, state.activeFilters, state.sortConfig),
+                });
+            }
+        },
+
+        removeColumn: (columnKey) => {
+            const state = get();
+            const updatedKeys = state.keys.filter((k) => k !== columnKey);
+            const updatedData = state.data.map((row) => {
+                const { [columnKey]: _removedColumn, ...rest } = row;
+                void _removedColumn;
+                return rest as T;
+            });
+            set({
+                keys: updatedKeys,
+                data: updatedData,
+                filteredAndSortedData: computeFilteredAndSorted(updatedData, state.activeFilters, state.sortConfig),
+            });
+        },
+
+        updateRow: (rowId, updatedRow) => {
+            const state = get();
+            const newData = state.data.map((row) => (row.id === rowId ? updatedRow : row));
+            set({
+                data: newData,
+                filteredAndSortedData: computeFilteredAndSorted(newData, state.activeFilters, state.sortConfig),
+            });
+        },
+
+        deleteRow: (rowId) => {
+            const state = get();
+            const newData = state.data.filter((row) => row.id !== rowId);
+            set({
+                data: newData,
+                filteredAndSortedData: computeFilteredAndSorted(newData, state.activeFilters, state.sortConfig),
+            });
+        },
+
+        computeFilteredAndSorted,
+    }));
