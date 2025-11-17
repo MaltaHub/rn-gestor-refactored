@@ -10,6 +10,7 @@ interface DataRowsProps<T extends DataItem> {
     navigateTo?: { path: string; keyPath: keyof T };
     canEditRows: boolean;
     onRowMenuOpen: (event: React.MouseEvent, rowId: string | number) => void;
+    onAddRowAfter: (position: number) => void;
 }
 
 const DataRows = <T extends DataItem>({
@@ -20,31 +21,62 @@ const DataRows = <T extends DataItem>({
     navigateTo,
     canEditRows,
     onRowMenuOpen,
+    onAddRowAfter,
 }: DataRowsProps<T>) => {
     return (
         <>
-            {data.map((row) => (
+            {data.map((row, rowIndex) => (
                 <div
                     key={row.id}
-                    className="flex hover:bg-gray-50 transition-colors duration-150 relative group"
+                    className="group relative flex transition-colors duration-150 hover:bg-gray-50"
                     onMouseEnter={() => onHoverRow(row.id)}
                     onMouseLeave={() => onHoverRow(null)}
                 >
-                    <Link href={navigateTo ? `${navigateTo.path}/${row[navigateTo.keyPath]}` : '#'} className="flex flex-1">
-                        {keys.map((key) => (
-                            <div key={key} className="flex-1 px-4 py-3 border border-gray-200 text-sm text-gray-800">
-                                {row[key]}
+                    {keys.map((key) => {
+                        const cellContent = (
+                            <div className="block w-full px-4 py-3 text-sm text-gray-800">{row[key]}</div>
+                        );
+                        return (
+                            <div key={key} className="relative flex-1 border border-gray-200">
+                                {navigateTo ? (
+                                    <Link
+                                        href={`${navigateTo.path}/${row[navigateTo.keyPath]}`}
+                                        className="block h-full w-full"
+                                    >
+                                        {cellContent}
+                                    </Link>
+                                ) : (
+                                    cellContent
+                                )}
+
+                                {canEditRows && (
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            onAddRowAfter(rowIndex + 1);
+                                        }}
+                                        className="pointer-events-none absolute left-1/2 top-full flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-600 opacity-0 shadow transition group-hover:pointer-events-auto group-hover:opacity-100"
+                                        aria-label={`Adicionar linha abaixo de ${row.id}`}
+                                    >
+                                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
+                                )}
                             </div>
-                        ))}
-                    </Link>
+                        );
+                    })}
 
                     {canEditRows && hoveredRow === row.id && (
                         <button
                             data-menu-trigger="true"
                             onClick={(event) => onRowMenuOpen(event, row.id)}
-                            className="absolute top-1 right-1 p-1 bg-white rounded shadow-md hover:bg-gray-50 transition-all duration-150 border border-gray-200 z-10"
+                            className="absolute right-1 top-1 z-10 rounded border border-gray-200 bg-white p-1 shadow-md transition-all duration-150 hover:bg-gray-50"
+                            aria-label="Abrir menu da linha"
                         >
-                            <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-3.5 w-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                             </svg>
                         </button>

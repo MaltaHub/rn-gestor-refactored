@@ -1,5 +1,11 @@
 import React from 'react';
-import { FormFieldRenderProps, PrimitiveFieldType } from './schema';
+import {
+    CustomFieldDefinition,
+    FormFieldDefinition,
+    FormFieldRenderProps,
+    PrimitiveFieldType,
+    SelectFieldDefinition,
+} from './schema';
 
 export type FieldRenderer = (props: FormFieldRenderProps) => React.ReactNode;
 
@@ -14,6 +20,10 @@ export class FieldRegistry {
         return this.renderers.get(type);
     }
 }
+
+const isSelectField = (definition: FormFieldDefinition): definition is SelectFieldDefinition => definition.type === 'select';
+
+const isCustomField = (definition: FormFieldDefinition): definition is CustomFieldDefinition => definition.type === 'custom';
 
 const sharedInputClasses =
     'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100';
@@ -85,28 +95,29 @@ defaultRegistry.register('date', ({ definition, value, onChange, readOnly, error
 ));
 
 defaultRegistry.register('select', ({ definition, value, onChange, readOnly, error }) => {
-    if (definition.type !== 'select') {
+    if (!isSelectField(definition)) {
         return null;
     }
+    const selectDefinition = definition;
     return (
         <div className="flex flex-col gap-1">
-            {definition.label && <label className={sharedLabelClasses}>{definition.label}</label>}
+            {selectDefinition.label && <label className={sharedLabelClasses}>{selectDefinition.label}</label>}
             <select
                 className={`${sharedInputClasses} ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30' : ''}`}
                 value={(value as string | number | undefined) ?? ''}
                 onChange={(event) => onChange(event.target.value)}
-                disabled={readOnly || definition.disabled}
+                disabled={readOnly || selectDefinition.disabled}
             >
                 <option value="" disabled>
-                    {definition.placeholder ?? 'Selecione'}
+                    {selectDefinition.placeholder ?? 'Selecione'}
                 </option>
-                {definition.options.map((option) => (
+                {selectDefinition.options.map((option) => (
                     <option key={option.value} value={option.value}>
                         {option.label}
                     </option>
                 ))}
             </select>
-            {definition.description && <p className="text-xs text-slate-500">{definition.description}</p>}
+            {selectDefinition.description && <p className="text-xs text-slate-500">{selectDefinition.description}</p>}
             {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
     );
@@ -191,7 +202,7 @@ defaultRegistry.register('percent', ({ definition, value, onChange, readOnly, er
 ));
 
 defaultRegistry.register('custom', ({ definition, value, onChange, readOnly, error }) => {
-    if (definition.type !== 'custom') {
+    if (!isCustomField(definition)) {
         return null;
     }
     return definition.renderer({ definition, value, onChange, readOnly, error });

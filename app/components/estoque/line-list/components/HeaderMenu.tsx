@@ -7,10 +7,10 @@ interface HeaderMenuProps {
     onSort: (key: string, direction: 'asc' | 'desc') => void;
     onFilterOpen: (key: string, position: { x: number; y: number }) => void;
     onFilterClear: (key: string) => void;
-    onAddColumn: () => void;
+    onAddColumn: (options?: { position?: number; name?: string }) => string | null;
     onRemoveColumn: (key: string) => void;
     onCloseMenu: () => void;
-    canEditHeaders: boolean;
+    canStructureEdit: boolean;
 }
 
 const HeaderMenu: React.FC<HeaderMenuProps> = ({
@@ -22,7 +22,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     onAddColumn,
     onRemoveColumn,
     onCloseMenu,
-    canEditHeaders,
+    canStructureEdit,
 }) => {
     if (!menu) {
         return null;
@@ -88,7 +88,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                     Limpar filtro
                 </button>
             )}
-            {canEditHeaders && (
+            {canStructureEdit && (
                 <>
                     <button
                         onClick={() => {

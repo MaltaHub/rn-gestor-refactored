@@ -13,7 +13,8 @@ import { DataItem, LineCardsProps } from './types';
 const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
     const {
         keys,
-        canEditHeaders,
+        canStructureEdit,
+        allowColumnReorder,
         canEditRows,
         hoveredHeader,
         setHoveredHeader,
@@ -44,6 +45,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
         handleFilterCancel,
         handleAddColumn,
         handleRemoveColumn,
+        handleRenameColumn,
         handleAddRow,
         handleEditRow,
         handleSaveEdit,
@@ -66,20 +68,23 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 activeFilters={activeFilters}
                 sortConfig={sortConfig}
                 hoveredHeader={hoveredHeader}
-                canEditHeaders={canEditHeaders}
+                canStructureEdit={canStructureEdit}
+                allowColumnReorder={allowColumnReorder}
                 onHoverHeader={setHoveredHeader}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
                 onDragLeave={handleDragLeave}
                 onHeaderMenuClick={handleHeaderMenuOpen}
+                onAddColumnAfter={(position) => handleAddColumn({ position })}
+                onRenameColumn={handleRenameColumn}
             />
 
             {canEditRows && (
                 <div className="flex justify-end py-3">
                     <button
                         className="px-4 py-2 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition-colors"
-                        onClick={handleAddRow}
+                        onClick={() => handleAddRow()}
                     >
                         Adicionar linha
                     </button>
@@ -94,6 +99,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 navigateTo={props.navigateTo}
                 canEditRows={canEditRows}
                 onRowMenuOpen={handleRowMenuOpen}
+                onAddRowAfter={(position) => handleAddRow({ position })}
             />
 
             <HeaderMenu
@@ -105,7 +111,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 onAddColumn={handleAddColumn}
                 onRemoveColumn={handleRemoveColumn}
                 onCloseMenu={closeContextMenus}
-                canEditHeaders={canEditHeaders}
+                canStructureEdit={canStructureEdit}
             />
 
             {canEditRows && (
