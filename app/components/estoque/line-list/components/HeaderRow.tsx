@@ -8,6 +8,7 @@ interface HeaderRowProps {
     activeFilters: Record<string, string>;
     sortConfig: SortConfig | null;
     hoveredHeader: string | null;
+    canEditHeaders: boolean;
     onHoverHeader: (key: string | null) => void;
     onDragStart: (index: number) => void;
     onDragOver: (event: React.DragEvent, index: number) => void;
@@ -23,6 +24,7 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
     activeFilters,
     sortConfig,
     hoveredHeader,
+    canEditHeaders,
     onHoverHeader,
     onDragStart,
     onDragOver,
@@ -35,18 +37,18 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
             {keys.map((key, index) => (
                 <div
                     key={key}
-                    draggable
-                    onDragStart={() => onDragStart(index)}
-                    onDragOver={(event) => onDragOver(event, index)}
-                    onDragEnd={onDragEnd}
-                    onDragLeave={onDragLeave}
-                    onMouseEnter={() => onHoverHeader(key)}
-                    onMouseLeave={() => onHoverHeader(null)}
+                    draggable={canEditHeaders}
+                    onDragStart={canEditHeaders ? () => onDragStart(index) : undefined}
+                    onDragOver={canEditHeaders ? (event) => onDragOver(event, index) : undefined}
+                    onDragEnd={canEditHeaders ? onDragEnd : undefined}
+                    onDragLeave={canEditHeaders ? onDragLeave : undefined}
+                    onMouseEnter={canEditHeaders ? () => onHoverHeader(key) : undefined}
+                    onMouseLeave={canEditHeaders ? () => onHoverHeader(null) : undefined}
                     className={`
                         flex-1 px-4 py-3 border border-gray-200
-                        cursor-move select-none
+                        ${canEditHeaders ? 'cursor-move' : 'cursor-default'} select-none
                         transition-all duration-200
-                        hover:bg-gray-100
+                        ${canEditHeaders ? 'hover:bg-gray-100' : ''}
                         relative
                         ${draggedIndex === index ? 'opacity-40' : 'opacity-100'}
                         ${dragOverIndex === index && draggedIndex !== index ? 'border-l-4 border-l-blue-500' : ''}
@@ -71,7 +73,7 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
                         )}
                     </div>
 
-                    {hoveredHeader === key && (
+                    {hoveredHeader === key && canEditHeaders && (
                         <button
                             data-menu-trigger="true"
                             onClick={(event) => onHeaderMenuClick(event, key)}

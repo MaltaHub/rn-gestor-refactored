@@ -1,6 +1,6 @@
 export type DataItem = { id: string | number; [key: string]: string | number };
 
-export type LineListMode = 'read-only' | 'edit';
+export type LineListMode = 'read-only' | 'edit' | 'cell-edit';
 
 export interface NavigateConfig<T extends DataItem> {
     path: string;

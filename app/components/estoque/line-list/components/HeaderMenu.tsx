@@ -10,7 +10,7 @@ interface HeaderMenuProps {
     onAddColumn: () => void;
     onRemoveColumn: (key: string) => void;
     onCloseMenu: () => void;
-    isReadOnly: boolean;
+    canEditHeaders: boolean;
 }
 
 const HeaderMenu: React.FC<HeaderMenuProps> = ({
@@ -22,7 +22,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     onAddColumn,
     onRemoveColumn,
     onCloseMenu,
-    isReadOnly,
+    canEditHeaders,
 }) => {
     if (!menu) {
         return null;
@@ -88,7 +88,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                     Limpar filtro
                 </button>
             )}
-            {!isReadOnly && (
+            {canEditHeaders && (
                 <>
                     <button
                         onClick={() => {

@@ -22,6 +22,8 @@ const isValidKeyPath = <T extends DataItem>(data: T[], keyPath: keyof T): boolea
 interface UseLineListStateReturn<T extends DataItem> {
     data: T[];
     keys: string[];
+    canEditHeaders: boolean;
+    canEditRows: boolean;
     hoveredHeader: string | null;
     setHoveredHeader: (key: string | null) => void;
     hoveredRow: string | number | null;
@@ -56,6 +58,7 @@ interface UseLineListStateReturn<T extends DataItem> {
     handleFilterCancel: () => void;
     handleAddColumn: () => void;
     handleRemoveColumn: (key: string) => void;
+    handleAddRow: () => void;
     handleEditRow: (rowId: string | number) => void;
     handleSaveEdit: () => void;
     handleCancelEdit: () => void;
@@ -95,6 +98,7 @@ const useLineListState = <T extends DataItem>({
     const removeFilter = dataStore((state) => state.removeFilter);
     const addColumn = dataStore((state) => state.addColumn);
     const removeColumn = dataStore((state) => state.removeColumn);
+    const addRow = dataStore((state) => state.addRow);
     const updateRow = dataStore((state) => state.updateRow);
     const deleteRow = dataStore((state) => state.deleteRow);
 
@@ -132,6 +136,8 @@ const useLineListState = <T extends DataItem>({
     );
 
     const isReadOnly: boolean = mode === 'read-only';
+    const canEditHeaders = mode === 'edit';
+    const canEditRows = mode !== 'read-only';
 
     // Initialize data store on mount
     React.useEffect(() => {
@@ -172,15 +178,24 @@ const useLineListState = <T extends DataItem>({
 
     // Drag handlers
     const handleDragStart = (index: number) => {
+        if (!canEditHeaders) {
+            return;
+        }
         setDraggedIndex(index);
     };
 
     const handleDragOver = (event: React.DragEvent, index: number) => {
+        if (!canEditHeaders) {
+            return;
+        }
         event.preventDefault();
         setDragOverIndex(index);
     };
 
     const handleDragEnd = () => {
+        if (!canEditHeaders) {
+            return;
+        }
         if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
             const newKeys = [...keys];
             const [draggedKey] = newKeys.splice(draggedIndex, 1);
@@ -192,18 +207,24 @@ const useLineListState = <T extends DataItem>({
     };
 
     const handleDragLeave = () => {
+        if (!canEditHeaders) {
+            return;
+        }
         setDragOverIndex(null);
     };
 
     // Menu handlers
     const handleHeaderMenuOpen = (event: React.MouseEvent, key: string) => {
+        if (!canEditHeaders) {
+            return;
+        }
         event.stopPropagation();
         event.preventDefault();
         setHeaderMenu({ key, x: event.clientX, y: event.clientY });
     };
 
     const handleRowMenuOpen = (event: React.MouseEvent, rowId: string | number) => {
-        if (isReadOnly) {
+        if (!canEditRows) {
             return;
         }
         event.preventDefault();
@@ -213,11 +234,17 @@ const useLineListState = <T extends DataItem>({
 
     // Sort handler
     const handleSort = (key: string, direction: 'asc' | 'desc') => {
+        if (!canEditHeaders) {
+            return;
+        }
         setSortConfig({ key, direction });
     };
 
     // Filter handlers
     const handleFilterOpen = (key: string, position: { x: number; y: number }) => {
+        if (!canEditHeaders) {
+            return;
+        }
         setFilterValue(activeFilters[key] || '');
         setFilterDialog({ key, x: position.x, y: position.y });
         closeContextMenus();
@@ -240,7 +267,7 @@ const useLineListState = <T extends DataItem>({
 
     // Column handlers
     const handleAddColumn = () => {
-        if (isReadOnly) {
+        if (!canEditHeaders) {
             return;
         }
         const newColumnName = prompt('Nome da nova coluna:');
@@ -252,7 +279,11 @@ const useLineListState = <T extends DataItem>({
     };
 
     const handleRemoveColumn = (key: string) => {
-        if (isReadOnly) {
+        if (!canEditHeaders) {
+            return;
+        }
+        if (keys.length <= 1) {
+            alert('A tabela precisa ter pelo menos uma coluna.');
             return;
         }
         if (confirm(`Remover a coluna "${key}"?`)) {
@@ -262,9 +293,21 @@ const useLineListState = <T extends DataItem>({
         }
     };
 
+    const handleAddRow = () => {
+        if (!canEditRows) {
+            return;
+        }
+        if (keys.length === 0) {
+            alert('Adicione ao menos uma coluna antes de criar linhas.');
+            return;
+        }
+        addRow();
+        onDataChange?.(dataStore.getState().data as T[]);
+    };
+
     // Edit handlers
     const handleEditRow = (rowId: string | number) => {
-        if (isReadOnly) {
+        if (!canEditRows) {
             return;
         }
         const row = data.find((r) => r.id === rowId);
@@ -274,7 +317,7 @@ const useLineListState = <T extends DataItem>({
     };
 
     const handleSaveEdit = () => {
-        if (!editingRow || isReadOnly) {
+        if (!editingRow || !canEditRows) {
             return;
         }
         updateRow(editingRow.rowId, editingRow.data as DataItem);
@@ -288,7 +331,11 @@ const useLineListState = <T extends DataItem>({
 
     // Delete handler
     const handleDeleteRow = (rowId: string | number) => {
-        if (isReadOnly) {
+        if (!canEditRows) {
+            return;
+        }
+        if (data.length <= 1) {
+            alert('A tabela precisa manter ao menos uma linha.');
             return;
         }
         if (confirm('Excluir esta linha?')) {
@@ -318,6 +365,8 @@ const useLineListState = <T extends DataItem>({
     return {
         data: data as T[],
         keys,
+        canEditHeaders,
+        canEditRows,
         hoveredHeader,
         setHoveredHeader,
         hoveredRow,
@@ -352,6 +401,7 @@ const useLineListState = <T extends DataItem>({
         handleFilterCancel,
         handleAddColumn,
         handleRemoveColumn,
+        handleAddRow,
         handleEditRow,
         handleSaveEdit,
         handleCancelEdit,

@@ -21,6 +21,7 @@ export interface DataStoreState<T extends DataItem> {
     clearFilters: () => void;
     addColumn: (columnName: string) => void;
     removeColumn: (columnKey: string) => void;
+    addRow: () => void;
     updateRow: (rowId: string | number, updatedRow: T) => void;
     deleteRow: (rowId: string | number) => void;
     computeFilteredAndSorted: (data: T[], filters: Record<string, string>, sort: SortConfig | null) => T[];
@@ -48,6 +49,16 @@ const computeFilteredAndSorted = <T extends DataItem>(
     }
 
     return result;
+};
+
+const generateRowId = (existing: DataItem[]): string | number => {
+    const base = Date.now();
+    let id = base;
+    const ids = new Set(existing.map((row) => row.id));
+    while (ids.has(id)) {
+        id += 1;
+    }
+    return id;
 };
 
 export const createDataStore = <T extends DataItem>() =>
@@ -123,6 +134,9 @@ export const createDataStore = <T extends DataItem>() =>
 
         removeColumn: (columnKey) => {
             const state = get();
+            if (state.keys.length <= 1) {
+                return;
+            }
             const updatedKeys = state.keys.filter((k) => k !== columnKey);
             const updatedData = state.data.map((row) => {
                 const { [columnKey]: _removedColumn, ...rest } = row;
@@ -133,6 +147,22 @@ export const createDataStore = <T extends DataItem>() =>
                 keys: updatedKeys,
                 data: updatedData,
                 filteredAndSortedData: computeFilteredAndSorted(updatedData, state.activeFilters, state.sortConfig),
+            });
+        },
+
+        addRow: () => {
+            const state = get();
+            if (state.keys.length === 0) {
+                return;
+            }
+            const newRow = state.keys.reduce<Record<string, string | number>>(
+                (acc, key) => ({ ...acc, [key]: '' }),
+                { id: generateRowId(state.data) }
+            ) as T;
+            const newData = [...state.data, newRow];
+            set({
+                data: newData,
+                filteredAndSortedData: computeFilteredAndSorted(newData, state.activeFilters, state.sortConfig),
             });
         },
 
@@ -147,6 +177,9 @@ export const createDataStore = <T extends DataItem>() =>
 
         deleteRow: (rowId) => {
             const state = get();
+            if (state.data.length <= 1) {
+                return;
+            }
             const newData = state.data.filter((row) => row.id !== rowId);
             set({
                 data: newData,

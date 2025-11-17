@@ -8,7 +8,7 @@ interface DataRowsProps<T extends DataItem> {
     hoveredRow: string | number | null;
     onHoverRow: (rowId: string | number | null) => void;
     navigateTo?: { path: string; keyPath: keyof T };
-    isReadOnly: boolean;
+    canEditRows: boolean;
     onRowMenuOpen: (event: React.MouseEvent, rowId: string | number) => void;
 }
 
@@ -18,7 +18,7 @@ const DataRows = <T extends DataItem>({
     hoveredRow,
     onHoverRow,
     navigateTo,
-    isReadOnly,
+    canEditRows,
     onRowMenuOpen,
 }: DataRowsProps<T>) => {
     return (
@@ -38,7 +38,7 @@ const DataRows = <T extends DataItem>({
                         ))}
                     </Link>
 
-                    {!isReadOnly && hoveredRow === row.id && (
+                    {canEditRows && hoveredRow === row.id && (
                         <button
                             data-menu-trigger="true"
                             onClick={(event) => onRowMenuOpen(event, row.id)}

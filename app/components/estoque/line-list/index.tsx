@@ -13,6 +13,8 @@ import { DataItem, LineCardsProps } from './types';
 const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
     const {
         keys,
+        canEditHeaders,
+        canEditRows,
         hoveredHeader,
         setHoveredHeader,
         hoveredRow,
@@ -28,7 +30,6 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
         setFilterValue,
         editingRow,
         invalidKeyPath,
-        isReadOnly,
         handleDragStart,
         handleDragOver,
         handleDragEnd,
@@ -43,6 +44,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
         handleFilterCancel,
         handleAddColumn,
         handleRemoveColumn,
+        handleAddRow,
         handleEditRow,
         handleSaveEdit,
         handleCancelEdit,
@@ -64,6 +66,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 activeFilters={activeFilters}
                 sortConfig={sortConfig}
                 hoveredHeader={hoveredHeader}
+                canEditHeaders={canEditHeaders}
                 onHoverHeader={setHoveredHeader}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
@@ -72,13 +75,24 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 onHeaderMenuClick={handleHeaderMenuOpen}
             />
 
+            {canEditRows && (
+                <div className="flex justify-end py-3">
+                    <button
+                        className="px-4 py-2 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition-colors"
+                        onClick={handleAddRow}
+                    >
+                        Adicionar linha
+                    </button>
+                </div>
+            )}
+
             <DataRows
                 data={filteredAndSortedData}
                 keys={keys}
                 hoveredRow={hoveredRow}
                 onHoverRow={setHoveredRow}
                 navigateTo={props.navigateTo}
-                isReadOnly={isReadOnly}
+                canEditRows={canEditRows}
                 onRowMenuOpen={handleRowMenuOpen}
             />
 
@@ -91,10 +105,10 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 onAddColumn={handleAddColumn}
                 onRemoveColumn={handleRemoveColumn}
                 onCloseMenu={closeContextMenus}
-                isReadOnly={isReadOnly}
+                canEditHeaders={canEditHeaders}
             />
 
-            {!isReadOnly && (
+            {canEditRows && (
                 <RowMenu
                     menu={rowMenu}
                     onEditRow={handleEditRow}
@@ -111,7 +125,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 onCancel={handleFilterCancel}
             />
 
-            {!isReadOnly && (
+            {canEditRows && (
                 <EditRowDialog
                     editingRow={editingRow}
                     keys={keys}
