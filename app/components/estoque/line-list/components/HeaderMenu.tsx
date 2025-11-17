@@ -7,8 +7,9 @@ interface HeaderMenuProps {
     onSort: (key: string, direction: 'asc' | 'desc') => void;
     onFilterOpen: (key: string, position: { x: number; y: number }) => void;
     onFilterClear: (key: string) => void;
-    onAddColumn: (options?: { position?: number; name?: string }) => string | null;
+    onAddColumn: (options?: { position?: number; name?: string }) => void;
     onRemoveColumn: (key: string) => void;
+    onRenameColumn: (key: string, nextKey: string) => boolean;
     onCloseMenu: () => void;
     canStructureEdit: boolean;
 }
@@ -21,6 +22,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
     onFilterClear,
     onAddColumn,
     onRemoveColumn,
+    onRenameColumn,
     onCloseMenu,
     canStructureEdit,
 }) => {
@@ -114,6 +116,21 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                         Remover coluna
+                    </button>
+                    <button
+                        onClick={() => {
+                            const nextLabel = prompt('Novo nome da coluna:', menu.key);
+                            if (nextLabel?.trim()) {
+                                onRenameColumn(menu.key, nextLabel.trim());
+                            }
+                            onCloseMenu();
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L7.5 21H3v-4.5L16.732 3.732z" />
+                        </svg>
+                        Renomear coluna
                     </button>
                 </>
             )}

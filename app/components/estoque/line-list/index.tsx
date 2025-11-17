@@ -77,19 +77,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 onDragLeave={handleDragLeave}
                 onHeaderMenuClick={handleHeaderMenuOpen}
                 onAddColumnAfter={(position) => handleAddColumn({ position })}
-                onRenameColumn={handleRenameColumn}
             />
-
-            {canEditRows && (
-                <div className="flex justify-end py-3">
-                    <button
-                        className="px-4 py-2 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition-colors"
-                        onClick={() => handleAddRow()}
-                    >
-                        Adicionar linha
-                    </button>
-                </div>
-            )}
 
             <DataRows
                 data={filteredAndSortedData}
@@ -110,6 +98,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 onFilterClear={handleFilterClear}
                 onAddColumn={handleAddColumn}
                 onRemoveColumn={handleRemoveColumn}
+                onRenameColumn={handleRenameColumn}
                 onCloseMenu={closeContextMenus}
                 canStructureEdit={canStructureEdit}
             />

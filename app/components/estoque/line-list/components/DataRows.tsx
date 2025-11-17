@@ -32,6 +32,21 @@ const DataRows = <T extends DataItem>({
                     onMouseEnter={() => onHoverRow(row.id)}
                     onMouseLeave={() => onHoverRow(null)}
                 >
+                    {canEditRows && (
+                        <div className="relative w-6 flex-shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => onAddRowAfter(rowIndex)}
+                                className="pointer-events-none absolute left-0 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-gray-300 opacity-0 transition-all duration-150 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:text-blue-600 group-hover:hover:bg-blue-50"
+                                aria-label={`Adicionar linha acima de ${row.id}`}
+                                title="Adicionar linha"
+                            >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                     {keys.map((key) => {
                         const cellContent = (
                             <div className="block w-full px-4 py-3 text-sm text-gray-800">{row[key]}</div>
@@ -47,23 +62,6 @@ const DataRows = <T extends DataItem>({
                                     </Link>
                                 ) : (
                                     cellContent
-                                )}
-
-                                {canEditRows && (
-                                    <button
-                                        type="button"
-                                        onClick={(event) => {
-                                            event.preventDefault();
-                                            event.stopPropagation();
-                                            onAddRowAfter(rowIndex + 1);
-                                        }}
-                                        className="pointer-events-none absolute left-1/2 top-full flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-600 opacity-0 shadow transition group-hover:pointer-events-auto group-hover:opacity-100"
-                                        aria-label={`Adicionar linha abaixo de ${row.id}`}
-                                    >
-                                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                    </button>
                                 )}
                             </div>
                         );

@@ -58,7 +58,7 @@ interface UseLineListStateReturn<T extends DataItem> {
     handleFilterApply: () => void;
     handleFilterClear: (key: string) => void;
     handleFilterCancel: () => void;
-    handleAddColumn: (options?: { position?: number; name?: string }) => string | null;
+    handleAddColumn: (options?: { position?: number; name?: string }) => void;
     handleRemoveColumn: (key: string) => void;
     handleRenameColumn: (currentKey: string, nextKey: string) => boolean;
     handleAddRow: (options?: { position?: number }) => void;
@@ -297,7 +297,7 @@ const useLineListState = <T extends DataItem>({
     // Column handlers
     const handleAddColumn = (options?: { position?: number; name?: string }) => {
         if (!canStructureEdit) {
-            return null;
+            return;
         }
         const desiredName = options?.name?.trim();
         const candidateName = desiredName && !keys.includes(desiredName) ? desiredName : generateUniqueColumnName();
@@ -309,7 +309,6 @@ const useLineListState = <T extends DataItem>({
         });
         addColumn(candidateName, insertionIndex);
         onDataChange?.(dataStore.getState().data as T[]);
-        return candidateName;
     };
 
     const handleRemoveColumn = (key: string) => {
