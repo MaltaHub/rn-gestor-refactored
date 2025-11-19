@@ -1,3 +1,6 @@
+import type { Table } from '@/app/framework/table-render';
+import type { TableColumn } from '@/app/framework/table-render/types';
+
 export type DataItem = { id: string | number; [key: string]: string | number };
 
 export type LineListMode = 'read-only' | 'edit' | 'cell-edit';
@@ -13,7 +16,8 @@ export interface SortConfig {
 }
 
 export interface MenuPosition {
-    key: string;
+    columnId: string;
+    label: string;
     x: number;
     y: number;
 }
@@ -25,7 +29,8 @@ export interface RowMenuPosition {
 }
 
 export interface FilterDialogState {
-    key: string;
+    columnId: string;
+    label: string;
     x: number;
     y: number;
 }
@@ -35,8 +40,13 @@ export interface EditingRowState<T extends DataItem> {
     data: T;
 }
 
+export interface LineListColumnMeta {
+    column: TableColumn;
+    label: string;
+}
+
 export interface LineCardsProps<T extends DataItem> {
-    data: T[];
+    table: Table;
     navigateTo?: NavigateConfig<T>;
     onDataChange?: (newData: T[]) => void;
     mode?: LineListMode;

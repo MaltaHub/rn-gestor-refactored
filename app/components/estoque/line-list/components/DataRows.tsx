@@ -1,27 +1,29 @@
 import React from 'react';
 import Link from 'next/link';
-import { DataItem } from '../types';
+import { DataItem, LineListColumnMeta } from '../types';
 
 interface DataRowsProps<T extends DataItem> {
     data: T[];
-    keys: string[];
+    columns: LineListColumnMeta[];
     hoveredRow: string | number | null;
     onHoverRow: (rowId: string | number | null) => void;
     navigateTo?: { path: string; keyPath: keyof T };
     canEditRows: boolean;
     onRowMenuOpen: (event: React.MouseEvent, rowId: string | number) => void;
     onAddRowAfter: (position: number) => void;
+    getCellValue: (rowId: string | number, column: LineListColumnMeta) => any;
 }
 
 const DataRows = <T extends DataItem>({
     data,
-    keys,
+    columns,
     hoveredRow,
     onHoverRow,
     navigateTo,
     canEditRows,
     onRowMenuOpen,
     onAddRowAfter,
+    getCellValue,
 }: DataRowsProps<T>) => {
     return (
         <>
@@ -47,10 +49,16 @@ const DataRows = <T extends DataItem>({
                             </button>
                         </div>
                     )}
-                    {keys.map((key) => {
+
+                    {columns.map((columnMeta) => {
+                        const key = columnMeta.column.id;
+                        const value = getCellValue(row.id, columnMeta);
                         const cellContent = (
-                            <div className="block w-full px-4 py-3 text-sm text-gray-800">{row[key]}</div>
+                            <div className="block w-full px-4 py-3 text-sm text-gray-800">
+                                {value ?? '—'}
+                            </div>
                         );
+
                         return (
                             <div key={key} className="relative flex-1 border border-gray-200">
                                 {navigateTo ? (

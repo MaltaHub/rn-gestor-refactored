@@ -12,7 +12,7 @@ import { DataItem, LineCardsProps } from './types';
 
 const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
     const {
-        keys,
+        columns,
         canStructureEdit,
         allowColumnReorder,
         canEditRows,
@@ -31,6 +31,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
         setFilterValue,
         editingRow,
         invalidKeyPath,
+        getCellValue,
         handleDragStart,
         handleDragOver,
         handleDragEnd,
@@ -55,14 +56,14 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
     } = useLineListState(props);
 
     if (invalidKeyPath && props.navigateTo) {
-        console.error(`Invalid keyPath: ${String(props.navigateTo.keyPath)} does not exist in data items.`);
+        console.error(`Invalid keyPath: ${String(props.navigateTo.keyPath)} does not exist na tabela fornecida.`);
         return null;
     }
 
     return (
         <div className="flex flex-col w-full">
             <HeaderRow
-                keys={keys}
+                columns={columns}
                 draggedIndex={dragState.draggedIndex}
                 dragOverIndex={dragState.dragOverIndex}
                 activeFilters={activeFilters}
@@ -81,13 +82,14 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
 
             <DataRows
                 data={filteredAndSortedData}
-                keys={keys}
+                columns={columns}
                 hoveredRow={hoveredRow}
                 onHoverRow={setHoveredRow}
                 navigateTo={props.navigateTo}
                 canEditRows={canEditRows}
                 onRowMenuOpen={handleRowMenuOpen}
                 onAddRowAfter={(position) => handleAddRow({ position })}
+                getCellValue={getCellValue}
             />
 
             <HeaderMenu
@@ -123,7 +125,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
             {canEditRows && (
                 <EditRowDialog
                     editingRow={editingRow}
-                    keys={keys}
+                    columns={columns}
                     onFieldChange={updateEditingRowField}
                     onSave={handleSaveEdit}
                     onCancel={handleCancelEdit}

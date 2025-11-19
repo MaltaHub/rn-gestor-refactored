@@ -20,7 +20,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ dialog, value, onChange, on
             style={{ left: `${dialog.x + 8}px`, top: `${dialog.y + 8}px`, zIndex: 9999 }}
             data-menu="true"
         >
-            <div className="text-sm font-semibold text-gray-700 mb-2">Filtrar: {dialog.key}</div>
+            <div className="text-sm font-semibold text-gray-700 mb-2">Filtrar: {dialog.label}</div>
             <input
                 type="text"
                 value={value}

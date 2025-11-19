@@ -1,8 +1,8 @@
 import React from 'react';
-import { SortConfig } from '../types';
+import { LineListColumnMeta, SortConfig } from '../types';
 
 interface HeaderRowProps {
-    keys: string[];
+    columns: LineListColumnMeta[];
     draggedIndex: number | null;
     dragOverIndex: number | null;
     activeFilters: Record<string, string>;
@@ -15,12 +15,12 @@ interface HeaderRowProps {
     onDragOver: (event: React.DragEvent, index: number) => void;
     onDragEnd: () => void;
     onDragLeave: () => void;
-    onHeaderMenuClick: (event: React.MouseEvent, key: string) => void;
+    onHeaderMenuClick: (event: React.MouseEvent, column: LineListColumnMeta) => void;
     onAddColumnAfter: (position: number) => void;
 }
 
 const HeaderRow: React.FC<HeaderRowProps> = ({
-    keys,
+    columns,
     draggedIndex,
     dragOverIndex,
     activeFilters,
@@ -38,7 +38,9 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
 }) => {
     return (
         <div className="flex bg-gray-50 font-semibold text-sm text-gray-700">
-            {keys.map((key, index) => {
+            {columns.map((meta, index) => {
+                const key = meta.column.id;
+                const label = meta.label;
                 const showHoverState = canStructureEdit && hoveredHeader === key;
                 return (
                     <div
@@ -60,7 +62,12 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
                             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                             </svg>
-                            <span className="truncate">{key}</span>
+                            <span className={`truncate ${meta.column.isDynamic ? 'text-orange-600' : ''}`}>
+                                {label}
+                            </span>
+                            {meta.column.isDynamic && (
+                                <span className="text-[10px] uppercase tracking-wide text-orange-500">dinâmico</span>
+                            )}
                             {activeFilters[key] && (
                                 <span className="ml-1 h-2 w-2 rounded-full bg-blue-500" title="Filtro ativo"></span>
                             )}
@@ -80,7 +87,7 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
                                 {showHoverState && (
                                     <button
                                         data-menu-trigger="true"
-                                        onClick={(event) => onHeaderMenuClick(event, key)}
+                                        onClick={(event) => onHeaderMenuClick(event, meta)}
                                         className="absolute right-1 top-1 rounded border border-gray-200 bg-white p-1 shadow-md transition-all duration-150 hover:bg-gray-50"
                                     >
                                         <svg className="h-3.5 w-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

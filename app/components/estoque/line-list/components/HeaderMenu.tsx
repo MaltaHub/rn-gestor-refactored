@@ -5,11 +5,11 @@ interface HeaderMenuProps {
     menu: MenuPosition | null;
     activeFilters: Record<string, string>;
     onSort: (key: string, direction: 'asc' | 'desc') => void;
-    onFilterOpen: (key: string, position: { x: number; y: number }) => void;
+    onFilterOpen: (columnId: string, label: string, position: { x: number; y: number }) => void;
     onFilterClear: (key: string) => void;
     onAddColumn: (options?: { position?: number; name?: string }) => void;
     onRemoveColumn: (key: string) => void;
-    onRenameColumn: (key: string, nextKey: string) => boolean;
+    onRenameColumn: (key: string, nextKey: string) => Promise<boolean>;
     onCloseMenu: () => void;
     canStructureEdit: boolean;
 }
@@ -38,7 +38,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
         >
             <button
                 onClick={() => {
-                    onSort(menu.key, 'asc');
+                    onSort(menu.columnId, 'asc');
                     onCloseMenu();
                 }}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -50,7 +50,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
             </button>
             <button
                 onClick={() => {
-                    onSort(menu.key, 'desc');
+                    onSort(menu.columnId, 'desc');
                     onCloseMenu();
                 }}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -63,7 +63,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
             <div className="border-t border-gray-200 my-1"></div>
             <button
                 onClick={() => {
-                    onFilterOpen(menu.key, { x: menu.x, y: menu.y });
+                    onFilterOpen(menu.columnId, menu.label, { x: menu.x, y: menu.y });
                     onCloseMenu();
                 }}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -72,14 +72,14 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
                 Filtrar
-                {activeFilters[menu.key] && (
+                {activeFilters[menu.columnId] && (
                     <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded">Ativo</span>
                 )}
             </button>
-            {activeFilters[menu.key] && (
+            {activeFilters[menu.columnId] && (
                 <button
                     onClick={() => {
-                        onFilterClear(menu.key);
+                        onFilterClear(menu.columnId);
                         onCloseMenu();
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -107,7 +107,7 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                     <div className="border-t border-gray-200 my-1"></div>
                     <button
                         onClick={() => {
-                            onRemoveColumn(menu.key);
+                            onRemoveColumn(menu.columnId);
                             onCloseMenu();
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
@@ -119,11 +119,12 @@ const HeaderMenu: React.FC<HeaderMenuProps> = ({
                     </button>
                     <button
                         onClick={() => {
-                            const nextLabel = prompt('Novo nome da coluna:', menu.key);
+                            const nextLabel = prompt('Novo nome da coluna:', menu.label);
                             if (nextLabel?.trim()) {
-                                onRenameColumn(menu.key, nextLabel.trim());
+                                onRenameColumn(menu.columnId, nextLabel.trim()).finally(onCloseMenu);
+                            } else {
+                                onCloseMenu();
                             }
-                            onCloseMenu();
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
