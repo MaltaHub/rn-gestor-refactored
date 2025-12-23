@@ -36,12 +36,44 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
     onHeaderMenuClick,
     onAddColumnAfter,
 }) => {
+    const hoverTimer = React.useRef<number | null>(null);
+
+    React.useEffect(() => {
+        return () => {
+            if (hoverTimer.current) {
+                window.clearTimeout(hoverTimer.current);
+                hoverTimer.current = null;
+            }
+        };
+    }, []);
+
+    const handleDelayedHoverEnter = (key: string) => {
+        if (hoverTimer.current) {
+            window.clearTimeout(hoverTimer.current);
+            hoverTimer.current = null;
+        }
+        hoverTimer.current = window.setTimeout(() => {
+            console.log('Hover activated for key:', key);
+            onHoverHeader(key);
+            hoverTimer.current = null;
+        }, 2000);
+    };
+
+    const handleDelayedHoverLeave = () => {
+        if (hoverTimer.current) {
+            window.clearTimeout(hoverTimer.current);
+            hoverTimer.current = null;
+        }
+        onHoverHeader(null);
+    };
+
     return (
         <div className="flex bg-gray-50 font-semibold text-sm text-gray-700">
             {columns.map((meta, index) => {
                 const key = meta.column.id;
                 const label = meta.label;
                 const showHoverState = canStructureEdit && hoveredHeader === key;
+                console.log(`Header ${key}: canStructureEdit=${canStructureEdit}, hoveredHeader=${hoveredHeader}, showHoverState=${showHoverState}`);
                 return (
                     <div
                         key={key}
@@ -50,8 +82,8 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
                         onDragOver={allowColumnReorder ? (event) => onDragOver(event, index) : undefined}
                         onDragEnd={allowColumnReorder ? onDragEnd : undefined}
                         onDragLeave={allowColumnReorder ? onDragLeave : undefined}
-                        onMouseEnter={canStructureEdit ? () => onHoverHeader(key) : undefined}
-                        onMouseLeave={canStructureEdit ? () => onHoverHeader(null) : undefined}
+                        onMouseEnter={canStructureEdit ? () => handleDelayedHoverEnter(key) : undefined}
+                        onMouseLeave={canStructureEdit ? () => handleDelayedHoverLeave() : undefined}
                         className={`group relative flex-1 border border-gray-200 px-4 py-3 select-none transition-all duration-200 ${
                             allowColumnReorder ? 'cursor-move hover:bg-gray-100' : 'cursor-default'
                         } ${draggedIndex === index ? 'opacity-40' : 'opacity-100'} ${
