@@ -204,7 +204,7 @@ Métodos da Table:            20+ métodos públicos
 
 ✅ INTEGRAÇÃO REACT
    • Hook useTable() para reatividade
-   • Adaptor para line-list existente
+   • RenderTable com config centralizada
    • Sem necessidade de renderização
    • Uso em lógica pura
 
@@ -237,7 +237,7 @@ Métodos da Table:            20+ métodos públicos
 
 🚀 PRÓXIMOS PASSOS
 
-1. Integrar com line-list existente
+1. Integrar com RenderTable oficial
 2. Criar UI para colunas dinâmicas (cor alaranjada)
 3. Adaptar LineListShowcase para usar useTable()
 4. Adicionar suporte a multi-select de linhas

@@ -1,15 +1,17 @@
 import React from 'react';
+import type { RenderTableLabels } from '../../types';
 import { FilterDialogState } from '../types';
 
 interface FilterDialogProps {
     dialog: FilterDialogState | null;
     value: string;
+    labels: RenderTableLabels;
     onChange: (value: string) => void;
     onApply: () => void;
     onCancel: () => void;
 }
 
-const FilterDialog: React.FC<FilterDialogProps> = ({ dialog, value, onChange, onApply, onCancel }) => {
+const FilterDialog: React.FC<FilterDialogProps> = ({ dialog, value, labels, onChange, onApply, onCancel }) => {
     if (!dialog) {
         return null;
     }
@@ -20,12 +22,12 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ dialog, value, onChange, on
             style={{ left: `${dialog.x + 8}px`, top: `${dialog.y + 8}px`, zIndex: 9999 }}
             data-menu="true"
         >
-            <div className="text-sm font-semibold text-gray-700 mb-2">Filtrar: {dialog.label}</div>
+            <div className="text-sm font-semibold text-gray-700 mb-2">{labels.filterDialogTitle(dialog.label)}</div>
             <input
                 type="text"
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                placeholder="Digite para filtrar..."
+                placeholder={labels.filterPlaceholder}
                 className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoFocus
             />
@@ -34,13 +36,13 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ dialog, value, onChange, on
                     onClick={onApply}
                     className="flex-1 px-3 py-1.5 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
                 >
-                    Aplicar
+                    {labels.apply}
                 </button>
                 <button
                     onClick={onCancel}
                     className="flex-1 px-3 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300 transition-colors"
                 >
-                    Cancelar
+                    {labels.cancel}
                 </button>
             </div>
         </div>

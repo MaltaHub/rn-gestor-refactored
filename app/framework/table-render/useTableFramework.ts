@@ -1,13 +1,13 @@
 /**
  * Table Render Hook & Integration
- * Hook que permite consumir uma tabela no React e renderizar com line-list
+ * Hook que permite consumir uma tabela no React e manter estado reativo.
  */
 
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Table } from './Table';
-import { TableSnapshot, TableRow, TableColumn, TableFilter, TableSort } from './types';
+import { TableRow, TableColumn, TableFilter, TableSort, TableCellValue } from './types';
 
 /**
  * Hook para consumir uma tabela no React
@@ -77,7 +77,7 @@ export function useTable(table: Table) {
     ),
 
     addColumn: useCallback(
-      (column: TableColumn, options?: { fillValue?: any }) =>
+      (column: TableColumn, options?: { fillValue?: TableCellValue }) =>
         tableRef.current.addColumn(column, options).then(() => {
           rerender();
         }),
@@ -194,33 +194,5 @@ export function useTableManager() {
     getTables: () => Array.from(tablesRef.current.values()),
 
     getTableIds: () => Array.from(tablesRef.current.keys()),
-  };
-}
-
-/**
- * Adaptador para integração com o line-list existente
- * Converte uma Table para o formato esperado pelo LineListShowcase
- */
-export function tableToLineListProps(table: Table) {
-  return {
-    data: table.getRows(),
-    columns: table.getColumns(),
-    config: {
-      name: table.name,
-      realEscope: table.realEscope,
-    },
-  };
-}
-
-/**
- * Factory para criar uma tabela pronta para renderização
- */
-export function createRenderableTable(table: Table) {
-  return {
-    table,
-    // Props para passar ao componente de renderização
-    props: tableToLineListProps(table),
-    // Métodos de renderização
-    render: () => tableToLineListProps(table),
   };
 }

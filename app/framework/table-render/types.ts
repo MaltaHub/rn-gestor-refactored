@@ -49,12 +49,14 @@ export interface TableColumn {
 /**
  * Representa uma linha de dados na tabela
  */
+export type TableCellValue = string | number | boolean | null | undefined;
+
 export interface TableRow {
   /** ID único da linha */
   id: string | number;
 
   /** Dados da linha como objeto key-value */
-  [key: string]: any;
+  [key: string]: TableCellValue;
 }
 
 /**
@@ -71,7 +73,7 @@ export interface TableFilter {
   operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'in' | 'between';
 
   /** Valor(es) para comparação */
-  value: any;
+  value: TableCellValue | TableCellValue[];
 
   /** Se verdadeiro, filtro é case-insensitive */
   caseSensitive?: boolean;
@@ -117,7 +119,7 @@ export interface TableCallbacks {
  */
 export interface ColumnValidation {
   /** Validadores customizados */
-  validators?: Array<(value: any) => boolean | string>;
+  validators?: Array<(value: TableCellValue) => boolean | string>;
 
   /** Valor máximo (para numbers/currency) */
   max?: number;
@@ -146,7 +148,7 @@ export interface CompiledExpression {
   originalExpression: string;
 
   /** Função compilada que calcula o valor */
-  compute: (row: TableRow, tables: Map<string, Table>, allRows?: TableRow[]) => any;
+  compute: (row: TableRow, tables: Map<string, Table>, allRows?: TableRow[]) => TableCellValue;
 
   /** Colunas referenciadas por esta expressão (para invalidação de cache) */
   dependencies: string[];
@@ -198,10 +200,10 @@ export interface TableHistoryEntry {
   columnId?: string;
 
   /** Dados antes da mudança */
-  oldValue?: any;
+  oldValue?: unknown;
 
   /** Dados depois da mudança */
-  newValue?: any;
+  newValue?: unknown;
 
   /** Usuário que realizou a operação (opcional) */
   userId?: string;
@@ -245,7 +247,7 @@ export interface TableConfig {
   validations?: Record<string, ColumnValidation>;
 
   /** Metadados customizados */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -281,7 +283,7 @@ export interface ITable {
 
   // Computação de colunas dinâmicas
   computeDynamicColumns(): void;
-  getValue(rowId: string | number, columnId: string): any;
+  getValue(rowId: string | number, columnId: string): TableCellValue | undefined;
 
   // Snapshots e histórico
   createSnapshot(): TableSnapshot;
@@ -298,7 +300,7 @@ export interface ITable {
 /**
  * Classe Table (implementação)
  */
-export interface Table extends ITable {}
+export type Table = ITable;
 
 /**
  * Contexto de execução para expressões dinâmicas
@@ -317,5 +319,5 @@ export interface ExpressionContext {
   currentColumn: TableColumn;
 
   /** Valores previamente calculados (para expressões dependentes) */
-  computedValues: Map<string, any>;
+  computedValues: Map<string, TableCellValue>;
 }

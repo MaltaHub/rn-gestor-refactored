@@ -8,18 +8,17 @@ import RowMenu from './components/RowMenu';
 import FilterDialog from './components/FilterDialog';
 import EditRowDialog from './components/EditRowDialog';
 import useLineListState from './hooks/useLineListState';
-import { DataItem, LineCardsProps } from './types';
+import { DataItem, LineListProps } from './types';
 
-const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
+const LineListComponent = <T extends DataItem>(props: LineListProps<T>) => {
     const {
         columns,
+        hiddenColumns,
+        canEditHeaders,
         canStructureEdit,
         allowColumnReorder,
         canEditRows,
-        hoveredHeader,
-        setHoveredHeader,
-        hoveredRow,
-        setHoveredRow,
+        labels,
         dragState,
         activeFilters,
         sortConfig,
@@ -31,7 +30,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
         setFilterValue,
         editingRow,
         invalidKeyPath,
-        getCellValue,
+        renderCell,
         handleDragStart,
         handleDragOver,
         handleDragEnd,
@@ -39,6 +38,8 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
         handleHeaderMenuOpen,
         handleRowMenuOpen,
         closeContextMenus,
+        scheduleMenuClose,
+        cancelMenuClose,
         handleSort,
         handleFilterOpen,
         handleFilterApply,
@@ -47,8 +48,11 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
         handleAddColumn,
         handleRemoveColumn,
         handleRenameColumn,
+        handleHideColumn,
+        handleShowColumn,
         handleAddRow,
         handleEditRow,
+        handleDuplicateRow,
         handleSaveEdit,
         handleCancelEdit,
         handleDeleteRow,
@@ -61,62 +65,81 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
     }
 
     return (
-        <div className="flex flex-col w-full">
+        <div className={`flex flex-col w-full ${props.className ?? ''}`}>
             <HeaderRow
                 columns={columns}
                 draggedIndex={dragState.draggedIndex}
                 dragOverIndex={dragState.dragOverIndex}
                 activeFilters={activeFilters}
                 sortConfig={sortConfig}
-                hoveredHeader={hoveredHeader}
+                activeMenuColumnId={headerMenu?.columnId ?? null}
+                canEditHeaders={canEditHeaders}
                 canStructureEdit={canStructureEdit}
                 allowColumnReorder={allowColumnReorder}
-                onHoverHeader={setHoveredHeader}
+                canEditRows={canEditRows}
+                labels={labels}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
                 onDragLeave={handleDragLeave}
-                onHeaderMenuClick={handleHeaderMenuOpen}
+                onMenuOpen={handleHeaderMenuOpen}
+                onMenuCloseDelay={scheduleMenuClose}
+                onMenuCloseCancel={cancelMenuClose}
                 onAddColumnAfter={(position) => handleAddColumn({ position })}
             />
 
             <DataRows
                 data={filteredAndSortedData}
                 columns={columns}
-                hoveredRow={hoveredRow}
-                onHoverRow={setHoveredRow}
+                activeMenuCell={
+                    rowMenu && rowMenu.columnId ? { rowId: rowMenu.rowId, columnId: rowMenu.columnId } : null
+                }
                 navigateTo={props.navigateTo}
                 canEditRows={canEditRows}
-                onRowMenuOpen={handleRowMenuOpen}
+                labels={labels}
                 onAddRowAfter={(position) => handleAddRow({ position })}
-                getCellValue={getCellValue}
+                onCellMenuOpen={handleRowMenuOpen}
+                onMenuCloseDelay={scheduleMenuClose}
+                onMenuCloseCancel={cancelMenuClose}
+                renderCell={renderCell}
             />
 
             <HeaderMenu
                 menu={headerMenu}
                 activeFilters={activeFilters}
+                labels={labels}
                 onSort={handleSort}
                 onFilterOpen={handleFilterOpen}
                 onFilterClear={handleFilterClear}
                 onAddColumn={handleAddColumn}
                 onRemoveColumn={handleRemoveColumn}
                 onRenameColumn={handleRenameColumn}
+                onHideColumn={handleHideColumn}
+                onShowColumn={handleShowColumn}
+                hiddenColumns={hiddenColumns}
                 onCloseMenu={closeContextMenus}
                 canStructureEdit={canStructureEdit}
+                onHoverStart={cancelMenuClose}
+                onHoverEnd={scheduleMenuClose}
             />
 
             {canEditRows && (
                 <RowMenu
                     menu={rowMenu}
+                    labels={labels}
                     onEditRow={handleEditRow}
+                    onDuplicateRow={handleDuplicateRow}
                     onDeleteRow={handleDeleteRow}
                     onCloseMenu={closeContextMenus}
+                    onHoverStart={cancelMenuClose}
+                    onHoverEnd={scheduleMenuClose}
                 />
             )}
 
             <FilterDialog
                 dialog={filterDialog}
                 value={filterValue}
+                labels={labels}
                 onChange={setFilterValue}
                 onApply={handleFilterApply}
                 onCancel={handleFilterCancel}
@@ -126,6 +149,7 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
                 <EditRowDialog
                     editingRow={editingRow}
                     columns={columns}
+                    labels={labels}
                     onFieldChange={updateEditingRowField}
                     onSave={handleSaveEdit}
                     onCancel={handleCancelEdit}
@@ -135,6 +159,6 @@ const LineCardsComponent = <T extends DataItem>(props: LineCardsProps<T>) => {
     );
 };
 
-const LineCards = LineCardsComponent as <T extends DataItem>(props: LineCardsProps<T>) => React.ReactElement;
+const LineList = LineListComponent as <T extends DataItem>(props: LineListProps<T>) => React.ReactElement;
 
-export default LineCards;
+export default LineList;

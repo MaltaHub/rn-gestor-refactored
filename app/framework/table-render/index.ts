@@ -62,7 +62,22 @@ export {
 } from './stores';
 
 // Hooks e utilidades
-export { useTable, useTableManager, tableToLineListProps, createRenderableTable } from './useTableFramework';
+export { useTable, useTableManager } from './useTableFramework';
+
+// Renderizacao
+export { RenderTable } from './render/RenderTable';
+export { resolveRenderConfig, resolveRenderPermissions } from './render/config';
+export type {
+  RenderTableMode,
+  RenderTableConfig,
+  RenderTableConfigOverrides,
+  RenderTableLabels,
+  RenderTableInteractions,
+  RenderTablePermissions,
+  RenderTableProps,
+  NavigateConfig,
+  DataItem,
+} from './render/types';
 
 /**
  * Re-export de tipos mais comuns para conveniência

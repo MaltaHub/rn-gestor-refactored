@@ -77,7 +77,7 @@ export const DATA_TYPES = {
 /**
  * Aplica defaults a uma coluna, mantendo overrides fornecidos
  */
-export function applyColumnDefaults(column: Partial<TableColumn> & { id: string; dataSource: string; dataType: any }): TableColumn {
+export function applyColumnDefaults(column: TableColumn): TableColumn {
   return {
     ...DEFAULT_COLUMN_CONFIG,
     ...column,

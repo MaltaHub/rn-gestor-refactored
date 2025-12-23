@@ -170,6 +170,9 @@ cat << 'EOF'
   // Hooks
   import { useTable, useTableManager } from '@/app/framework/table-render';
 
+  // Renderizacao
+  import { RenderTable } from '@/app/framework/table-render';
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📊 API RESUMIDA

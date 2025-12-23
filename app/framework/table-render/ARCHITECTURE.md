@@ -89,16 +89,30 @@ app/framework/table-render/
 
 
 // ============================================================================
-// CAMADA 4: INTEGRAÇÃO REACT
+// CAMADA 4: RENDERIZACAO
+// ============================================================================
+
+├── render/                    // Camada de renderizacao e configuracao
+│   ├── config.ts              // Defaults, labels e permissoes
+│   ├── types.ts               // Tipos de renderizacao
+│   ├── RenderTable.tsx        // Componente oficial de renderizacao
+│   └── line-list/             // Renderizador padrao (LineList)
+│       ├── components/        // UI (HeaderRow, DataRows, menus)
+│       ├── hooks/             // useLineListState
+│       └── stores/            // Zustand stores dedicadas
+
+// ============================================================================
+// CAMADA 5: INTEGRAÇÃO REACT
 // ============================================================================
 
 ├── useTableFramework.ts       // Hooks React
 │   ├── useTable()             // Hook principal - Retorna API da tabela
-│   └── useTableManager()      // Hook para gerenciar múltiplas tabelas
+│   └── useTableManager()      // Hook para gerenciar multiplas tabelas
 │
-└── index.ts                   // Exports públicos (API do framework)
+└── index.ts                   // Exports publicos (API do framework)
     ├── Table
     ├── useTable
+    ├── RenderTable
     ├── DEFAULT_COLUMN_CONFIG
     ├── applyColumnDefaults
     ├── FILTER_OPERATORS
@@ -110,7 +124,7 @@ app/framework/table-render/
 // ============================================================================
 
 ┌─────────────────────────────────────────────────────────────────┐
-│ Componente React (LineList, LineCardsDemo, etc)                │
+│ Componente React (RenderTable, TableRenderDemo, etc)           │
 └────────────────────┬────────────────────────────────────────────┘
                      │ cria instância
                      ▼

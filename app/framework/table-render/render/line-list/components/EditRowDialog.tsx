@@ -1,15 +1,24 @@
 import React from 'react';
+import type { RenderTableLabels } from '../../types';
 import { DataItem, EditingRowState, LineListColumnMeta } from '../types';
 
 interface EditRowDialogProps<T extends DataItem> {
     editingRow: EditingRowState<T> | null;
     columns: LineListColumnMeta[];
+    labels: RenderTableLabels;
     onFieldChange: (key: string, value: string) => void;
     onSave: () => void;
     onCancel: () => void;
 }
 
-const EditRowDialog = <T extends DataItem>({ editingRow, columns, onFieldChange, onSave, onCancel }: EditRowDialogProps<T>) => {
+const EditRowDialog = <T extends DataItem>({
+    editingRow,
+    columns,
+    labels,
+    onFieldChange,
+    onSave,
+    onCancel,
+}: EditRowDialogProps<T>) => {
     if (!editingRow) {
         return null;
     }
@@ -19,7 +28,7 @@ const EditRowDialog = <T extends DataItem>({ editingRow, columns, onFieldChange,
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 9999 }} onClick={onCancel}>
             <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onClick={(event) => event.stopPropagation()}>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Editar Linha</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">{labels.editRowTitle}</h3>
                 <div className="space-y-3">
                     {editableColumns.map((meta) => (
                         <div key={meta.column.id}>
@@ -38,13 +47,13 @@ const EditRowDialog = <T extends DataItem>({ editingRow, columns, onFieldChange,
                         onClick={onSave}
                         className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                     >
-                        Salvar
+                        {labels.save}
                     </button>
                     <button
                         onClick={onCancel}
                         className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
                     >
-                        Cancelar
+                        {labels.cancel}
                     </button>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { MenuPosition, RowMenuPosition } from '@/app/components/estoque/line-list/types';
+import { MenuPosition, RowMenuPosition } from '../types';
 
 export interface MenuStoreState {
     headerMenu: MenuPosition | null;

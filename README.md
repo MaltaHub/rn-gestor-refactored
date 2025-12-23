@@ -13,6 +13,7 @@ npm run dev
 - `app/page.tsx` — ponto de entrada único que exibe a demo completa.
 - `app/components/TableRenderDemo.tsx` — playground do Table Render (filtros, ordenação, reordenação, snapshots).
 - `app/framework/table-render` — núcleo do engine de tabelas (Table, hooks, tipos).
+- `app/framework/table-render/render/RenderTable.tsx` — componente oficial de renderização com config centralizada.
 
 ## Como explorar
 - **Tabelas**: altere filtros, ordenações, reordene colunas, salve snapshots e veja o console de eventos. Tudo parte do Table Render padrão.

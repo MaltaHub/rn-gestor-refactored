@@ -1,17 +1,18 @@
 import React from 'react';
-import { useTable } from '@/app/framework/table-render';
+import { useTable } from '../../../useTableFramework';
 import type { TableColumn, TableFilter, TableRow } from '@/app/framework/table-render/types';
-import { createDragStore } from '@/app/stores/line-list/useDragStore';
-import { createFilterStore } from '@/app/stores/line-list/useFilterStore';
-import { createEditStore } from '@/app/stores/line-list/useEditStore';
-import { createMenuStore } from '@/app/stores/line-list/useMenuStore';
-import { createUIStore } from '@/app/stores/line-list/useUIStore';
+import { resolveRenderConfig, resolveRenderPermissions } from '../../config';
+import type { RenderTableLabels } from '../../types';
+import { createDragStore } from '../stores/useDragStore';
+import { createFilterStore } from '../stores/useFilterStore';
+import { createEditStore } from '../stores/useEditStore';
+import { createMenuStore } from '../stores/useMenuStore';
 import {
   DataItem,
   EditingRowState,
   FilterDialogState,
-  LineCardsProps,
   LineListColumnMeta,
+  LineListProps,
   MenuPosition,
   RowMenuPosition,
   SortConfig,
@@ -26,32 +27,16 @@ const buildColumnMeta = (columns: TableColumn[]): LineListColumnMeta[] =>
       label: column.alias || column.dataSource,
     }));
 
-const sanitizeColumnId = (base: string, existing: Set<string>): string => {
-  const normalized = base
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '');
-
-  if (!normalized.length) {
-    return `col_${Date.now()}`;
-  }
-
-  if (!existing.has(normalized)) {
-    return normalized;
-  }
-
-  let counter = 1;
-  let candidate = `${normalized}_${counter}`;
-  while (existing.has(candidate)) {
-    counter += 1;
-    candidate = `${normalized}_${counter}`;
-  }
-  return candidate;
-};
+const buildHiddenColumnMeta = (columns: TableColumn[]): LineListColumnMeta[] =>
+  [...columns]
+    .filter((column) => column.isHidden)
+    .sort((a, b) => a.order - b.order)
+    .map((column) => ({
+      column,
+      label: column.alias || column.dataSource,
+    }));
 
 const isValidKeyPath = <T extends DataItem>(columns: LineListColumnMeta[], keyPath: keyof T): boolean => {
-  // 'id' is always a valid keyPath since it's a reserved field in DataItem
   if (keyPath === 'id') {
     return true;
   }
@@ -61,14 +46,12 @@ const isValidKeyPath = <T extends DataItem>(columns: LineListColumnMeta[], keyPa
 interface UseLineListStateReturn<T extends DataItem> {
   data: T[];
   columns: LineListColumnMeta[];
+  hiddenColumns: LineListColumnMeta[];
+  labels: RenderTableLabels;
   canEditHeaders: boolean;
   canStructureEdit: boolean;
   allowColumnReorder: boolean;
   canEditRows: boolean;
-  hoveredHeader: string | null;
-  setHoveredHeader: (key: string | null) => void;
-  hoveredRow: string | number | null;
-  setHoveredRow: (rowId: string | number | null) => void;
   dragState: {
     draggedIndex: number | null;
     dragOverIndex: number | null;
@@ -83,15 +66,16 @@ interface UseLineListStateReturn<T extends DataItem> {
   editingRow: EditingRowState<T> | null;
   filteredAndSortedData: T[];
   invalidKeyPath: boolean;
-  isReadOnly: boolean;
   handleDragStart: (index: number) => void;
   handleDragOver: (event: React.DragEvent, index: number) => void;
   handleDragEnd: () => void;
   handleDragLeave: () => void;
-  handleHeaderMenuOpen: (event: React.MouseEvent, column: LineListColumnMeta) => void;
-  handleRowMenuOpen: (event: React.MouseEvent, rowId: string | number) => void;
+  handleHeaderMenuOpen: (column: LineListColumnMeta, anchor: HTMLElement) => void;
+  handleRowMenuOpen: (rowId: string | number, column: LineListColumnMeta, anchor: HTMLElement) => void;
   closeContextMenus: () => void;
   closeMenus: () => void;
+  scheduleMenuClose: () => void;
+  cancelMenuClose: () => void;
   handleSort: (columnId: string, direction: 'asc' | 'desc') => void;
   handleFilterOpen: (columnId: string, label: string, position: { x: number; y: number }) => void;
   handleFilterApply: () => void;
@@ -99,14 +83,17 @@ interface UseLineListStateReturn<T extends DataItem> {
   handleFilterCancel: () => void;
   handleAddColumn: (options?: { position?: number; name?: string }) => void;
   handleRemoveColumn: (columnId: string) => void;
-  handleRenameColumn: (columnId: string, nextLabel: string) => Promise<boolean>;
+  handleRenameColumn: (columnId: string) => Promise<void>;
+  handleHideColumn: (columnId: string) => Promise<void>;
+  handleShowColumn: (columnId: string) => Promise<void>;
   handleAddRow: (options?: { position?: number }) => Promise<void>;
   handleEditRow: (rowId: string | number) => void;
+  handleDuplicateRow: (rowId: string | number) => Promise<void>;
   handleSaveEdit: () => Promise<void>;
   handleCancelEdit: () => void;
   handleDeleteRow: (rowId: string | number) => Promise<void>;
   updateEditingRowField: (key: string, value: string) => void;
-  getCellValue: (rowId: string | number, column: LineListColumnMeta) => any;
+  renderCell: (rowId: string | number, column: LineListColumnMeta) => React.ReactNode;
 }
 
 const createLineListStores = () => ({
@@ -114,14 +101,25 @@ const createLineListStores = () => ({
   filterStore: createFilterStore(),
   editStore: createEditStore<DataItem>(),
   menuStore: createMenuStore(),
-  uiStore: createUIStore(),
 });
 
-const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange, mode = 'edit' }: LineCardsProps<T>): UseLineListStateReturn<T> => {
+const useLineListState = <T extends DataItem>({
+  table,
+  navigateTo,
+  onDataChange,
+  mode = 'edit',
+  config,
+}: LineListProps<T>): UseLineListStateReturn<T> => {
   const tableApi = useTable(table);
-  const { dragStore, filterStore, editStore, menuStore, uiStore } = React.useMemo(() => createLineListStores(), []);
+  const resolvedConfig = React.useMemo(() => resolveRenderConfig(config), [config]);
+  const permissions = React.useMemo(
+    () => resolveRenderPermissions(table, mode, resolvedConfig),
+    [table, mode, resolvedConfig]
+  );
+  const { dragStore, filterStore, editStore, menuStore } = React.useMemo(() => createLineListStores(), []);
 
   const columns = React.useMemo(() => buildColumnMeta(tableApi.columns), [tableApi.columns]);
+  const hiddenColumns = React.useMemo(() => buildHiddenColumnMeta(tableApi.columns), [tableApi.columns]);
   const columnOrder = React.useMemo(() => columns.map((meta) => meta.column.id), [columns]);
 
   const data = React.useMemo(() => {
@@ -132,9 +130,7 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
   const activeFilters = React.useMemo(() => {
     const filters: Record<string, string> = {};
     tableApi.filters.forEach((filter) => {
-      if (filter.operator === 'contains') {
-        filters[filter.columnId] = String(filter.value ?? '');
-      }
+      filters[filter.columnId] = String(filter.value ?? '');
     });
     return filters;
   }, [tableApi.filters]);
@@ -167,16 +163,23 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
   const setRowMenu = menuStore((state) => state.setRowMenu);
   const closeMenusStore = menuStore((state) => state.closeContextMenus);
 
-  const hoveredHeader = uiStore((state) => state.hoveredHeader);
-  const hoveredRow = uiStore((state) => state.hoveredRow);
-  const setHoveredHeader = uiStore((state) => state.setHoveredHeader);
-  const setHoveredRow = uiStore((state) => state.setHoveredRow);
 
-  const isReadOnly = mode === 'read-only';
-  const canStructureEdit = mode === 'edit';
-  const canEditHeaders = mode !== 'read-only';
-  const canEditRows = mode !== 'read-only' && table.realEscope;
-  const allowColumnReorder = mode === 'edit';
+  const { labels, interactions } = resolvedConfig;
+  const notifyError = React.useCallback(
+    (error: unknown) => {
+      if (resolvedConfig.onError) {
+        resolvedConfig.onError(error);
+        return;
+      }
+      console.error(error);
+    },
+    [resolvedConfig]
+  );
+
+  const canStructureEdit = permissions.canStructureEdit;
+  const canEditHeaders = permissions.canEditHeaders;
+  const canEditRows = permissions.canEditRows;
+  const allowColumnReorder = permissions.allowColumnReorder;
 
   const invalidKeyPath = React.useMemo(() => {
     if (!navigateTo) {
@@ -184,6 +187,8 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     }
     return !isValidKeyPath(columns, navigateTo.keyPath as keyof T);
   }, [navigateTo, columns]);
+
+  const menuCloseTimer = React.useRef<number | null>(null);
 
   const closeContextMenus = React.useCallback(() => {
     closeMenusStore();
@@ -193,6 +198,24 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     closeContextMenus();
     closeFilterDialog();
   }, [closeContextMenus, closeFilterDialog]);
+
+  const cancelMenuClose = React.useCallback(() => {
+    if (menuCloseTimer.current) {
+      window.clearTimeout(menuCloseTimer.current);
+      menuCloseTimer.current = null;
+    }
+  }, []);
+
+  const scheduleMenuClose = React.useCallback(() => {
+    if (!headerMenu && !rowMenu) {
+      return;
+    }
+    cancelMenuClose();
+    menuCloseTimer.current = window.setTimeout(() => {
+      closeContextMenus();
+      menuCloseTimer.current = null;
+    }, 1000);
+  }, [cancelMenuClose, closeContextMenus, headerMenu, rowMenu]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -206,6 +229,10 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [closeContextMenus, closeFilterDialog]);
+
+  React.useEffect(() => {
+    return () => cancelMenuClose();
+  }, [cancelMenuClose]);
 
   const handleDragStart = (index: number) => {
     if (!allowColumnReorder) {
@@ -231,6 +258,7 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
       const [moved] = newOrder.splice(draggedIndex, 1);
       newOrder.splice(dragOverIndex, 0, moved);
       tableApi.setColumnOrder(newOrder);
+      resolvedConfig.onColumnOrderChange?.(newOrder);
     }
     resetDrag();
   };
@@ -242,22 +270,29 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     setDragOverIndex(null);
   };
 
-  const handleHeaderMenuOpen = (event: React.MouseEvent, column: LineListColumnMeta) => {
-    if (!canStructureEdit) {
-      return;
-    }
-    event.stopPropagation();
-    event.preventDefault();
-    setHeaderMenu({ columnId: column.column.id, label: column.label, x: event.clientX, y: event.clientY });
+  const getMenuAnchorPosition = (anchor: HTMLElement) => {
+    const rect = anchor.getBoundingClientRect();
+    return { x: rect.left, y: rect.bottom };
   };
 
-  const handleRowMenuOpen = (event: React.MouseEvent, rowId: string | number) => {
+  const handleHeaderMenuOpen = (column: LineListColumnMeta, anchor: HTMLElement) => {
+    if (!canEditHeaders) {
+      return;
+    }
+    cancelMenuClose();
+    setRowMenu(null);
+    const { x, y } = getMenuAnchorPosition(anchor);
+    setHeaderMenu({ columnId: column.column.id, label: column.label, x, y });
+  };
+
+  const handleRowMenuOpen = (rowId: string | number, column: LineListColumnMeta, anchor: HTMLElement) => {
     if (!canEditRows) {
       return;
     }
-    event.preventDefault();
-    event.stopPropagation();
-    setRowMenu({ rowId, x: event.clientX, y: event.clientY });
+    cancelMenuClose();
+    setHeaderMenu(null);
+    const { x, y } = getMenuAnchorPosition(anchor);
+    setRowMenu({ rowId, columnId: column.column.id, x, y });
   };
 
   const handleSort = (columnId: string, direction: 'asc' | 'desc') => {
@@ -281,9 +316,9 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
       const filter: TableFilter = {
         id: filterDialog.columnId,
         columnId: filterDialog.columnId,
-        operator: 'contains',
+        operator: resolvedConfig.filter.operator,
         value: filterValue,
-        caseSensitive: false,
+        caseSensitive: resolvedConfig.filter.caseSensitive,
       };
       tableApi.applyFilter(filter);
     }
@@ -302,9 +337,9 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     if (!canStructureEdit) {
       return;
     }
-    const baseName = options?.name?.trim() || 'Nova Coluna';
+    const baseName = options?.name?.trim() || labels.newColumnName;
     const existingIds = new Set(columnOrder);
-    const columnId = sanitizeColumnId(baseName, existingIds);
+    const columnId = resolvedConfig.columnIdFactory(baseName, existingIds);
     const insertionIndex = Math.max(0, Math.min(options?.position ?? columnOrder.length, columnOrder.length));
 
     const columnConfig: TableColumn = {
@@ -321,15 +356,17 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     tableApi
       .addColumn(columnConfig, { fillValue: '' })
       .then(() => {
+        let nextOrder = [...columnOrder, columnId];
         if (insertionIndex !== columnOrder.length) {
-          const newOrder = [...columnOrder];
-          newOrder.splice(insertionIndex, 0, columnId);
-          tableApi.setColumnOrder(newOrder);
+          nextOrder = [...columnOrder];
+          nextOrder.splice(insertionIndex, 0, columnId);
+          tableApi.setColumnOrder(nextOrder);
         }
+        resolvedConfig.onColumnOrderChange?.(nextOrder);
         onDataChange?.(table.getRows() as T[]);
       })
       .catch((error) => {
-        console.error(error);
+        notifyError(error);
       });
   };
 
@@ -338,62 +375,92 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
       return;
     }
     if (columns.length <= 1) {
-      alert('A tabela precisa ter pelo menos uma coluna.');
+      interactions.alert(labels.alertMinColumns);
       return;
     }
-    if (confirm('Remover esta coluna?')) {
-      tableApi
-        .deleteColumn(columnId)
-        .then(() => {
-          onDataChange?.(table.getRows() as T[]);
-        })
-        .catch((error) => console.error(error));
-    }
+    const columnLabel = columns.find((meta) => meta.column.id === columnId)?.label || columnId;
+    Promise.resolve(interactions.confirm(labels.confirmRemoveColumn(columnLabel)))
+      .then((confirmed) => {
+        if (!confirmed) {
+          return;
+        }
+        tableApi
+          .deleteColumn(columnId)
+          .then(() => {
+            onDataChange?.(table.getRows() as T[]);
+          })
+          .catch((error) => notifyError(error));
+      })
+      .catch((error) => notifyError(error));
   };
 
-  const handleRenameColumn = async (columnId: string, nextLabel: string) => {
+  const handleRenameColumn = async (columnId: string) => {
     if (!canStructureEdit) {
-      return false;
+      return;
     }
-    const trimmed = nextLabel.trim();
-    if (!trimmed.length) {
-      return false;
+    const columnLabel = columns.find((meta) => meta.column.id === columnId)?.label || columnId;
+    const nextLabel = await Promise.resolve(interactions.prompt(labels.promptRenameColumn(columnLabel), columnLabel));
+    const trimmed = nextLabel?.trim();
+    if (!trimmed) {
+      return;
     }
-    await tableApi.renameColumn(columnId, trimmed);
-    return true;
+    try {
+      await tableApi.renameColumn(columnId, trimmed);
+    } catch (error) {
+      notifyError(error);
+    }
   };
 
-  const buildEmptyRow = () => {
-    return columns.reduce<Record<string, any>>((acc, meta) => {
-      if (!meta.column.isDynamic) {
-        acc[meta.column.dataSource] = '';
-      }
-      return acc;
-    }, {});
+  const handleHideColumn = async (columnId: string) => {
+    if (!canStructureEdit) {
+      return;
+    }
+    try {
+      await tableApi.updateColumn(columnId, { isHidden: true });
+    } catch (error) {
+      notifyError(error);
+    }
   };
+
+  const handleShowColumn = async (columnId: string) => {
+    if (!canStructureEdit) {
+      return;
+    }
+    try {
+      await tableApi.updateColumn(columnId, { isHidden: false });
+    } catch (error) {
+      notifyError(error);
+    }
+  };
+
+  const buildEmptyRow = () => resolvedConfig.buildEmptyRow(columns.map((meta) => meta.column));
 
   const handleAddRow = async (options?: { position?: number }) => {
     if (!canEditRows) {
-      alert('Esta tabela não permite operações de dados.');
+      interactions.alert(labels.alertReadOnly);
       return;
     }
     if (columns.length === 0) {
-      alert('Adicione ao menos uma coluna antes de criar linhas.');
+      interactions.alert(labels.alertNoColumns);
       return;
     }
-    const payload = buildEmptyRow();
-    const newRowId = await tableApi.create(payload);
-    const position = Math.max(0, Math.min(options?.position ?? data.length, data.length));
-    if (position !== data.length) {
-      const rows = [...table.getRows()];
-      const index = rows.findIndex((row) => row.id === newRowId);
-      if (index > -1) {
-        const [row] = rows.splice(index, 1);
-        rows.splice(position, 0, row);
-        tableApi.setRows(rows as TableRow[]);
+    try {
+      const payload = buildEmptyRow();
+      const newRowId = await tableApi.create(payload);
+      const position = Math.max(0, Math.min(options?.position ?? data.length, data.length));
+      if (position !== data.length) {
+        const rows = [...table.getRows()];
+        const index = rows.findIndex((row) => row.id === newRowId);
+        if (index > -1) {
+          const [row] = rows.splice(index, 1);
+          rows.splice(position, 0, row);
+          tableApi.setRows(rows as TableRow[]);
+        }
       }
+      onDataChange?.(table.getRows() as T[]);
+    } catch (error) {
+      notifyError(error);
     }
-    onDataChange?.(table.getRows() as T[]);
   };
 
   const handleEditRow = (rowId: string | number) => {
@@ -406,13 +473,35 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     }
   };
 
+  const handleDuplicateRow = async (rowId: string | number) => {
+    if (!canEditRows) {
+      return;
+    }
+    const row = table.getRows().find((item) => String(item.id) === String(rowId));
+    if (!row) {
+      return;
+    }
+    const payload = { ...row };
+    delete payload.id;
+    try {
+      await tableApi.create(payload);
+      onDataChange?.(table.getRows() as T[]);
+    } catch (error) {
+      notifyError(error);
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!editingRow || !canEditRows) {
       return;
     }
-    await tableApi.update(editingRow.rowId, editingRow.data as TableRow);
-    onDataChange?.(table.getRows() as T[]);
-    closeEditDialog();
+    try {
+      await tableApi.update(editingRow.rowId, editingRow.data as TableRow);
+      onDataChange?.(table.getRows() as T[]);
+      closeEditDialog();
+    } catch (error) {
+      notifyError(error);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -424,12 +513,18 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
       return;
     }
     if (table.getRows().length <= 1) {
-      alert('A tabela precisa manter ao menos uma linha.');
+      interactions.alert(labels.alertMinRows);
       return;
     }
-    if (confirm('Excluir esta linha?')) {
+    const confirmed = await Promise.resolve(interactions.confirm(labels.confirmDeleteRow(rowId)));
+    if (!confirmed) {
+      return;
+    }
+    try {
       await tableApi.delete(rowId);
       onDataChange?.(table.getRows() as T[]);
+    } catch (error) {
+      notifyError(error);
     }
   };
 
@@ -448,17 +543,28 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     [data, tableApi]
   );
 
+  const renderCell = React.useCallback(
+    (rowId: string | number, columnMeta: LineListColumnMeta) => {
+      const value = getCellValue(rowId, columnMeta);
+      return resolvedConfig.formatValue({
+        value,
+        column: columnMeta.column,
+        rowId,
+        table,
+      });
+    },
+    [getCellValue, resolvedConfig, table]
+  );
+
   return {
     data,
     columns,
+    hiddenColumns,
+    labels,
     canEditHeaders,
     canStructureEdit,
     allowColumnReorder,
     canEditRows,
-    hoveredHeader,
-    setHoveredHeader,
-    hoveredRow,
-    setHoveredRow,
     dragState: {
       draggedIndex,
       dragOverIndex,
@@ -473,7 +579,6 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     editingRow: editingRow as EditingRowState<T> | null,
     filteredAndSortedData: data,
     invalidKeyPath,
-    isReadOnly,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
@@ -482,6 +587,8 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     handleRowMenuOpen,
     closeContextMenus,
     closeMenus,
+    scheduleMenuClose,
+    cancelMenuClose,
     handleSort,
     handleFilterOpen,
     handleFilterApply,
@@ -490,13 +597,16 @@ const useLineListState = <T extends DataItem>({ table, navigateTo, onDataChange,
     handleAddColumn,
     handleRemoveColumn,
     handleRenameColumn,
+    handleHideColumn,
+    handleShowColumn,
     handleAddRow,
     handleEditRow,
+    handleDuplicateRow,
     handleSaveEdit,
     handleCancelEdit,
     handleDeleteRow,
     updateEditingRowField: handleUpdateEditingRowField,
-    getCellValue,
+    renderCell,
   };
 };
 

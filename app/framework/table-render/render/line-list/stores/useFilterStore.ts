@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { FilterDialogState } from '@/app/components/estoque/line-list/types';
+import { FilterDialogState } from '../types';
 
 export interface FilterStoreState {
     filterDialog: FilterDialogState | null;

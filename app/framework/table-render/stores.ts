@@ -12,6 +12,7 @@ import {
   TableSnapshot,
   TableHistoryEntry,
   TableColumn,
+  CompiledExpression,
 } from './types';
 
 /**
@@ -225,9 +226,9 @@ export const createSnapshotStore = () => {
  * Store de colunas dinâmicas: cacheia expressões compiladas
  */
 export interface DynamicColumnStoreState {
-  compiledExpressions: Map<string, any>;
-  setCompiledExpression: (columnId: string, compiled: any) => void;
-  getCompiledExpression: (columnId: string) => any | undefined;
+  compiledExpressions: Map<string, CompiledExpression>;
+  setCompiledExpression: (columnId: string, compiled: CompiledExpression) => void;
+  getCompiledExpression: (columnId: string) => CompiledExpression | undefined;
   clearCompiledExpressions: () => void;
 }
 

@@ -41,7 +41,6 @@
 import crypto from 'crypto';
 import {
   ITable,
-  Table as TableInterface,
   TableConfig,
   TableRow,
   TableColumn,
@@ -50,7 +49,7 @@ import {
   TableSnapshot,
   TableHistoryEntry,
   ColumnValidation,
-  CompiledExpression,
+  TableCellValue,
 } from './types';
 import {
   createDataStore,
@@ -59,21 +58,14 @@ import {
   createHistoryStore,
   createSnapshotStore,
   createDynamicColumnStore,
-  DataStoreState,
-  FilterStoreState,
-  SortStoreState,
-  HistoryStoreState,
-  SnapshotStoreState,
-  DynamicColumnStoreState,
 } from './stores';
 import { expressionEngine } from './expression-engine';
-import { tableRegistry } from './registry';
-import { applyColumnDefaults, DEFAULT_TABLE_STATE } from './defaults';
+import { applyColumnDefaults } from './defaults';
 
 /**
  * Implementação da classe Table
  */
-export class Table implements TableInterface {
+export class Table implements ITable {
   // Informações básicas
   readonly id: string;
   readonly name: string;
@@ -96,7 +88,7 @@ export class Table implements TableInterface {
   private validations: Map<string, ColumnValidation>;
 
   // Metadados customizados
-  private metadata: Map<string, any>;
+  private metadata: Map<string, unknown>;
 
   // Stores Zustand (estado interno)
   private dataStore: ReturnType<typeof createDataStore>;
@@ -107,7 +99,7 @@ export class Table implements TableInterface {
   private dynamicColumnStore: ReturnType<typeof createDynamicColumnStore>;
 
   // Cache de colunas dinâmicas processadas
-  private dynamicColumnCache: Map<string, any> = new Map();
+  private dynamicColumnCache: Map<string, TableCellValue> = new Map();
 
   /**
    * Construtor
@@ -131,9 +123,7 @@ export class Table implements TableInterface {
     this.metadata = new Map(Object.entries(config.metadata || {}));
 
     // APLICAR DEFAULTS: Garantir que filtro, reordenação e ordenação estão habilitados
-    const columnsWithDefaults = config.columns.map((col) =>
-      applyColumnDefaults(col as any)
-    );
+    const columnsWithDefaults = config.columns.map((col) => applyColumnDefaults(col));
 
     // Inicializar stores com colunas com defaults aplicados
     this.dataStore = createDataStore(config.rows, columnsWithDefaults);
@@ -340,7 +330,7 @@ export class Table implements TableInterface {
   /**
    * Adiciona uma coluna dinâmica (apenas realEscope: false ou se allowDynamicColumns: true)
    */
-  async addColumn(column: TableColumn, options?: { fillValue?: any }): Promise<void> {
+  async addColumn(column: TableColumn, options?: { fillValue?: TableCellValue }): Promise<void> {
     if (column.isDynamic) {
       await this.addDynamicColumn(column);
       return;
@@ -651,30 +641,71 @@ export class Table implements TableInterface {
   /**
    * Filtra um conjunto de linhas por um filtro
    */
+  private toComparableValue(value: TableCellValue): string | number {
+    if (typeof value === 'number' || typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'boolean') {
+      return value ? 1 : 0;
+    }
+    return '';
+  }
+
+  private toNumberValue(value: TableCellValue): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'boolean') {
+      return value ? 1 : 0;
+    }
+    if (value === null || value === undefined) {
+      return 0;
+    }
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  private toStringValue(value: TableCellValue): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value);
+  }
+
   private applyRowFilter(rows: TableRow[], filter: TableFilter): TableRow[] {
     return rows.filter((row) => {
       const value = row[filter.columnId];
       const compareValue = filter.value;
+      const compareSingle = Array.isArray(compareValue) ? compareValue[0] : compareValue;
 
       switch (filter.operator) {
         case 'eq':
-          return filter.caseSensitive ? value === compareValue : String(value).toLowerCase() === String(compareValue).toLowerCase();
+          return filter.caseSensitive
+            ? value === compareSingle
+            : this.toStringValue(value).toLowerCase() === this.toStringValue(compareSingle).toLowerCase();
         case 'ne':
-          return filter.caseSensitive ? value !== compareValue : String(value).toLowerCase() !== String(compareValue).toLowerCase();
+          return filter.caseSensitive
+            ? value !== compareSingle
+            : this.toStringValue(value).toLowerCase() !== this.toStringValue(compareSingle).toLowerCase();
         case 'gt':
-          return value > compareValue;
+          return this.toNumberValue(value) > this.toNumberValue(compareSingle);
         case 'gte':
-          return value >= compareValue;
+          return this.toNumberValue(value) >= this.toNumberValue(compareSingle);
         case 'lt':
-          return value < compareValue;
+          return this.toNumberValue(value) < this.toNumberValue(compareSingle);
         case 'lte':
-          return value <= compareValue;
+          return this.toNumberValue(value) <= this.toNumberValue(compareSingle);
         case 'contains':
-          return String(value).toLowerCase().includes(String(compareValue).toLowerCase());
+          return this.toStringValue(value).toLowerCase().includes(this.toStringValue(compareSingle).toLowerCase());
         case 'in':
           return Array.isArray(compareValue) && compareValue.includes(value);
         case 'between':
-          return Array.isArray(compareValue) && compareValue.length === 2 && value >= compareValue[0] && value <= compareValue[1];
+          return (
+            Array.isArray(compareValue) &&
+            compareValue.length === 2 &&
+            this.toNumberValue(value) >= this.toNumberValue(compareValue[0]) &&
+            this.toNumberValue(value) <= this.toNumberValue(compareValue[1])
+          );
         default:
           return true;
       }
@@ -686,8 +717,8 @@ export class Table implements TableInterface {
    */
   private applySortToRows(rows: TableRow[], sort: TableSort): TableRow[] {
     return [...rows].sort((a, b) => {
-      const aVal = a[sort.columnId];
-      const bVal = b[sort.columnId];
+      const aVal = this.toComparableValue(a[sort.columnId]);
+      const bVal = this.toComparableValue(b[sort.columnId]);
 
       if (aVal < bVal) return sort.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sort.direction === 'asc' ? 1 : -1;
@@ -723,7 +754,7 @@ export class Table implements TableInterface {
   /**
    * Obtém valor de uma célula (incluindo colunas dinâmicas)
    */
-  getValue(rowId: string | number, columnId: string): any {
+  getValue(rowId: string | number, columnId: string): TableCellValue | undefined {
     const column = this.dataStore.getState().getColumn(columnId);
     if (!column) {
       return undefined;

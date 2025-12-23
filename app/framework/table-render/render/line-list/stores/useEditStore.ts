@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { DataItem, EditingRowState } from '@/app/components/estoque/line-list/types';
+import { DataItem, EditingRowState } from '../types';
 
 export interface EditStoreState<T extends DataItem> {
     editingRow: EditingRowState<T> | null;

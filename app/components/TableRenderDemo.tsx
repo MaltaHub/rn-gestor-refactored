@@ -1,38 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Table, tableRegistry, useTable } from '@/app/framework/table-render';
-import { TableConfig, TableColumn, TableRow } from '@/app/framework/table-render/types';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { RenderTable, Table, tableRegistry, useTable } from '@/app/framework/table-render';
+import type { RenderTableConfigOverrides, RenderTableMode } from '@/app/framework/table-render';
+import { TableConfig, TableColumn, TableRow, TableSnapshot, TableHistoryEntry } from '@/app/framework/table-render/types';
 
 type TablePanelProps = {
   table: Table;
   tableId: string;
   api: ReturnType<typeof useTable>;
-  columnOrder: Record<string, string[]>;
   defaultColumnOrder: Record<string, string[]>;
-  setColumnOrder: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
-  snapshots: Record<string, any[]>;
-  setSnapshots: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
+  snapshots: Record<string, TableSnapshot[]>;
+  setSnapshots: React.Dispatch<React.SetStateAction<Record<string, TableSnapshot[]>>>;
   showHistory: Record<string, boolean>;
   setShowHistory: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   addLog: (message: string) => void;
   tableType: 'original' | 'reference';
   indexColumnId: string;
   referenceSourceLabel?: string;
-};
-
-type EditingCellState = {
-  rowId: string | number;
-  columnId: string;
-  value: any;
-};
-
-type ActionDialogState = {
-  type: 'cell' | 'row' | 'column';
-  title: string;
-  description?: string;
-  meta: Record<string, any>;
-  anchor: { x: number; y: number };
 };
 
 type HubTableType = 'original' | 'reference';
@@ -49,6 +34,7 @@ type HubTableMeta = {
   referenceColumns?: string[];
 };
 
+
 const PLACEHOLDER_TABLE_CONFIG = (id: string): TableConfig => ({
   id,
   name: 'Placeholder',
@@ -63,9 +49,7 @@ const TablePanel: React.FC<TablePanelProps> = ({
   table,
   tableId,
   api,
-  columnOrder,
   defaultColumnOrder,
-  setColumnOrder,
   snapshots,
   setSnapshots,
   showHistory,
@@ -75,18 +59,9 @@ const TablePanel: React.FC<TablePanelProps> = ({
   indexColumnId,
   referenceSourceLabel,
 }) => {
-  const [editingCell, setEditingCell] = useState<EditingCellState | null>(null);
-  const [contextDialog, setContextDialog] = useState<ActionDialogState | null>(null);
-
   const visibleColumns = useMemo(() => {
-    let cols = api.columns;
-    const order = columnOrder[tableId] || [];
-    if (order.length > 0) {
-      const orderMap = new Map(order.map((colId, idx) => [colId, idx]));
-      cols = [...cols].sort((a: TableColumn, b: TableColumn) => (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999));
-    }
-    return cols.filter((c: TableColumn) => !c.isHidden);
-  }, [api.columns, columnOrder, tableId]);
+    return api.columns.filter((c: TableColumn) => !c.isHidden);
+  }, [api.columns]);
 
   const stats = useMemo(
     () => [
@@ -100,7 +75,6 @@ const TablePanel: React.FC<TablePanelProps> = ({
 
   const updateColumnOrderState = (order: string[]) => {
     api.setColumnOrder(order);
-    setColumnOrder((prev) => ({ ...prev, [tableId]: order }));
   };
 
   const shuffleColumns = () => {
@@ -132,318 +106,19 @@ const TablePanel: React.FC<TablePanelProps> = ({
     });
     addLog(`🔍 Filtro rápido aplicado em "${target.alias || target.dataSource}"`);
   };
-
-  const formatValue = (column: TableColumn, value: any) => {
-    if (value === null || value === undefined || value === '') return '—';
-    if (column.dataType === 'currency' && typeof value === 'number') {
-      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-    }
-    if (column.dataType === 'number' && typeof value === 'number') {
-      return value.toLocaleString('pt-BR');
-    }
-    return value;
-  };
-
-  const startEditingCell = (rowId: string | number, column: TableColumn, value: any) => {
-    if (!table.realEscope || column.isDynamic || column.isReadOnly) {
-      addLog('ℹ️ Esta célula é somente leitura');
-      return;
-    }
-    setEditingCell({
-      rowId,
-      columnId: column.id,
-      value: value ?? '',
-    });
-  };
-
-  const saveEditingCell = async () => {
-    if (!editingCell) return;
-    const column = api.columns.find((col) => col.id === editingCell.columnId);
-    if (!column || !table.realEscope) {
-      setEditingCell(null);
-      return;
-    }
-
-    let nextValue: any = editingCell.value;
-    if ((column.dataType === 'number' || column.dataType === 'currency') && nextValue !== '') {
-      const parsed = Number(nextValue);
-      if (!Number.isNaN(parsed)) {
-        nextValue = parsed;
-      }
-    }
-
-    try {
-      await table.update(editingCell.rowId, { [column.dataSource]: nextValue });
-      addLog(`✏️ ${column.alias || column.dataSource} atualizado na linha ${editingCell.rowId}`);
-    } catch (error) {
-      addLog(`⚠️ Falha ao atualizar célula: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setEditingCell(null);
-    }
-  };
-
-  const clearCell = async (rowId: string | number, columnId: string) => {
-    if (!table.realEscope) return;
-    const column = api.columns.find((col) => col.id === columnId);
-    if (!column) return;
-    try {
-      await table.update(rowId, { [column.dataSource]: '' });
-      addLog(`🧽 Célula limpa na linha ${rowId}`);
-    } catch (error) {
-      addLog(`⚠️ Falha ao limpar célula: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
-  const createRowPayload = () => {
-    const payload: Record<string, any> = {};
-    api.columns.forEach((col) => {
-      if (!col.isDynamic) {
-        payload[col.dataSource] = '';
-      }
-    });
-    return payload;
-  };
-
-  const insertRow = async () => {
-    if (!table.realEscope) {
-      addLog('ℹ️ Esta tabela é somente leitura');
-      return;
-    }
-    try {
-      await table.create(createRowPayload());
-      addLog('➕ Nova linha adicionada ao final da tabela');
-    } catch (error) {
-      addLog(`⚠️ Falha ao adicionar linha: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
-  const duplicateRow = async (rowId: string | number) => {
-    if (!table.realEscope) return;
-    const row = table.getRows().find((r) => String(r.id) === String(rowId));
-    if (!row) return;
-    const payload = { ...row };
-    delete payload.id;
-    try {
-      await table.create(payload);
-      addLog(`🧬 Linha ${rowId} duplicada`);
-    } catch (error) {
-      addLog(`⚠️ Falha ao duplicar linha: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
-  const deleteRow = async (rowId: string | number) => {
-    if (!table.realEscope) return;
-    try {
-      await table.delete(rowId);
-      addLog(`🗑️ Linha ${rowId} removida`);
-    } catch (error) {
-      addLog(`⚠️ Falha ao remover linha: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
-  const sortColumn = (columnId: string, direction: 'asc' | 'desc') => {
-    api.applySort([{ columnId, direction }]);
-    addLog(`↕️ Ordenação ${direction === 'asc' ? 'crescente' : 'decrescente'} aplicada`);
-  };
-
-  const hideColumn = async (columnId: string) => {
-    try {
-      await table.updateColumn(columnId, { isHidden: true });
-      addLog(`🙈 Coluna ${columnId} oculta da visualização`);
-    } catch (error) {
-      addLog(`⚠️ Falha ao ocultar coluna: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
-  const openCellDialog = (
-    event: React.MouseEvent,
-    rowId: string | number,
-    column: TableColumn,
-    value: any,
-    rowIndex: number
-  ) => {
-    setContextDialog({
-      type: 'cell',
-      title: column.alias || column.dataSource,
-      description: `Linha #${rowIndex + 1}`,
-      meta: { rowId, columnId: column.id, value },
-      anchor: { x: event.pageX, y: event.pageY },
-    });
-  };
-
-  const openRowDialog = (event: React.MouseEvent, rowId: string | number, rowIndex: number) => {
-    setContextDialog({
-      type: 'row',
-      title: `Linha #${rowIndex + 1}`,
-      description: table.realEscope ? 'Gerencie a linha selecionada' : 'Linha somente leitura',
-      meta: { rowId },
-      anchor: { x: event.pageX, y: event.pageY },
-    });
-  };
-
-  const openColumnDialog = (event: React.MouseEvent, column: TableColumn) => {
-    setContextDialog({
-      type: 'column',
-      title: column.alias || column.dataSource,
-      description: 'Aplique ações rápidas à coluna',
-      meta: { columnId: column.id },
-      anchor: { x: event.pageX, y: event.pageY },
-    });
-  };
-
-  const copyValue = async (value: any) => {
-    try {
-      await navigator.clipboard?.writeText(String(value ?? ''));
-      addLog('📋 Valor copiado para a área de transferência');
-    } catch {
-      addLog('⚠️ Não foi possível copiar o valor');
-    }
-  };
-
-  const ActionDialog = () => {
-    if (!contextDialog) return null;
-    const { type, title, description, meta, anchor } = contextDialog;
-    const column = meta?.columnId ? api.columns.find((col) => col.id === meta.columnId) : undefined;
-
-    const closeDialog = () => setContextDialog(null);
-    const rawX = Number.isFinite(anchor?.x) ? anchor!.x : window.innerWidth / 2;
-    const rawY = Number.isFinite(anchor?.y) ? anchor!.y : window.scrollY + window.innerHeight / 2;
-    const viewportX = Math.min(rawX, window.innerWidth - 320);
-    const viewportY = Math.min(rawY, window.scrollY + window.innerHeight - 220);
-    const top = Math.max(12, viewportY - window.scrollY + 12);
-    const left = Math.max(12, viewportX - 12);
-
-    return (
-      <div className="pointer-events-none fixed inset-0 z-50">
-        <div
-          className="pointer-events-auto w-72 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
-          style={{
-            position: 'absolute',
-            top,
-            left,
-          }}
-          onMouseEnter={(e) => e.stopPropagation()}
-          onMouseLeave={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-400">
-                {type === 'cell' && 'Célula selecionada'}
-                {type === 'row' && 'Linha selecionada'}
-                {type === 'column' && 'Coluna selecionada'}
-              </p>
-              <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-              {description && <p className="text-sm text-slate-500">{description}</p>}
-            </div>
-              <button onClick={closeDialog} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 hover:text-slate-900">
-                Fechar
-              </button>
-            </div>
-
-            <div className="space-y-2">
-            {type === 'cell' && (
-              <>
-                <button
-                  onClick={() => {
-                    closeDialog();
-                    void copyValue(meta?.value);
-                  }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-slate-700 hover:border-slate-300"
-                >
-                  Copiar valor
-                </button>
-                {table.realEscope && column && !column.isDynamic && !column.isReadOnly && (
-                  <>
-                    <button
-                      onClick={() => {
-                        closeDialog();
-                        startEditingCell(meta.rowId, column, meta.value);
-                      }}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-slate-700 hover:border-slate-300"
-                    >
-                      Editar célula
-                    </button>
-                    <button
-                      onClick={() => {
-                        closeDialog();
-                        void clearCell(meta.rowId, meta.columnId);
-                      }}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-slate-700 hover:border-slate-300"
-                    >
-                      Limpar conteúdo
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-
-            {type === 'row' && (
-              <>
-                {table.realEscope ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        closeDialog();
-                        void duplicateRow(meta.rowId);
-                      }}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-slate-700 hover:border-slate-300"
-                    >
-                      Duplicar linha
-                    </button>
-                    <button
-                      onClick={() => {
-                        closeDialog();
-                        void deleteRow(meta.rowId);
-                      }}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-red-600 hover:border-red-300"
-                    >
-                      Remover linha
-                    </button>
-                  </>
-                ) : (
-                  <p className="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-500">
-                    Esta tabela é somente leitura
-                  </p>
-                )}
-              </>
-            )}
-
-            {type === 'column' && (
-              <>
-                <button
-                  onClick={() => {
-                    closeDialog();
-                    sortColumn(meta.columnId, 'asc');
-                  }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-slate-700 hover:border-slate-300"
-                >
-                  Ordenar A → Z
-                </button>
-                <button
-                  onClick={() => {
-                    closeDialog();
-                    sortColumn(meta.columnId, 'desc');
-                  }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-slate-700 hover:border-slate-300"
-                >
-                  Ordenar Z → A
-                </button>
-                <button
-                  onClick={() => {
-                    closeDialog();
-                    void hideColumn(meta.columnId);
-                  }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-left text-sm text-slate-700 hover:border-slate-300"
-                >
-                  Ocultar coluna
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const renderConfig = useMemo<RenderTableConfigOverrides>(
+    () => ({
+      permissionsResolver: (targetTable: Table, tableMode: RenderTableMode) => ({
+        canStructureEdit: targetTable.realEscope && tableMode === 'edit',
+      }),
+      onColumnOrderChange: (order: string[]) => {
+        if (order.length > 0) {
+          addLog('↔️ Colunas reorganizadas');
+        }
+      },
+    }),
+    [addLog]
+  );
 
   const snapshotsList = snapshots[tableId] || [];
 
@@ -519,94 +194,12 @@ const TablePanel: React.FC<TablePanelProps> = ({
 
       <div className="overflow-hidden rounded-3xl border border-slate-200">
         <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="w-32 px-4 py-3">Linha</th>
-                {visibleColumns.map((col: TableColumn) => (
-                  <th
-                    key={col.id}
-                    className="cursor-pointer px-4 py-3 transition hover:bg-slate-100"
-                    onClick={(event) => openColumnDialog(event, col)}
-                  >
-                    <span>{col.alias || col.dataSource}</span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {api.visibleRows.length > 0 ? (
-                api.visibleRows.map((row: TableRow, idx: number) => (
-                  <tr key={row.id} className="border-t border-slate-100 transition-colors hover:bg-blue-50">
-                    <td
-                      className="px-4 py-2 align-middle text-xs font-semibold text-slate-500"
-                      onClick={(event) => openRowDialog(event, row.id, idx)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>#{idx + 1}</span>
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            insertRow();
-                          }}
-                          className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:border-slate-300 disabled:cursor-not-allowed disabled:text-slate-300"
-                          disabled={!table.realEscope}
-                          title="Adicionar nova linha"
-                        >
-                          ＋
-                        </button>
-                      </div>
-                    </td>
-                    {visibleColumns.map((col: TableColumn) => {
-                      const value = api.getValue(row.id, col.id);
-                      const display = formatValue(col, value);
-                      const isEditing = editingCell && editingCell.rowId === row.id && editingCell.columnId === col.id;
-                      return (
-                        <td
-                          key={col.id}
-                          className="group px-4 py-3 align-middle text-sm text-slate-700"
-                          onDoubleClick={() => startEditingCell(row.id, col, value)}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openCellDialog(event, row.id, col, value, idx);
-                          }}
-                        >
-                          {isEditing ? (
-                            <input
-                              value={editingCell.value ?? ''}
-                              autoFocus
-                              onChange={(e) => setEditingCell((prev) => (prev ? { ...prev, value: e.target.value } : prev))}
-                              onBlur={() => {
-                                void saveEditingCell();
-                              }}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                  event.preventDefault();
-                                  void saveEditingCell();
-                                }
-                                if (event.key === 'Escape') {
-                                  setEditingCell(null);
-                                }
-                              }}
-                              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                            />
-                          ) : (
-                            <span className="block truncate">{display}</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={visibleColumns.length + 1} className="px-4 py-6 text-center text-sm text-slate-500">
-                    Nenhum resultado encontrado para os filtros atuais.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <RenderTable
+            table={table}
+            mode="edit"
+            config={renderConfig}
+            className="min-w-[720px]"
+          />
         </div>
       </div>
 
@@ -664,7 +257,7 @@ const TablePanel: React.FC<TablePanelProps> = ({
             </div>
             {showHistory[tableId] && (
               <div className="mt-3 space-y-2 text-xs text-slate-600">
-                {(api.history || []).slice(-8).map((entry: any, idx: number) => (
+                {(api.history || []).slice(-8).map((entry: TableHistoryEntry, idx: number) => (
                   <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2">
                     <div className="font-mono text-[11px]">{entry.description}</div>
                     <div className="text-[10px] text-slate-400">{new Date(entry.timestamp).toLocaleTimeString()}</div>
@@ -676,7 +269,6 @@ const TablePanel: React.FC<TablePanelProps> = ({
         )}
       </div>
 
-      {contextDialog && <ActionDialog />}
     </section>
   );
 };
@@ -693,9 +285,8 @@ const TablePanel: React.FC<TablePanelProps> = ({
  */
 export function TableRenderDemo() {
   const [output, setOutput] = useState<string[]>([]);
-  const [columnOrder, setColumnOrder] = useState<Record<string, string[]>>({});
   const [defaultColumnOrder, setDefaultColumnOrder] = useState<Record<string, string[]>>({});
-  const [snapshots, setSnapshots] = useState<Record<string, any[]>>({});
+  const [snapshots, setSnapshots] = useState<Record<string, TableSnapshot[]>>({});
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
   const [hubTables, setHubTables] = useState<Record<string, HubTableMeta>>({});
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
@@ -732,6 +323,18 @@ export function TableRenderDemo() {
     setDefaultColumnOrder((prev) => ({ ...prev, [meta.id]: meta.table.getColumns().map((col) => col.id) }));
     if (options?.activate) {
       setActiveTableId(meta.id);
+    }
+    if (meta.type === 'original') {
+      setNewReferenceForm((prev) => {
+        if (prev.sourceId) {
+          return prev;
+        }
+        const selectedColumns = meta.table
+          .getColumns()
+          .map((col) => col.id)
+          .filter((id) => id !== meta.indexColumnId);
+        return { ...prev, sourceId: meta.id, selectedColumns };
+      });
     }
   }, []);
 
@@ -780,6 +383,162 @@ export function TableRenderDemo() {
     [syncReferenceRows]
   );
 
+  useEffect(() => {
+    if (Object.keys(hubTables).length > 0) {
+      return;
+    }
+    /* eslint-disable react-hooks/set-state-in-effect */
+    try {
+      addLog('🚀 Iniciando Table Render Demo v2.0...');
+
+      const columnsProducts: TableColumn[] = [
+        { id: 'id', dataSource: 'id', dataType: 'string', isDynamic: false, alias: 'ID', order: 1, isFilterable: true, isSortable: true },
+        { id: 'name', dataSource: 'name', dataType: 'string', isDynamic: false, alias: 'Nome do Produto', order: 2, isFilterable: true, isSortable: true },
+        { id: 'category', dataSource: 'category', dataType: 'string', isDynamic: false, alias: 'Categoria', order: 3, isFilterable: true, isSortable: true },
+        { id: 'price', dataSource: 'price', dataType: 'currency', isDynamic: false, alias: 'Preço', order: 4, isFilterable: true, isSortable: true },
+        { id: 'stock', dataSource: 'stock', dataType: 'number', isDynamic: false, alias: 'Estoque', order: 5, isFilterable: true, isSortable: true },
+        {
+          id: 'price_with_tax',
+          dataSource: 'price',
+          dataType: 'currency',
+          isDynamic: true,
+          alias: 'Preço com 15% Imposto 📐',
+          order: 6,
+          isReadOnly: true,
+          expression: 'price * 1.15',
+        },
+      ];
+      const rowsProducts: TableRow[] = [
+        { id: 'p001', name: 'Notebook Dell', category: 'Eletrônicos', price: 3500, stock: 5 },
+        { id: 'p002', name: 'Mouse Logitech', category: 'Periféricos', price: 85, stock: 25 },
+        { id: 'p003', name: 'Teclado Mecânico', category: 'Periféricos', price: 450, stock: 15 },
+        { id: 'p004', name: 'Monitor LG 27\"', category: 'Eletrônicos', price: 1200, stock: 8 },
+        { id: 'p005', name: 'Webcam HD', category: 'Periféricos', price: 200, stock: 35 },
+      ];
+      const productsConfig: TableConfig = {
+        id: 'products_demo',
+        name: 'Produtos',
+        description: 'Demonstração com TODOS os defaults ativados',
+        realEscope: true,
+        rows: rowsProducts,
+        columns: columnsProducts,
+        trackHistory: true,
+        allowDynamicColumns: true,
+        callbacks: buildBaseCallbacks('products_demo'),
+      };
+      const products = new Table(productsConfig);
+      tableRegistry.register(products, 'products_demo');
+      registerHubTable(
+        { id: 'products_demo', label: 'Produtos', description: productsConfig.description, table: products, type: 'original', indexColumnId: 'id' },
+        { activate: true }
+      );
+
+      const columnsPrices: TableColumn[] = [
+        { id: 'id', dataSource: 'id', dataType: 'string', isDynamic: false, alias: 'ID', order: 1 },
+        { id: 'product_name', dataSource: 'product_name', dataType: 'string', isDynamic: false, alias: 'Produto', order: 2 },
+        { id: 'cost', dataSource: 'cost', dataType: 'currency', isDynamic: false, alias: 'Custo', order: 3 },
+        { id: 'selling_price', dataSource: 'selling_price', dataType: 'currency', isDynamic: false, alias: 'Preço Venda', order: 4 },
+        {
+          id: 'margin',
+          dataSource: 'margin',
+          dataType: 'number',
+          isDynamic: true,
+          alias: 'Margem % 📐',
+          order: 5,
+          isReadOnly: true,
+          expression: '((selling_price - cost) / cost) * 100',
+        },
+      ];
+      const rowsPrices: TableRow[] = [
+        { id: 'pr1', product_name: 'Notebook Dell', cost: 2500, selling_price: 3500 },
+        { id: 'pr2', product_name: 'Mouse Logitech', cost: 50, selling_price: 85 },
+        { id: 'pr3', product_name: 'Teclado Mecânico', cost: 250, selling_price: 450 },
+        { id: 'pr4', product_name: 'Monitor LG 27\"', cost: 800, selling_price: 1200 },
+        { id: 'pr5', product_name: 'Webcam HD', cost: 120, selling_price: 200 },
+      ];
+      const pricesConfig: TableConfig = {
+        id: 'prices_demo',
+        name: 'Preços & Margens',
+        description: 'Demonstração com colunas calculadas',
+        realEscope: true,
+        rows: rowsPrices,
+        columns: columnsPrices,
+        trackHistory: true,
+        allowDynamicColumns: true,
+        callbacks: buildBaseCallbacks('prices_demo'),
+      };
+      const prices = new Table(pricesConfig);
+      tableRegistry.register(prices, 'prices_demo');
+      registerHubTable({
+        id: 'prices_demo',
+        label: 'Preços & Margens',
+        description: pricesConfig.description,
+        table: prices,
+        type: 'original',
+        indexColumnId: 'id',
+      });
+
+      const columnsStats: TableColumn[] = [
+        { id: 'product_name', dataSource: 'product_name', dataType: 'string', isDynamic: false, alias: 'Produto', order: 1 },
+        { id: 'current_stock', dataSource: 'current_stock', dataType: 'number', isDynamic: false, alias: 'Estoque Atual', order: 2 },
+        { id: 'unit_price', dataSource: 'unit_price', dataType: 'currency', isDynamic: false, alias: 'Preço Unit.', order: 3 },
+        {
+          id: 'total_value',
+          dataSource: 'total_value',
+          dataType: 'currency',
+          isDynamic: true,
+          alias: 'Valor Total 📐',
+          order: 4,
+          isReadOnly: true,
+          expression: 'current_stock * unit_price',
+        },
+        {
+          id: 'stock_status',
+          dataSource: 'current_stock',
+          dataType: 'custom',
+          isDynamic: true,
+          alias: 'Status Estoque 📐',
+          order: 5,
+          isReadOnly: true,
+          expression: 'current_stock > 20 ? \"ALTO\" : current_stock > 5 ? \"MÉDIO\" : \"BAIXO\"',
+        },
+      ];
+      const rowsStats: TableRow[] = [
+        { id: 'stat1', product_name: 'Notebook Dell', current_stock: 5, unit_price: 3500 },
+        { id: 'stat2', product_name: 'Mouse Logitech', current_stock: 25, unit_price: 85 },
+        { id: 'stat3', product_name: 'Teclado Mecânico', current_stock: 15, unit_price: 450 },
+        { id: 'stat4', product_name: 'Monitor LG 27\"', current_stock: 8, unit_price: 1200 },
+        { id: 'stat5', product_name: 'Webcam HD', current_stock: 35, unit_price: 200 },
+      ];
+      const statsConfig: TableConfig = {
+        id: 'statistics_demo',
+        name: 'Análise & Estatísticas',
+        description: 'Tabela imaginária com cálculos dinâmicos (sem CRUD)',
+        realEscope: false,
+        rows: rowsStats,
+        columns: columnsStats,
+        trackHistory: false,
+        allowDynamicColumns: true,
+      };
+      const statistics = new Table(statsConfig);
+      tableRegistry.register(statistics, 'statistics_demo');
+      registerHubTable({
+        id: 'statistics_demo',
+        label: 'Análise & Estatísticas',
+        description: statsConfig.description,
+        table: statistics,
+        type: 'original',
+        indexColumnId: 'product_name',
+      });
+
+      addLog('✨ Tabelas padrão registradas no hub!');
+    } catch (error) {
+      addLog(`❌ Erro: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [hubTables, buildBaseCallbacks, registerHubTable, addLog]);
+
+
   const removeHubTable = useCallback(
     (tableId: string) => {
       const target = hubTables[tableId];
@@ -792,11 +551,6 @@ export function TableRenderDemo() {
           : [];
       const idsToRemove = [tableId, ...cascadeIds];
       setHubTables((prev) => {
-        const next = { ...prev };
-        idsToRemove.forEach((id) => delete next[id]);
-        return next;
-      });
-      setColumnOrder((prev) => {
         const next = { ...prev };
         idsToRemove.forEach((id) => delete next[id]);
         return next;
@@ -815,6 +569,12 @@ export function TableRenderDemo() {
         const next = { ...prev };
         idsToRemove.forEach((id) => delete next[id]);
         return next;
+      });
+      setNewReferenceForm((prev) => {
+        if (!idsToRemove.includes(prev.sourceId)) {
+          return prev;
+        }
+        return { ...prev, sourceId: '', selectedColumns: [] };
       });
       if (idsToRemove.includes(activeTableId ?? '')) {
         setActiveTableId(null);
@@ -957,194 +717,6 @@ export function TableRenderDemo() {
     },
     [newReferenceForm, hubTables, prettifyLabel, registerHubTable, addLog]
   );
-
-  useEffect(() => {
-    if (Object.keys(hubTables).length > 0) {
-      return;
-    }
-    try {
-      addLog('🚀 Iniciando Table Render Demo v2.0...');
-
-      const columnsProducts: TableColumn[] = [
-        { id: 'id', dataSource: 'id', dataType: 'string', isDynamic: false, alias: 'ID', order: 1, isFilterable: true, isSortable: true },
-        { id: 'name', dataSource: 'name', dataType: 'string', isDynamic: false, alias: 'Nome do Produto', order: 2, isFilterable: true, isSortable: true },
-        { id: 'category', dataSource: 'category', dataType: 'string', isDynamic: false, alias: 'Categoria', order: 3, isFilterable: true, isSortable: true },
-        { id: 'price', dataSource: 'price', dataType: 'currency', isDynamic: false, alias: 'Preço', order: 4, isFilterable: true, isSortable: true },
-        { id: 'stock', dataSource: 'stock', dataType: 'number', isDynamic: false, alias: 'Estoque', order: 5, isFilterable: true, isSortable: true },
-        {
-          id: 'price_with_tax',
-          dataSource: 'price',
-          dataType: 'currency',
-          isDynamic: true,
-          alias: 'Preço com 15% Imposto 📐',
-          order: 6,
-          isReadOnly: true,
-          expression: 'price * 1.15',
-        },
-      ];
-      const rowsProducts: TableRow[] = [
-        { id: 'p001', name: 'Notebook Dell', category: 'Eletrônicos', price: 3500, stock: 5 },
-        { id: 'p002', name: 'Mouse Logitech', category: 'Periféricos', price: 85, stock: 25 },
-        { id: 'p003', name: 'Teclado Mecânico', category: 'Periféricos', price: 450, stock: 15 },
-        { id: 'p004', name: 'Monitor LG 27"', category: 'Eletrônicos', price: 1200, stock: 8 },
-        { id: 'p005', name: 'Webcam HD', category: 'Periféricos', price: 200, stock: 35 },
-      ];
-      const productsConfig: TableConfig = {
-        id: 'products_demo',
-        name: 'Produtos',
-        description: 'Demonstração com TODOS os defaults ativados',
-        realEscope: true,
-        rows: rowsProducts,
-        columns: columnsProducts,
-        trackHistory: true,
-        allowDynamicColumns: true,
-        callbacks: buildBaseCallbacks('products_demo'),
-      };
-      const products = new Table(productsConfig);
-      tableRegistry.register(products, 'products_demo');
-      registerHubTable(
-        { id: 'products_demo', label: 'Produtos', description: productsConfig.description, table: products, type: 'original', indexColumnId: 'id' },
-        { activate: true }
-      );
-
-      const columnsPrices: TableColumn[] = [
-        { id: 'id', dataSource: 'id', dataType: 'string', isDynamic: false, alias: 'ID', order: 1 },
-        { id: 'product_name', dataSource: 'product_name', dataType: 'string', isDynamic: false, alias: 'Produto', order: 2 },
-        { id: 'cost', dataSource: 'cost', dataType: 'currency', isDynamic: false, alias: 'Custo', order: 3 },
-        { id: 'selling_price', dataSource: 'selling_price', dataType: 'currency', isDynamic: false, alias: 'Preço Venda', order: 4 },
-        {
-          id: 'margin',
-          dataSource: 'margin',
-          dataType: 'number',
-          isDynamic: true,
-          alias: 'Margem % 📐',
-          order: 5,
-          isReadOnly: true,
-          expression: '((selling_price - cost) / cost) * 100',
-        },
-      ];
-      const rowsPrices: TableRow[] = [
-        { id: 'pr1', product_name: 'Notebook Dell', cost: 2500, selling_price: 3500 },
-        { id: 'pr2', product_name: 'Mouse Logitech', cost: 50, selling_price: 85 },
-        { id: 'pr3', product_name: 'Teclado Mecânico', cost: 250, selling_price: 450 },
-        { id: 'pr4', product_name: 'Monitor LG 27"', cost: 800, selling_price: 1200 },
-        { id: 'pr5', product_name: 'Webcam HD', cost: 120, selling_price: 200 },
-      ];
-      const pricesConfig: TableConfig = {
-        id: 'prices_demo',
-        name: 'Preços & Margens',
-        description: 'Demonstração com colunas calculadas',
-        realEscope: true,
-        rows: rowsPrices,
-        columns: columnsPrices,
-        trackHistory: true,
-        allowDynamicColumns: true,
-        callbacks: buildBaseCallbacks('prices_demo'),
-      };
-      const prices = new Table(pricesConfig);
-      tableRegistry.register(prices, 'prices_demo');
-      registerHubTable({
-        id: 'prices_demo',
-        label: 'Preços & Margens',
-        description: pricesConfig.description,
-        table: prices,
-        type: 'original',
-        indexColumnId: 'id',
-      });
-
-      const columnsStats: TableColumn[] = [
-        { id: 'product_name', dataSource: 'product_name', dataType: 'string', isDynamic: false, alias: 'Produto', order: 1 },
-        { id: 'current_stock', dataSource: 'current_stock', dataType: 'number', isDynamic: false, alias: 'Estoque Atual', order: 2 },
-        { id: 'unit_price', dataSource: 'unit_price', dataType: 'currency', isDynamic: false, alias: 'Preço Unit.', order: 3 },
-        {
-          id: 'total_value',
-          dataSource: 'total_value',
-          dataType: 'currency',
-          isDynamic: true,
-          alias: 'Valor Total 📐',
-          order: 4,
-          isReadOnly: true,
-          expression: 'current_stock * unit_price',
-        },
-        {
-          id: 'stock_status',
-          dataSource: 'current_stock',
-          dataType: 'custom',
-          isDynamic: true,
-          alias: 'Status Estoque 📐',
-          order: 5,
-          isReadOnly: true,
-          expression: 'current_stock > 20 ? "ALTO" : current_stock > 5 ? "MÉDIO" : "BAIXO"',
-        },
-      ];
-      const rowsStats: TableRow[] = [
-        { id: 'stat1', product_name: 'Notebook Dell', current_stock: 5, unit_price: 3500 },
-        { id: 'stat2', product_name: 'Mouse Logitech', current_stock: 25, unit_price: 85 },
-        { id: 'stat3', product_name: 'Teclado Mecânico', current_stock: 15, unit_price: 450 },
-        { id: 'stat4', product_name: 'Monitor LG 27"', current_stock: 8, unit_price: 1200 },
-        { id: 'stat5', product_name: 'Webcam HD', current_stock: 35, unit_price: 200 },
-      ];
-      const statsConfig: TableConfig = {
-        id: 'statistics_demo',
-        name: 'Análise & Estatísticas',
-        description: 'Tabela imaginária com cálculos dinâmicos (sem CRUD)',
-        realEscope: false,
-        rows: rowsStats,
-        columns: columnsStats,
-        trackHistory: false,
-        allowDynamicColumns: true,
-      };
-      const statistics = new Table(statsConfig);
-      tableRegistry.register(statistics, 'statistics_demo');
-      registerHubTable({
-        id: 'statistics_demo',
-        label: 'Análise & Estatísticas',
-        description: statsConfig.description,
-        table: statistics,
-        type: 'original',
-        indexColumnId: 'product_name',
-      });
-
-      addLog('✨ Tabelas padrão registradas no hub!');
-      setNewReferenceForm((prev) => ({
-        ...prev,
-        sourceId: 'products_demo',
-      }));
-    } catch (error) {
-      addLog(`❌ Erro: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }, [hubTables, buildBaseCallbacks, registerHubTable, addLog]);
-
-  useEffect(() => {
-    if (newReferenceForm.sourceId) {
-      return;
-    }
-    const firstOriginal = Object.values(hubTables).find((meta) => meta.type === 'original');
-    if (firstOriginal) {
-      setNewReferenceForm((prev) => ({
-        ...prev,
-        sourceId: firstOriginal.id,
-      }));
-    }
-  }, [hubTables, newReferenceForm.sourceId]);
-
-  const lastReferenceSource = useRef<string | null>(null);
-  useEffect(() => {
-    if (!newReferenceForm.sourceId) return;
-    const base = hubTables[newReferenceForm.sourceId];
-    if (!base) return;
-    if (lastReferenceSource.current !== newReferenceForm.sourceId || newReferenceForm.selectedColumns.length === 0) {
-      lastReferenceSource.current = newReferenceForm.sourceId;
-      setNewReferenceForm((prev) => ({
-        ...prev,
-        selectedColumns: base
-          .table
-          .getColumns()
-          .map((col) => col.id)
-          .filter((id) => id !== base.indexColumnId),
-      }));
-    }
-  }, [newReferenceForm.sourceId, hubTables]);
 
   const activeMeta = activeTableId ? hubTables[activeTableId] : null;
   const activeTable = activeMeta?.table ?? placeholderTables.base;
@@ -1314,7 +886,17 @@ export function TableRenderDemo() {
                   <select
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
                     value={newReferenceForm.sourceId}
-                    onChange={(e) => setNewReferenceForm((prev) => ({ ...prev, sourceId: e.target.value, selectedColumns: [] }))}
+                    onChange={(e) => {
+                      const sourceId = e.target.value;
+                      const base = hubTables[sourceId];
+                      const selectedColumns = base
+                        ? base.table
+                            .getColumns()
+                            .map((col) => col.id)
+                            .filter((id) => id !== base.indexColumnId)
+                        : [];
+                      setNewReferenceForm((prev) => ({ ...prev, sourceId, selectedColumns }));
+                    }}
                   >
                     <option value="">Selecione...</option>
                     {hubTableList
@@ -1406,9 +988,7 @@ export function TableRenderDemo() {
               table={activeTable}
               tableId={activeMeta.id}
               api={activeApi}
-              columnOrder={columnOrder}
               defaultColumnOrder={defaultColumnOrder}
-              setColumnOrder={setColumnOrder}
               snapshots={snapshots}
               setSnapshots={setSnapshots}
               showHistory={showHistory}

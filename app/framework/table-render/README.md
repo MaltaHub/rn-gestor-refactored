@@ -119,6 +119,24 @@ export function ProductTable() {
 }
 ```
 
+### 3. Renderizar com o componente oficial
+
+```typescript
+import { RenderTable } from '@/app/framework/table-render';
+
+export function ProductTable() {
+  return (
+    <RenderTable
+      table={table}
+      mode="edit"
+      config={{
+        onColumnOrderChange: (order) => console.log('Nova ordem:', order),
+      }}
+    />
+  );
+}
+```
+
 ## 📚 API Principal
 
 ### Métodos de Tabela

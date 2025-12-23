@@ -4,8 +4,7 @@
  * Suporta referências a outras tabelas (PROCV/PROCH) e expressões matemáticas
  */
 
-import { CompiledExpression, ExpressionContext, Table, TableColumn, TableRow } from './types';
-import { tableRegistry } from './registry';
+import { CompiledExpression, Table, TableCellValue, TableRow } from './types';
 
 /**
  * Tipos de tokens na expressão
@@ -31,6 +30,38 @@ interface Token {
   type: TokenType;
   value: string;
 }
+
+type LiteralValue = string | number;
+
+type BinaryOperator =
+  | '+'
+  | '-'
+  | '*'
+  | '/'
+  | '%'
+  | '=='
+  | '!='
+  | '<'
+  | '>'
+  | '<='
+  | '>='
+  | '&&'
+  | '||';
+
+type ComparisonOperator = '==' | '!=' | '<' | '>' | '<=' | '>=';
+
+const comparisonOperators: ComparisonOperator[] = ['==', '!=', '<', '>', '<=', '>='];
+
+const isComparisonOperator = (value: string): value is ComparisonOperator =>
+  comparisonOperators.includes(value as ComparisonOperator);
+
+type ExpressionNode =
+  | { type: 'literal'; value: LiteralValue }
+  | { type: 'identifier'; name: string }
+  | { type: 'tableReference'; tableId: string; columnName: string }
+  | { type: 'binary'; operator: BinaryOperator; left: ExpressionNode; right: ExpressionNode }
+  | { type: 'ternary'; condition: ExpressionNode; trueBranch: ExpressionNode; falseBranch: ExpressionNode }
+  | { type: 'access'; object: ExpressionNode; key: ExpressionNode };
 
 /**
  * Motor de expressões dinâmicas com suporte a:
@@ -235,19 +266,19 @@ export class ExpressionEngine {
   /**
    * Parse simples de expressão em AST
    */
-  private parse(expression: string): any {
+  private parse(expression: string): ExpressionNode {
     const tokens = this.tokenize(expression);
     let current = 0;
 
     const peek = () => tokens[current];
     const advance = () => tokens[current++];
 
-    const parseExpression = (): any => {
+    const parseExpression = (): ExpressionNode => {
       return parseTernary();
     };
 
-    const parseTernary = (): any => {
-      let expr = parseLogicalOr();
+    const parseTernary = (): ExpressionNode => {
+      const expr = parseLogicalOr();
       if (peek().type === TokenType.QUESTION) {
         advance(); // ?
         const trueBranch = parseExpression();
@@ -258,57 +289,57 @@ export class ExpressionEngine {
       return expr;
     };
 
-    const parseLogicalOr = (): any => {
+    const parseLogicalOr = (): ExpressionNode => {
       let expr = parseLogicalAnd();
       while (peek().value === '||') {
-        const op = advance().value;
+        const op = advance().value as BinaryOperator;
         const right = parseLogicalAnd();
         expr = { type: 'binary', operator: op, left: expr, right };
       }
       return expr;
     };
 
-    const parseLogicalAnd = (): any => {
+    const parseLogicalAnd = (): ExpressionNode => {
       let expr = parseComparison();
       while (peek().value === '&&') {
-        const op = advance().value;
+        const op = advance().value as BinaryOperator;
         const right = parseComparison();
         expr = { type: 'binary', operator: op, left: expr, right };
       }
       return expr;
     };
 
-    const parseComparison = (): any => {
+    const parseComparison = (): ExpressionNode => {
       let expr = parseAdditive();
-      while (['==', '!=', '<', '>', '<=', '>='].includes(peek().value as any)) {
-        const op = advance().value;
+      while (isComparisonOperator(peek().value)) {
+        const op = advance().value as ComparisonOperator;
         const right = parseAdditive();
         expr = { type: 'binary', operator: op, left: expr, right };
       }
       return expr;
     };
 
-    const parseAdditive = (): any => {
+    const parseAdditive = (): ExpressionNode => {
       let expr = parseMultiplicative();
       while (peek().value === '+' || peek().value === '-') {
-        const op = advance().value;
+        const op = advance().value as BinaryOperator;
         const right = parseMultiplicative();
         expr = { type: 'binary', operator: op, left: expr, right };
       }
       return expr;
     };
 
-    const parseMultiplicative = (): any => {
+    const parseMultiplicative = (): ExpressionNode => {
       let expr = parsePrimary();
       while (peek().value === '*' || peek().value === '/' || peek().value === '%') {
-        const op = advance().value;
+        const op = advance().value as BinaryOperator;
         const right = parsePrimary();
         expr = { type: 'binary', operator: op, left: expr, right };
       }
       return expr;
     };
 
-    const parsePrimary = (): any => {
+    const parsePrimary = (): ExpressionNode => {
       const token = peek();
 
       // Número
@@ -365,7 +396,7 @@ export class ExpressionEngine {
   /**
    * Extrai referências de colunas e tabelas de um AST
    */
-  private extractReferences(node: any, dependencies: string[], tableReferences: string[]): void {
+  private extractReferences(node: ExpressionNode | null | undefined, dependencies: string[], tableReferences: string[]): void {
     if (!node) return;
 
     switch (node.type) {
@@ -400,8 +431,8 @@ export class ExpressionEngine {
    * Cria a função compilada que executa a expressão
    */
   private createComputeFunction(
-    ast: any
-  ): (row: TableRow, tables: Map<string, Table>, allRows?: TableRow[]) => any {
+    ast: ExpressionNode
+  ): (row: TableRow, tables: Map<string, Table>, allRows?: TableRow[]) => TableCellValue {
     return (row: TableRow, tables: Map<string, Table>, allRows?: TableRow[]) => {
       try {
         return this.evaluate(ast, row, tables, allRows);
@@ -415,7 +446,7 @@ export class ExpressionEngine {
   /**
    * Avalia um AST contra uma linha de dados
    */
-  private evaluate(node: any, row: TableRow, tables: Map<string, Table>, allRows?: TableRow[]): any {
+  private evaluate(node: ExpressionNode, row: TableRow, tables: Map<string, Table>, allRows?: TableRow[]): TableCellValue {
     if (!node) return null;
 
     switch (node.type) {
@@ -447,27 +478,30 @@ export class ExpressionEngine {
 
         switch (node.operator) {
           case '+':
-            return left + right;
+            if (typeof left === 'string' || typeof right === 'string') {
+              return `${this.toStringValue(left)}${this.toStringValue(right)}`;
+            }
+            return this.toNumberValue(left) + this.toNumberValue(right);
           case '-':
-            return left - right;
+            return this.toNumberValue(left) - this.toNumberValue(right);
           case '*':
-            return left * right;
+            return this.toNumberValue(left) * this.toNumberValue(right);
           case '/':
-            return left / right;
+            return this.toNumberValue(left) / this.toNumberValue(right);
           case '%':
-            return left % right;
+            return this.toNumberValue(left) % this.toNumberValue(right);
           case '==':
             return left === right;
           case '!=':
             return left !== right;
           case '<':
-            return left < right;
+            return this.toComparableValue(left) < this.toComparableValue(right);
           case '>':
-            return left > right;
+            return this.toComparableValue(left) > this.toComparableValue(right);
           case '<=':
-            return left <= right;
+            return this.toComparableValue(left) <= this.toComparableValue(right);
           case '>=':
-            return left >= right;
+            return this.toComparableValue(left) >= this.toComparableValue(right);
           case '&&':
             return left && right;
           case '||':
@@ -485,12 +519,47 @@ export class ExpressionEngine {
       case 'access': {
         const obj = this.evaluate(node.object, row, tables, allRows);
         const key = this.evaluate(node.key, row, tables, allRows);
-        return obj?.[key];
+        if (obj && typeof obj === 'object') {
+          const record = obj as Record<string, TableCellValue>;
+          return record[String(key)];
+        }
+        return null;
       }
 
       default:
         throw new Error(`Tipo de nó desconhecido: ${node.type}`);
     }
+  }
+
+  private toNumberValue(value: TableCellValue): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'boolean') {
+      return value ? 1 : 0;
+    }
+    if (value === null || value === undefined) {
+      return 0;
+    }
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  private toStringValue(value: TableCellValue): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value);
+  }
+
+  private toComparableValue(value: TableCellValue): string | number {
+    if (typeof value === 'number' || typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'boolean') {
+      return value ? 1 : 0;
+    }
+    return '';
   }
 
   /**
