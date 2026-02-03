@@ -1,22 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { AppProviders } from "@/lib/providers/AppProviders";
 import { PWARegister } from "../components/pwa-register";
-import { FirebaseRegister } from "../components/firebase-register";
-import { ThemeProvider } from "@/contexts/theme";
-import { ToastProvider } from "@/components/ui/toast";
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#050505" },
-    { color: "#ffffff" },
-  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0b0b0b",
 };
 
 export const metadata: Metadata = {
-  title: "Gestor de Veículos",
-  description: "Sistema de gerenciamento de vitrine e estoque",
-  applicationName: "Gestor de Veículos",
+  title: "Gestor WebApp",
+  description: "WebApp em tela cheia para acesso direto ao AppScript.",
+  applicationName: "Gestor WebApp",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -38,17 +34,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
-      <body className="antialiased theme-surface">
-        <ThemeProvider defaultMode="light">
-          <ToastProvider>
-            <AppProviders>
-              {children}
-              <PWARegister />
-              <FirebaseRegister />
-            </AppProviders>
-          </ToastProvider>
-        </ThemeProvider>
+    <html lang="pt-BR">
+      <body>
+        {children}
+        <PWARegister />
       </body>
     </html>
   );

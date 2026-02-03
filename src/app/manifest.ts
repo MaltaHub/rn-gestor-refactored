@@ -2,14 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Gestor de Veículos",
+    name: "Gestor WebApp",
     short_name: "Gestor",
-    description: "Gerencie o estoque e a vitrine de veículos em qualquer dispositivo.",
+    description: "WebApp em tela cheia para acesso direto ao AppScript.",
     start_url: "/",
     scope: "/",
     display: "standalone",
-    background_color: "#0f172a",
-    theme_color: "#0ea5e9",
+    background_color: "#0b0b0b",
+    theme_color: "#0b0b0b",
     lang: "pt-BR",
     icons: [
       {
