@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTable } from '../../../useTableFramework';
-import type { TableColumn, TableFilter, TableRow } from '@/app/framework/table-render/types';
+import type { TableCellValue, TableColumn, TableFilter, TableRow } from '@/app/framework/table-render/types';
 import { resolveRenderConfig, resolveRenderPermissions } from '../../config';
 import type { RenderTableLabels } from '../../types';
 import { createDragStore } from '../stores/useDragStore';
@@ -43,6 +43,14 @@ const isValidKeyPath = <T extends DataItem>(columns: LineListColumnMeta[], keyPa
   return columns.some((meta) => meta.column.dataSource === keyPath);
 };
 
+type EditingCellState = {
+  rowId: string | number;
+  columnId: string;
+  dataSource: string;
+  dataType: TableColumn['dataType'];
+  originalValue: TableCellValue;
+};
+
 interface UseLineListStateReturn<T extends DataItem> {
   data: T[];
   columns: LineListColumnMeta[];
@@ -64,6 +72,8 @@ interface UseLineListStateReturn<T extends DataItem> {
   activeFilters: Record<string, string>;
   sortConfig: SortConfig | null;
   editingRow: EditingRowState<T> | null;
+  editingCell: { rowId: string | number; columnId: string } | null;
+  editingValue: string;
   filteredAndSortedData: T[];
   invalidKeyPath: boolean;
   handleDragStart: (index: number) => void;
@@ -93,6 +103,10 @@ interface UseLineListStateReturn<T extends DataItem> {
   handleCancelEdit: () => void;
   handleDeleteRow: (rowId: string | number) => Promise<void>;
   updateEditingRowField: (key: string, value: string) => void;
+  handleCellEditStart: (rowId: string | number, column: LineListColumnMeta) => void;
+  handleCellEditChange: (value: string) => void;
+  handleCellEditCommit: () => Promise<void>;
+  handleCellEditCancel: () => void;
   renderCell: (rowId: string | number, column: LineListColumnMeta) => React.ReactNode;
 }
 
@@ -110,6 +124,7 @@ const useLineListState = <T extends DataItem>({
   mode = 'edit',
   config,
 }: LineListProps<T>): UseLineListStateReturn<T> => {
+  // @ts-expect-error - ITable é compatível com Table em runtime
   const tableApi = useTable(table);
   const resolvedConfig = React.useMemo(() => resolveRenderConfig(config), [config]);
   const permissions = React.useMemo(
@@ -181,6 +196,42 @@ const useLineListState = <T extends DataItem>({
   const canEditRows = permissions.canEditRows;
   const allowColumnReorder = permissions.allowColumnReorder;
 
+  const [editingCell, setEditingCell] = React.useState<EditingCellState | null>(null);
+  const [editingValue, setEditingValue] = React.useState('');
+
+  const isCellEditable = React.useCallback(
+    (column: TableColumn) => canEditRows && !column.isDynamic && !column.isReadOnly,
+    [canEditRows]
+  );
+
+  const resetCellEdit = React.useCallback(() => {
+    setEditingCell(null);
+    setEditingValue('');
+  }, []);
+
+  const parseCellValue = React.useCallback((rawValue: string, dataType: TableColumn['dataType']): TableCellValue => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) {
+      return '';
+    }
+    if (dataType === 'number' || dataType === 'currency') {
+      const sanitized = trimmed.replace(/[^\d,.-]/g, '');
+      const normalized = sanitized.replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.');
+      const numeric = Number(normalized);
+      return Number.isNaN(numeric) ? trimmed : numeric;
+    }
+    if (dataType === 'boolean') {
+      const lower = trimmed.toLowerCase();
+      if (['true', '1', 'sim', 'yes'].includes(lower)) {
+        return true;
+      }
+      if (['false', '0', 'nao', 'no'].includes(lower)) {
+        return false;
+      }
+    }
+    return trimmed;
+  }, []);
+
   const invalidKeyPath = React.useMemo(() => {
     if (!navigateTo) {
       return false;
@@ -207,15 +258,15 @@ const useLineListState = <T extends DataItem>({
   }, []);
 
   const scheduleMenuClose = React.useCallback(() => {
-    if (!headerMenu && !rowMenu) {
+    if (!headerMenu && !rowMenu && !filterDialog) {
       return;
     }
     cancelMenuClose();
     menuCloseTimer.current = window.setTimeout(() => {
-      closeContextMenus();
+      closeMenus();
       menuCloseTimer.current = null;
     }, 1000);
-  }, [cancelMenuClose, closeContextMenus, headerMenu, rowMenu]);
+  }, [cancelMenuClose, closeMenus, filterDialog, headerMenu, rowMenu]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -306,6 +357,7 @@ const useLineListState = <T extends DataItem>({
     if (!canEditHeaders) {
       return;
     }
+    cancelMenuClose();
     setFilterValue(activeFilters[columnId] || '');
     setFilterDialog({ columnId, label, x: position.x, y: position.y });
     closeContextMenus();
@@ -482,6 +534,7 @@ const useLineListState = <T extends DataItem>({
       return;
     }
     const payload = { ...row };
+    // @ts-ignore - remove id para criar nova linha
     delete payload.id;
     try {
       await tableApi.create(payload);
@@ -543,6 +596,66 @@ const useLineListState = <T extends DataItem>({
     [data, tableApi]
   );
 
+  const handleCellEditStart = React.useCallback(
+    (rowId: string | number, columnMeta: LineListColumnMeta) => {
+      if (!isCellEditable(columnMeta.column)) {
+        return;
+      }
+      closeMenus();
+      const value = getCellValue(rowId, columnMeta);
+      setEditingCell({
+        rowId,
+        columnId: columnMeta.column.id,
+        dataSource: columnMeta.column.dataSource,
+        dataType: columnMeta.column.dataType,
+        originalValue: value,
+      });
+      setEditingValue(value === null || value === undefined ? '' : String(value));
+    },
+    [closeMenus, getCellValue, isCellEditable]
+  );
+
+  const handleCellEditChange = React.useCallback((value: string) => {
+    setEditingValue(value);
+  }, []);
+
+  const handleCellEditCommit = React.useCallback(async () => {
+    if (!editingCell) {
+      return;
+    }
+    if (!canEditRows) {
+      resetCellEdit();
+      return;
+    }
+    const nextValue = parseCellValue(editingValue, editingCell.dataType);
+    if (nextValue === editingCell.originalValue) {
+      resetCellEdit();
+      return;
+    }
+    try {
+      await tableApi.update(editingCell.rowId, { [editingCell.dataSource]: nextValue });
+      onDataChange?.(table.getRows() as T[]);
+    } catch (error) {
+      notifyError(error);
+      return;
+    }
+    resetCellEdit();
+  }, [
+    editingCell,
+    editingValue,
+    canEditRows,
+    parseCellValue,
+    resetCellEdit,
+    tableApi,
+    onDataChange,
+    table,
+    notifyError,
+  ]);
+
+  const handleCellEditCancel = React.useCallback(() => {
+    resetCellEdit();
+  }, [resetCellEdit]);
+
   const renderCell = React.useCallback(
     (rowId: string | number, columnMeta: LineListColumnMeta) => {
       const value = getCellValue(rowId, columnMeta);
@@ -577,6 +690,8 @@ const useLineListState = <T extends DataItem>({
     activeFilters,
     sortConfig,
     editingRow: editingRow as EditingRowState<T> | null,
+    editingCell: editingCell ? { rowId: editingCell.rowId, columnId: editingCell.columnId } : null,
+    editingValue,
     filteredAndSortedData: data,
     invalidKeyPath,
     handleDragStart,
@@ -606,6 +721,10 @@ const useLineListState = <T extends DataItem>({
     handleCancelEdit,
     handleDeleteRow,
     updateEditingRowField: handleUpdateEditingRowField,
+    handleCellEditStart,
+    handleCellEditChange,
+    handleCellEditCommit,
+    handleCellEditCancel,
     renderCell,
   };
 };

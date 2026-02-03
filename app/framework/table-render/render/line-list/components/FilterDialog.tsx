@@ -9,9 +9,20 @@ interface FilterDialogProps {
     onChange: (value: string) => void;
     onApply: () => void;
     onCancel: () => void;
+    onHoverStart: () => void;
+    onHoverEnd: () => void;
 }
 
-const FilterDialog: React.FC<FilterDialogProps> = ({ dialog, value, labels, onChange, onApply, onCancel }) => {
+const FilterDialog: React.FC<FilterDialogProps> = ({
+    dialog,
+    value,
+    labels,
+    onChange,
+    onApply,
+    onCancel,
+    onHoverStart,
+    onHoverEnd,
+}) => {
     if (!dialog) {
         return null;
     }
@@ -21,6 +32,8 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ dialog, value, labels, onCh
             className="fixed bg-white rounded-lg shadow-2xl border border-gray-200 p-4 min-w-[220px] animate-in fade-in zoom-in duration-100"
             style={{ left: `${dialog.x + 8}px`, top: `${dialog.y + 8}px`, zIndex: 9999 }}
             data-menu="true"
+            onMouseEnter={onHoverStart}
+            onMouseLeave={onHoverEnd}
         >
             <div className="text-sm font-semibold text-gray-700 mb-2">{labels.filterDialogTitle(dialog.label)}</div>
             <input

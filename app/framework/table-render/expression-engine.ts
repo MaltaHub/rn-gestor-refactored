@@ -527,6 +527,7 @@ export class ExpressionEngine {
       }
 
       default:
+        // @ts-ignore - Tipo genérico de nó
         throw new Error(`Tipo de nó desconhecido: ${node.type}`);
     }
   }

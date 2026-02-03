@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RenderTable, Table, tableRegistry, useTable } from '@/app/framework/table-render';
-import type { RenderTableConfigOverrides, RenderTableMode } from '@/app/framework/table-render';
+import type { RenderTableConfigOverrides, RenderTableMode, ITable } from '@/app/framework/table-render';
 import { TableConfig, TableColumn, TableRow, TableSnapshot, TableHistoryEntry } from '@/app/framework/table-render/types';
 
 type TablePanelProps = {
@@ -108,7 +108,7 @@ const TablePanel: React.FC<TablePanelProps> = ({
   };
   const renderConfig = useMemo<RenderTableConfigOverrides>(
     () => ({
-      permissionsResolver: (targetTable: Table, tableMode: RenderTableMode) => ({
+      permissionsResolver: (targetTable: ITable, tableMode: RenderTableMode) => ({
         canStructureEdit: targetTable.realEscope && tableMode === 'edit',
       }),
       onColumnOrderChange: (order: string[]) => {

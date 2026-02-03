@@ -10,6 +10,12 @@ interface DataRowsProps<T extends DataItem> {
     navigateTo?: { path: string; keyPath: keyof T };
     canEditRows: boolean;
     labels: RenderTableLabels;
+    editingCell: { rowId: string | number; columnId: string } | null;
+    editingValue: string;
+    onCellEditStart: (rowId: string | number, column: LineListColumnMeta) => void;
+    onCellEditChange: (value: string) => void;
+    onCellEditCommit: () => void;
+    onCellEditCancel: () => void;
     onAddRowAfter: (position: number) => void;
     onCellMenuOpen: (rowId: string | number, column: LineListColumnMeta, anchor: HTMLElement) => void;
     onMenuCloseDelay: () => void;
@@ -24,6 +30,12 @@ const DataRows = <T extends DataItem>({
     navigateTo,
     canEditRows,
     labels,
+    editingCell,
+    editingValue,
+    onCellEditStart,
+    onCellEditChange,
+    onCellEditCommit,
+    onCellEditCancel,
     onAddRowAfter,
     onCellMenuOpen,
     onMenuCloseDelay,
@@ -32,6 +44,7 @@ const DataRows = <T extends DataItem>({
 }: DataRowsProps<T>) => {
     const openTimer = React.useRef<number | null>(null);
     const pendingCell = React.useRef<{ rowId: string | number; columnId: string } | null>(null);
+    const skipCommitRef = React.useRef(false);
 
     React.useEffect(() => {
         return () => {
@@ -80,9 +93,11 @@ const DataRows = <T extends DataItem>({
         }, 2000);
     };
 
-    const handleCellMouseLeave = () => {
+    const handleCellMouseLeave = (rowId: string | number, columnId: string) => {
         clearOpenTimer();
-        onMenuCloseDelay();
+        if (activeMenuCell && activeMenuCell.rowId === rowId && activeMenuCell.columnId === columnId) {
+            onMenuCloseDelay();
+        }
     };
 
     if (data.length === 0) {
@@ -127,20 +142,62 @@ const DataRows = <T extends DataItem>({
 
                     {columns.map((columnMeta) => {
                         const key = columnMeta.column.id;
-                        const cellContent = (
+                        const isEditable = canEditRows && !columnMeta.column.isDynamic && !columnMeta.column.isReadOnly;
+                        const isEditing =
+                            editingCell &&
+                            editingCell.rowId === row.id &&
+                            editingCell.columnId === columnMeta.column.id;
+                        const cellContent = isEditing ? (
+                            <input
+                                type="text"
+                                value={editingValue}
+                                onChange={(event) => onCellEditChange(event.target.value)}
+                                onBlur={() => {
+                                    if (skipCommitRef.current) {
+                                        skipCommitRef.current = false;
+                                        return;
+                                    }
+                                    onCellEditCommit();
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        event.currentTarget.blur();
+                                    }
+                                    if (event.key === 'Escape') {
+                                        event.preventDefault();
+                                        skipCommitRef.current = true;
+                                        onCellEditCancel();
+                                    }
+                                }}
+                                className="w-full bg-white px-4 py-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-200"
+                                autoFocus
+                            />
+                        ) : (
                             <div className="block w-full min-w-0 break-words px-4 py-3 text-sm text-gray-800">
                                 {renderCell(row.id, columnMeta)}
                             </div>
                         );
+                        const shouldUseLink = Boolean(navigateTo && !canEditRows && !isEditing);
 
                         return (
                             <div
                                 key={key}
                                 className="relative flex-1 min-w-0 border border-gray-200"
                                 onMouseEnter={(event) => handleCellMouseEnter(event, row.id, columnMeta)}
-                                onMouseLeave={handleCellMouseLeave}
+                                onMouseLeave={() => handleCellMouseLeave(row.id, columnMeta.column.id)}
+                                onDoubleClick={(event) => {
+                                    if (!isEditable) {
+                                        return;
+                                    }
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    clearOpenTimer();
+                                    skipCommitRef.current = false;
+                                    onCellEditStart(row.id, columnMeta);
+                                }}
                             >
-                                {navigateTo ? (
+                                {shouldUseLink ? (
                                     <Link
                                         href={`${navigateTo.path}/${row[navigateTo.keyPath]}`}
                                         className="block h-full w-full"

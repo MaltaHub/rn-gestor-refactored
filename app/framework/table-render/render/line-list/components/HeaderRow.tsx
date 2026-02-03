@@ -84,9 +84,11 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
         scheduleMenuOpen(column, event.currentTarget as HTMLElement);
     };
 
-    const handleMouseLeave = () => {
+    const handleMouseLeave = (column: LineListColumnMeta) => {
         clearOpenTimer();
-        onMenuCloseDelay();
+        if (activeMenuColumnId === column.column.id) {
+            onMenuCloseDelay();
+        }
     };
 
     return (
@@ -104,7 +106,7 @@ const HeaderRow: React.FC<HeaderRowProps> = ({
                         onDragEnd={allowColumnReorder ? onDragEnd : undefined}
                         onDragLeave={allowColumnReorder ? onDragLeave : undefined}
                         onMouseEnter={(event) => handleMouseEnter(event, meta)}
-                        onMouseLeave={handleMouseLeave}
+                        onMouseLeave={() => handleMouseLeave(meta)}
                         className={`group relative flex-1 min-w-0 border border-gray-200 px-4 py-3 select-none transition-all duration-200 ${
                             allowColumnReorder ? 'cursor-move hover:bg-gray-100' : 'cursor-default'
                         } ${draggedIndex === index ? 'opacity-40' : 'opacity-100'} ${

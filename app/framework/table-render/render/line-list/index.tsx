@@ -29,6 +29,8 @@ const LineListComponent = <T extends DataItem>(props: LineListProps<T>) => {
         filterValue,
         setFilterValue,
         editingRow,
+        editingCell,
+        editingValue,
         invalidKeyPath,
         renderCell,
         handleDragStart,
@@ -57,6 +59,10 @@ const LineListComponent = <T extends DataItem>(props: LineListProps<T>) => {
         handleCancelEdit,
         handleDeleteRow,
         updateEditingRowField,
+        handleCellEditStart,
+        handleCellEditChange,
+        handleCellEditCommit,
+        handleCellEditCancel,
     } = useLineListState(props);
 
     if (invalidKeyPath && props.navigateTo) {
@@ -72,7 +78,7 @@ const LineListComponent = <T extends DataItem>(props: LineListProps<T>) => {
                 dragOverIndex={dragState.dragOverIndex}
                 activeFilters={activeFilters}
                 sortConfig={sortConfig}
-                activeMenuColumnId={headerMenu?.columnId ?? null}
+                activeMenuColumnId={headerMenu?.columnId ?? filterDialog?.columnId ?? null}
                 canEditHeaders={canEditHeaders}
                 canStructureEdit={canStructureEdit}
                 allowColumnReorder={allowColumnReorder}
@@ -97,6 +103,12 @@ const LineListComponent = <T extends DataItem>(props: LineListProps<T>) => {
                 navigateTo={props.navigateTo}
                 canEditRows={canEditRows}
                 labels={labels}
+                editingCell={editingCell}
+                editingValue={editingValue}
+                onCellEditStart={handleCellEditStart}
+                onCellEditChange={handleCellEditChange}
+                onCellEditCommit={handleCellEditCommit}
+                onCellEditCancel={handleCellEditCancel}
                 onAddRowAfter={(position) => handleAddRow({ position })}
                 onCellMenuOpen={handleRowMenuOpen}
                 onMenuCloseDelay={scheduleMenuClose}
@@ -143,6 +155,8 @@ const LineListComponent = <T extends DataItem>(props: LineListProps<T>) => {
                 onChange={setFilterValue}
                 onApply={handleFilterApply}
                 onCancel={handleFilterCancel}
+                onHoverStart={cancelMenuClose}
+                onHoverEnd={scheduleMenuClose}
             />
 
             {canEditRows && (

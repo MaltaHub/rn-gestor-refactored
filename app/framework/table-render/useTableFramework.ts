@@ -7,7 +7,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Table } from './Table';
-import { TableRow, TableColumn, TableFilter, TableSort, TableCellValue } from './types';
+import { TableRow, TableColumn, TableFilter, TableSort, TableCellValue, TableSnapshot } from './types';
 
 /**
  * Hook para consumir uma tabela no React

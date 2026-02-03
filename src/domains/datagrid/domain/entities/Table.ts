@@ -50,7 +50,7 @@ import {
   TableHistoryEntry,
   ColumnValidation,
   TableCellValue,
-} from './types';
+} from '@/src/domains/shared/domain/types';
 import {
   createDataStore,
   createFilterStore,
@@ -58,9 +58,9 @@ import {
   createHistoryStore,
   createSnapshotStore,
   createDynamicColumnStore,
-} from './stores';
-import { expressionEngine } from './expression-engine';
-import { applyColumnDefaults } from './defaults';
+} from '@/app/framework/table-render/stores';
+import { expressionEngine } from '@/app/framework/table-render/expression-engine';
+import { applyColumnDefaults } from '@/app/framework/table-render/defaults';
 
 /**
  * Implementação da classe Table
