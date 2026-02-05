@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PWARegister } from "../components/pwa-register";
+import { TopBar } from "../components/TopBar";
+import { TopLogo } from "../components/TopLogo";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -36,7 +38,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body>
-        {children}
+        <div className="app-layout">
+          <TopLogo />
+          <TopBar />
+          <div className="app-content">{children}</div>
+        </div>
         <PWARegister />
       </body>
     </html>
